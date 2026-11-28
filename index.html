@@ -601,121 +601,156 @@ function los(x0,z0,x1,z1){
 }
 
 const sc=new THREE.Scene();
-const cam=new THREE.PerspectiveCamera(72,1,.1,130);cam.rotation.order='YXZ';sc.add(cam);
-let ren;try{ren=new THREE.WebGLRenderer({antialias:true})}catch(e){$('msg').textContent='이 환경에서는 3D(WebGL)를 쓸 수 없어요.';throw e}
-const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.5));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.24;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
+const cam=new THREE.PerspectiveCamera(72,1,.1,140);cam.rotation.order='YXZ';sc.add(cam);
+let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch(e){$('msg').textContent='이 환경에서는 3D(WebGL)를 쓸 수 없어요.';throw e}
+const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.75));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.28;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
 const rz=()=>{ren.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()};addEventListener('resize',rz);rz();
 
-sc.add(new THREE.HemisphereLight(0x90a8cc,0x252a34,.82));
-const dl=new THREE.DirectionalLight(0xffb37a,1.65);dl.position.set(95,62,20);dl.target.position.set(42,0,42);sc.add(dl,dl.target);dl.castShadow=true;
-const shRes=LO?1024:2048;dl.shadow.mapSize.set(shRes,shRes);Object.assign(dl.shadow.camera,{left:-52,right:52,top:52,bottom:-52,near:10,far:190});dl.shadow.camera.updateProjectionMatrix();dl.shadow.bias=-.0004;
+/* 절차적 환경맵(PMREM) 생성: 금속 총열·리시버·스코프 반사광 확보 */
+{
+  const envScene=new THREE.Scene();
+  envScene.background=new THREE.Color(0x0c1018);
+  const p1=new THREE.Mesh(new THREE.PlaneGeometry(36,12),new THREE.MeshBasicMaterial({color:0xffe4c4,side:THREE.DoubleSide}));
+  p1.position.set(0,16,-14);p1.rotation.x=Math.PI/3;envScene.add(p1);
+  const p2=new THREE.Mesh(new THREE.PlaneGeometry(24,10),new THREE.MeshBasicMaterial({color:0x7cc4ff,side:THREE.DoubleSide}));
+  p2.position.set(-22,10,12);p2.lookAt(0,0,0);envScene.add(p2);
+  const p3=new THREE.Mesh(new THREE.PlaneGeometry(20,8),new THREE.MeshBasicMaterial({color:0xff7a2f,side:THREE.DoubleSide}));
+  p3.position.set(22,8,10);p3.lookAt(0,0,0);envScene.add(p3);
+  const pmrem=new THREE.PMREMGenerator(ren);
+  pmrem.compileEquirectangularShader();
+  const envRT=pmrem.fromScene(envScene,.035);
+  sc.environment=envRT.texture;
+  pmrem.dispose();
+}
 
-const rimLight=new THREE.DirectionalLight(0x63b3ed,.72);rimLight.position.set(-60,38,75);sc.add(rimLight);
-const fL=new THREE.PointLight(0xffb060,0,14);fL.position.set(0,0,-.8);cam.add(fL);
+sc.add(new THREE.HemisphereLight(0x9bb4d8,0x1f2530,.75));
+const dl=new THREE.DirectionalLight(0xffb878,1.75);dl.position.set(92,64,24);dl.target.position.set(42,0,42);sc.add(dl,dl.target);dl.castShadow=true;
+const shRes=LO?1024:2048;dl.shadow.mapSize.set(shRes,shRes);Object.assign(dl.shadow.camera,{left:-52,right:52,top:52,bottom:-52,near:10,far:190});dl.shadow.camera.updateProjectionMatrix();dl.shadow.bias=-.00035;
+
+const rimLight=new THREE.DirectionalLight(0x64b5f6,.78);rimLight.position.set(-65,40,72);sc.add(rimLight);
+const fL=new THREE.PointLight(0xffb454,0,16);fL.position.set(0,0,-.95);cam.add(fL);
 const world=new THREE.Group();sc.add(world);
 
-const TX=(w,f,repX,repY)=>{const c=document.createElement('canvas');c.width=c.height=w;f(c.getContext('2d'),w);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;t.encoding=THREE.sRGBEncoding;if(repX)t.repeat.set(repX,repY||repX);return t};
+const TX=(w,f,repX,repY)=>{const c=document.createElement('canvas');c.width=c.height=w;f(c.getContext('2d'),w);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;t.encoding=THREE.sRGBEncoding;if(repX)t.repeat.set(repX,repY||repX);return t};
 const nzp=(x,w,n,a,l)=>{for(let i=0;i<n;i++){const v=l+Math.random()*a|0;x.fillStyle='rgba('+v+','+v+','+v+',.16)';x.fillRect(Math.random()*w,Math.random()*w,1+Math.random()*3,1+Math.random()*3)}};
 
 const tileFloorT=TX(256,(x,w)=>{
-  x.fillStyle='#4a505a';x.fillRect(0,0,w,w);
-  nzp(x,w,6500,55,44);
+  x.fillStyle='#454b55';x.fillRect(0,0,w,w);
+  nzp(x,w,7500,52,40);
   const g=w/4;
   for(let gy=0;gy<4;gy++)for(let gx=0;gx<4;gx++){
-    const shade=((gx+gy)%2===0)?'rgba(255,255,255,.035)':'rgba(0,0,0,.06)';
+    const shade=((gx+gy)%2===0)?'rgba(255,255,255,.04)':'rgba(0,0,0,.075)';
     x.fillStyle=shade;x.fillRect(gx*g+2,gy*g+2,g-4,g-4);
-    x.strokeStyle='rgba(16,20,26,.75)';x.lineWidth=2.5;x.strokeRect(gx*g,gy*g,g,g);
+    x.strokeStyle='rgba(12,16,22,.82)';x.lineWidth=2.5;x.strokeRect(gx*g,gy*g,g,g);
+    x.fillStyle='rgba(180,192,210,.07)';x.fillRect(gx*g+6,gy*g+6,3,3);x.fillRect((gx+1)*g-9,gy*g+6,3,3);
   }
 },21,21);
 
 const wallConcT=TX(256,(x,w)=>{
-  x.fillStyle='#6c7480';x.fillRect(0,0,w,w);
-  nzp(x,w,4500,60,60);
-  x.fillStyle='rgba(22,26,33,.22)';
+  x.fillStyle='#626b78';x.fillRect(0,0,w,w);
+  nzp(x,w,5500,58,52);
+  x.fillStyle='rgba(18,22,29,.28)';
   for(let y=64;y<w;y+=64)x.fillRect(0,y,w,3);
-  for(let i=20;i<w;i+=40)x.fillRect(i,0,1.5,w);
-  x.strokeStyle='rgba(18,22,28,.72)';x.lineWidth=4;x.strokeRect(2,2,w-4,w-4);
+  for(let i=32;i<w;i+=32)x.fillRect(i,0,1.5,w);
+  x.strokeStyle='rgba(15,19,25,.78)';x.lineWidth=4;x.strokeRect(2,2,w-4,w-4);
 },2,2);
 
 const crT=TX(256,(x,w)=>{
-  x.fillStyle='#8c5022';x.fillRect(0,0,w,w);
-  nzp(x,w,3500,80,30);
-  for(let y=24;y<w;y+=28){x.fillStyle='rgba(18,12,8,.38)';x.fillRect(10,y,w-20,3)}
-  x.strokeStyle='#1d1712';x.lineWidth=12;x.strokeRect(6,6,w-12,w-12);
-  x.strokeStyle='#424852';x.lineWidth=5;x.strokeRect(14,14,w-28,w-28);
+  x.fillStyle='#8c4f20';x.fillRect(0,0,w,w);
+  nzp(x,w,4000,75,28);
+  for(let y=24;y<w;y+=28){x.fillStyle='rgba(16,10,6,.42)';x.fillRect(10,y,w-20,3)}
+  x.strokeStyle='#191410';x.lineWidth=12;x.strokeRect(6,6,w-12,w-12);
+  x.strokeStyle='#48505e';x.lineWidth=5;x.strokeRect(14,14,w-28,w-28);
 });
 
 const woodGrainT=TX(256,(x,w)=>{
-  x.fillStyle='#6e3819';x.fillRect(0,0,w,w);
-  for(let i=0;i<90;i++){
-    const y=(i/90)*w;
-    x.strokeStyle=i%2===0?'rgba(38,16,6,.36)':'rgba(175,105,58,.24)';
-    x.lineWidth=1.4+Math.sin(i*.7)*1.1;
+  x.fillStyle='#633014';x.fillRect(0,0,w,w);
+  for(let i=0;i<110;i++){
+    const y=(i/110)*w;
+    x.strokeStyle=i%2===0?'rgba(32,12,4,.42)':'rgba(190,114,62,.28)';
+    x.lineWidth=1.2+Math.sin(i*.8)*1.1;
     x.beginPath();
     x.moveTo(0,y);
-    x.bezierCurveTo(w*.33,y+Math.sin(i)*8,w*.66,y-Math.cos(i)*8,w,y);
+    x.bezierCurveTo(w*.33,y+Math.sin(i)*10,w*.66,y-Math.cos(i)*10,w,y);
     x.stroke();
   }
 },1,1);
 
-sc.background=new THREE.Color(0x141923);
-sc.fog=new THREE.FogExp2(0x181f2b,.013);
+const brushedMetalT=TX(256,(x,w)=>{
+  x.fillStyle='#2b303a';x.fillRect(0,0,w,w);
+  for(let y=0;y<w;y+=2){
+    const v=36+((Math.sin(y*1.7)*14+Math.random()*14)|0);
+    x.fillStyle=`rgba(${v},${v+3},${v+8},.35)`;
+    x.fillRect(0,y,w,1.5);
+  }
+},1,1);
 
-/* 대형 아레나 바닥, 바닥 통로 라인, 배수 그레이팅 & 천장 트러스/조명 */
-const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),new THREE.MeshStandardMaterial({map:tileFloorT,bumpMap:tileFloorT,bumpScale:.45,roughness:.84,metalness:.14}));
+sc.background=new THREE.Color(0x111620);
+sc.fog=new THREE.FogExp2(0x151c28,.0125);
+
+/* 대형 아레나 바닥, 배관·케이블·트러스·조명·단차 몰딩 */
+const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),new THREE.MeshStandardMaterial({map:tileFloorT,bumpMap:tileFloorT,bumpScale:.55,roughness:.78,metalness:.2}));
 flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveShadow=true;world.add(flr);
 
 {
-  const beamMat=new THREE.MeshStandardMaterial({color:0x1b202a,roughness:.55,metalness:.65});
-  const trussMat=new THREE.MeshStandardMaterial({color:0x2d3545,roughness:.45,metalness:.75});
-  const stripLightMat=new THREE.MeshBasicMaterial({color:0xffe4b5});
-  const laneMat=new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.32});
-  const grateMat=new THREE.MeshStandardMaterial({color:0x161b22,roughness:.4,metalness:.85});
+  const beamMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x1b202a,roughness:.42,metalness:.82});
+  const trussMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x323b4c,roughness:.36,metalness:.86});
+  const pipeMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x475266,roughness:.32,metalness:.88});
+  const hazardMat=new THREE.MeshStandardMaterial({color:0xe88a25,roughness:.45,metalness:.35});
+  const stripLightMat=new THREE.MeshBasicMaterial({color:0xffe6bd});
+  const laneMat=new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.36});
+  const grateMat=new THREE.MeshStandardMaterial({color:0x13171e,roughness:.38,metalness:.88});
 
-  /* 중앙 축 & 횡축 유도 라인 */
-  const mainAxis=new THREE.Mesh(new THREE.PlaneGeometry(.35,ARENA_D-8),laneMat);
+  const mainAxis=new THREE.Mesh(new THREE.PlaneGeometry(.38,ARENA_D-8),laneMat);
   mainAxis.rotation.x=-Math.PI/2;mainAxis.position.set(ARENA_W/2,.015,ARENA_D/2);world.add(mainAxis);
-  const crossAxis=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-8,.35),laneMat);
+  const crossAxis=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-8,.38),laneMat);
   crossAxis.rotation.x=-Math.PI/2;crossAxis.position.set(ARENA_W/2,.015,ARENA_D/2);world.add(crossAxis);
 
-  /* 바닥 배수 그레이팅 */
+  /* 바닥 그레이팅 + 테두리 경고 프레임 */
   [[28,28],[56,28],[28,56],[56,56],[42,20],[42,64]].forEach(([gx,gz])=>{
-    const frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,.04,2.2),grateMat);
-    frame.position.set(gx,.02,gz);frame.receiveShadow=true;world.add(frame);
-    for(let s=-.7;s<=.7;s+=.35){
-      const bar=new THREE.Mesh(new THREE.BoxGeometry(1.9,.05,.07),trussMat);
-      bar.position.set(gx,.025,gz+s);world.add(bar);
+    const outer=new THREE.Mesh(new THREE.BoxGeometry(2.44,.045,2.44),hazardMat);
+    outer.position.set(gx,.02,gz);world.add(outer);
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(2.16,.055,2.16),grateMat);
+    frame.position.set(gx,.025,gz);frame.receiveShadow=true;world.add(frame);
+    for(let s=-.78;s<=.78;s+=.26){
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(1.96,.065,.065),trussMat);
+      bar.position.set(gx,.03,gz+s);world.add(bar);
     }
   });
 
-  /* 천장 가로 들보 + 스트럿 + 조명 바 */
+  /* 상부 파이프 라인 + 거더 + 스트럿 + 조명 바 */
   for(let z=14;z<=70;z+=14){
-    const beam=new THREE.Mesh(new THREE.BoxGeometry(ARENA_W-4,.7,1.2),beamMat);
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(ARENA_W-4,.72,1.25),beamMat);
     beam.position.set(ARENA_W/2,WALL_H+.2,z);
     world.add(beam);
-    const lightBar=new THREE.Mesh(new THREE.BoxGeometry(14,.12,.36),stripLightMat);
-    lightBar.position.set(ARENA_W/2,WALL_H-.2,z);
+    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,ARENA_W-5,14),pipeMat);
+    pipe.rotation.z=Math.PI/2;pipe.position.set(ARENA_W/2,WALL_H-.38,z+.75);
+    world.add(pipe);
+    const lightHousing=new THREE.Mesh(new THREE.BoxGeometry(14.6,.18,.48),trussMat);
+    lightHousing.position.set(ARENA_W/2,WALL_H-.16,z);
+    world.add(lightHousing);
+    const lightBar=new THREE.Mesh(new THREE.BoxGeometry(14,.08,.32),stripLightMat);
+    lightBar.position.set(ARENA_W/2,WALL_H-.25,z);
     world.add(lightBar);
     for(let x=14;x<=70;x+=14){
-      const strut=new THREE.Mesh(new THREE.BoxGeometry(.26,1.4,.26),trussMat);
+      const strut=new THREE.Mesh(new THREE.BoxGeometry(.28,1.5,.28),trussMat);
       strut.position.set(x,WALL_H-.55,z);
       world.add(strut);
     }
   }
 
-  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.8,48),new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.45,side:2}));
+  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,48),new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.48,side:2}));
   midRing.rotation.x=-Math.PI/2;midRing.position.set(ARENA_W/2,.02,ARENA_D/2);world.add(midRing);
 }
 
-const wallMat=new THREE.MeshStandardMaterial({map:wallConcT,bumpMap:wallConcT,bumpScale:.6,color:0xdbe2ec,roughness:.82,metalness:.14});
-const pillarMat=new THREE.MeshStandardMaterial({map:wallConcT,color:0x9aa5b4,roughness:.75,metalness:.22});
-const crateMat=new THREE.MeshStandardMaterial({map:crT,color:0xf8fafc,roughness:.52,metalness:.35});
-const deckMat=new THREE.MeshStandardMaterial({map:tileFloorT,color:0x64748b,roughness:.72,metalness:.25});
-const rampMat=new THREE.MeshStandardMaterial({map:tileFloorT,color:0x526075,roughness:.68,metalness:.3});
-const railMat=new THREE.MeshStandardMaterial({color:0xff7a2f,roughness:.4,metalness:.55});
-const steelTrimMat=new THREE.MeshStandardMaterial({color:0x2b3340,roughness:.38,metalness:.82});
+const wallMat=new THREE.MeshStandardMaterial({map:wallConcT,bumpMap:wallConcT,bumpScale:.68,color:0xdbe2ec,roughness:.76,metalness:.18});
+const pillarMat=new THREE.MeshStandardMaterial({map:wallConcT,bumpMap:wallConcT,bumpScale:.5,color:0x9aa5b4,roughness:.68,metalness:.28});
+const crateMat=new THREE.MeshStandardMaterial({map:crT,bumpMap:crT,bumpScale:.4,color:0xf8fafc,roughness:.48,metalness:.38});
+const deckMat=new THREE.MeshStandardMaterial({map:tileFloorT,bumpMap:tileFloorT,bumpScale:.4,color:0x64748b,roughness:.66,metalness:.3});
+const rampMat=new THREE.MeshStandardMaterial({map:tileFloorT,bumpMap:tileFloorT,bumpScale:.4,color:0x526075,roughness:.62,metalness:.35});
+const railMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0xff7a2f,roughness:.34,metalness:.65});
+const steelTrimMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x2b3340,roughness:.3,metalness:.88});
 
-/* 고체 벽/기둥/상자 메시 + 베이스 몰딩 & 보강 리브 */
 SOLID_BOXES.forEach(b=>{
   const w=b.xMax-b.xMin,d=b.zMax-b.zMin;
   const cx=(b.xMin+b.xMax)/2,cz=(b.zMin+b.zMax)/2;
@@ -725,23 +760,39 @@ SOLID_BOXES.forEach(b=>{
   m.castShadow=m.receiveShadow=true;
   world.add(m);
   if(b.kind==='wall'||b.kind==='pillar'){
-    const basePlinth=new THREE.Mesh(new THREE.BoxGeometry(w+.12,.36,d+.12),steelTrimMat);
-    basePlinth.position.set(cx,.18,cz);
+    const basePlinth=new THREE.Mesh(new THREE.BoxGeometry(w+.14,.4,d+.14),steelTrimMat);
+    basePlinth.position.set(cx,.2,cz);
     world.add(basePlinth);
-    const trim=new THREE.Mesh(new THREE.BoxGeometry(w+.08,.14,d+.08),railMat);
+    const trim=new THREE.Mesh(new THREE.BoxGeometry(w+.1,.16,d+.1),railMat);
     trim.position.set(cx,2.6,cz);
     world.add(trim);
-    const topCap=new THREE.Mesh(new THREE.BoxGeometry(w+.14,.22,d+.14),steelTrimMat);
-    topCap.position.set(cx,b.h+.05,cz);
+    const topCap=new THREE.Mesh(new THREE.BoxGeometry(w+.16,.24,d+.16),steelTrimMat);
+    topCap.position.set(cx,b.h+.06,cz);
     world.add(topCap);
+    /* 세로 보강 필라스터 */
+    if(w>8||d>8){
+      const span=w>8?w:d;
+      const count=Math.floor(span/4);
+      for(let i=1;i<count;i++){
+        const off=-span/2+(span*i)/count;
+        const rib=new THREE.Mesh(
+          w>8?new THREE.BoxGeometry(.24,b.h-.4,d+.12):new THREE.BoxGeometry(w+.12,b.h-.4,.24),
+          steelTrimMat
+        );
+        rib.position.set(w>8?cx+off:cx,b.h/2,w>8?cz:cz+off);
+        world.add(rib);
+      }
+    }
   }else if(b.kind==='crate'){
-    const topPlate=new THREE.Mesh(new THREE.BoxGeometry(w-.24,.06,d-.24),steelTrimMat);
+    const topPlate=new THREE.Mesh(new THREE.BoxGeometry(w-.22,.06,d-.22),steelTrimMat);
     topPlate.position.set(cx,b.h+.02,cz);
     world.add(topPlate);
+    const cornerA=new THREE.Mesh(new THREE.BoxGeometry(w+.06,.12,d+.06),steelTrimMat);
+    cornerA.position.set(cx,.06,cz);
+    world.add(cornerA);
   }
 });
 
-/* 고가 데크(육교 + 북/남 회랑) 및 난간·크로스브레이스·기둥 */
 ELEVATED_DECKS.forEach(deck=>{
   const w=deck.xMax-deck.xMin,d=deck.zMax-deck.zMin;
   const cx=(deck.xMin+deck.xMax)/2,cz=(deck.zMin+deck.zMax)/2;
@@ -751,21 +802,21 @@ ELEVATED_DECKS.forEach(deck=>{
   slab.castShadow=slab.receiveShadow=true;
   world.add(slab);
 
-  const edgeBeam=new THREE.Mesh(new THREE.BoxGeometry(w+.06,.24,d+.06),steelTrimMat);
-  edgeBeam.position.set(cx,deck.h-deck.thick-.1,cz);
+  const edgeBeam=new THREE.Mesh(new THREE.BoxGeometry(w+.08,.26,d+.08),steelTrimMat);
+  edgeBeam.position.set(cx,deck.h-deck.thick-.11,cz);
   world.add(edgeBeam);
 
-  const railH=.78;
+  const railH=.8;
   [-1,1].forEach(side=>{
     const rz=cz+side*(d/2-.08);
-    const bar=new THREE.Mesh(new THREE.BoxGeometry(w,.09,.12),railMat);
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(w,.095,.12),railMat);
     bar.position.set(cx,deck.h+railH,rz);
     bar.castShadow=true;
     world.add(bar);
-    const midBar=new THREE.Mesh(new THREE.BoxGeometry(w,.045,.06),steelTrimMat);
+    const midBar=new THREE.Mesh(new THREE.BoxGeometry(w,.048,.065),steelTrimMat);
     midBar.position.set(cx,deck.h+railH*.52,rz);
     world.add(midBar);
-    const steps=Math.max(4,Math.floor(w/3));
+    const steps=Math.max(5,Math.floor(w/2.6));
     for(let i=0;i<=steps;i++){
       const px=deck.xMin+(w*i)/steps;
       const post=new THREE.Mesh(new THREE.BoxGeometry(.1,railH,.1),pillarMat);
@@ -780,18 +831,31 @@ ELEVATED_DECKS.forEach(deck=>{
     const px=deck.xMin+.8+((w-1.6)*i)/colCount;
     [deck.zMin+.45,deck.zMax-.45].forEach(pz=>{
       const colH=deck.h-deck.thick;
-      const col=new THREE.Mesh(new THREE.BoxGeometry(.65,colH,.65),pillarMat);
+      const col=new THREE.Mesh(new THREE.BoxGeometry(.68,colH,.68),pillarMat);
       col.position.set(px,colH/2,pz);
       col.castShadow=col.receiveShadow=true;
       world.add(col);
-      const collar=new THREE.Mesh(new THREE.BoxGeometry(.76,.22,.76),steelTrimMat);
+      const foot=new THREE.Mesh(new THREE.BoxGeometry(.82,.22,.82),steelTrimMat);
+      foot.position.set(px,.11,pz);
+      world.add(foot);
+      const collar=new THREE.Mesh(new THREE.BoxGeometry(.82,.24,.82),steelTrimMat);
       collar.position.set(px,colH-.14,pz);
       world.add(collar);
     });
+    /* 기둥 사이 대각 브레이스 */
+    if(i<colCount){
+      const nextPx=deck.xMin+.8+((w-1.6)*(i+1))/colCount;
+      const spanX=nextPx-px;
+      const diagLen=Math.hypot(spanX,deck.h-.5);
+      const diagAng=Math.atan2(deck.h-.5,spanX);
+      const diag=new THREE.Mesh(new THREE.BoxGeometry(diagLen,.09,.09),steelTrimMat);
+      diag.position.set((px+nextPx)/2,(deck.h-.3)/2,cz);
+      diag.rotation.z=i%2===0?diagAng:-diagAng;
+      world.add(diag);
+    }
   }
 });
 
-/* 진입 경사로 메시 + 논슬립 스트립 */
 ELEVATED_RAMPS.forEach(r=>{
   const len=Math.abs(r.x1-r.x0),wid=r.zMax-r.zMin;
   const risingRight=(r.h1>=r.h0);
@@ -807,13 +871,13 @@ ELEVATED_RAMPS.forEach(r=>{
   m.castShadow=m.receiveShadow=true;
   world.add(m);
 
-  const cleatCount=8;
+  const cleatCount=9;
   const slopeAngle=Math.atan2(Math.abs(r.h1-r.h0),len);
   for(let i=1;i<cleatCount;i++){
     const t=i/cleatCount;
     const cx=Math.min(r.x0,r.x1)+len*t;
     const cy=(risingRight?t:(1-t))*Math.abs(r.h1-r.h0)+.03;
-    const cleat=new THREE.Mesh(new THREE.BoxGeometry(.14,.05,wid-.4),steelTrimMat);
+    const cleat=new THREE.Mesh(new THREE.BoxGeometry(.16,.05,wid-.36),steelTrimMat);
     cleat.position.set(cx,cy,(r.zMin+r.zMax)/2);
     cleat.rotation.z=risingRight?slopeAngle:-slopeAngle;
     world.add(cleat);
@@ -821,7 +885,7 @@ ELEVATED_RAMPS.forEach(r=>{
 });
 
 const GC={};
-const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=14)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=16)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
+const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=16)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=18)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
 function camo(base){
@@ -847,13 +911,13 @@ function mkChar(c){
     color:map?0xffffff:col,map,roughness:r,metalness:m,
     emissive:new THREE.Color(emissiveHex),emissiveIntensity:emInt
   }),
-    u=M(0,.65,.12,camo(accentHex),accentHex,.28),
-    v=M(accentHex,.42,.35,null,accentHex,.34),
-    s=M(0xffd8b8,.62,.05),
-    d=M(0x141820,.5,.45),
-    mt=M(0x3a4250,.3,.85),
-    visor=M(0xffffff,.1,.6,null,accentHex,1.15),
-    beacon=M(accentHex,.2,.2,null,accentHex,1.25),
+    u=M(0,.62,.15,camo(accentHex),accentHex,.28),
+    v=M(accentHex,.38,.42,null,accentHex,.34),
+    s=M(0xffd8b8,.6,.05),
+    d=M(0x141820,.45,.55),
+    mt=M(0x3a4250,.25,.88),
+    visor=M(0xffffff,.08,.65,null,accentHex,1.2),
+    beacon=M(accentHex,.2,.25,null,accentHex,1.3),
     ms=[u,v,s,d,mt,visor,beacon];
 
   const leg=(x,side)=>{
@@ -922,7 +986,7 @@ function mkChar(c){
 const pl={x:8,y:0,z:8,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=95;
 let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,hCrit=0,dm=0,dmgAngle=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0,bobPhase=0;
 
-/* 샷건 데미지 발당 14 (헤드샷 24)로 상향 */
+/* 샷건 데미지 발당 14 (헤드샷 24) */
 const WP=[
   {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true},
   {n:'샷건',mag:6,res:30,cd:.8,dmg:14,hd:24,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
@@ -931,128 +995,151 @@ const WP=[
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
-/* 총기 모델링 강화: 곡선 리시버/그립/스톡/배럴/스코프/탄창/장갑 디테일 */
+/* 정교한 총기 모델링: LatheGeometry(선반 회전 총열/소염기/스코프) + ExtrudeGeometry + 브러시드 메탈/우드/탄피 */
 const gun=new THREE.Group();
-const MT=(c,r,m,map)=>new THREE.MeshStandardMaterial({color:map?0xffffff:c,map,roughness:r,metalness:m});
-const gm1=MT(0x252930,.36,.78);
-const gm2=MT(0x111317,.44,.68);
-const gm3=MT(0x454c59,.26,.88);
-const glv=MT(0x1d2026,.72,.12);
-const wd=MT(0x8c4720,.62,.08,woodGrainT);
-const snM=MT(0x1f232b,.28,.9);
-const scpM=MT(0x161920,.2,.92);
-const accRed=MT(0xff3b30,.32,.55);
-const brassM=MT(0xe5a93c,.28,.88);
+const MT=(c,r,m,map,bump,bumpScale=.012)=>new THREE.MeshStandardMaterial({
+  color:map?0xffffff:c,map,bumpMap:bump||null,bumpScale:bump?bumpScale:0,
+  roughness:r,metalness:m,envMapIntensity:1.35
+});
+const gm1=MT(0x282d37,.28,.88,brushedMetalT,brushedMetalT,.015);
+const gm2=MT(0x14171d,.36,.78,brushedMetalT,brushedMetalT,.012);
+const gm3=MT(0x525c6e,.18,.94,brushedMetalT,brushedMetalT,.01);
+const glv=MT(0x1d2129,.68,.16,null,null,0);
+const wd=MT(0x8c461e,.52,.1,woodGrainT,woodGrainT,.025);
+const snM=MT(0x222731,.2,.94,brushedMetalT,brushedMetalT,.012);
+const scpM=MT(0x171b22,.16,.95,brushedMetalT,brushedMetalT,.01);
+const accRed=MT(0xff3b30,.26,.65);
+const brassM=MT(0xf0b441,.2,.92);
+const lensM=MT(0x38bdf8,.06,.95);
 
 const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
 
-/* 곡선 3D 파츠 헬퍼 */
-function makeExtrudeShape(pts,depth,bevel=.008){
+function makeExtrudeShape(pts,depth,bevel=.009){
   const sh=new THREE.Shape();
   sh.moveTo(pts[0][0],pts[0][1]);
   for(let i=1;i<pts.length;i++)sh.lineTo(pts[i][0],pts[i][1]);
   sh.closePath();
-  const geo=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2});
+  const geo=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:3});
   geo.translate(0,0,-depth/2);
+  return geo;
+}
+
+/* 선반 회전(Lathe) 헬퍼: Y축 기준 프로필을 Z축(-Z가 전방)으로 돌려 배치 */
+function makeLatheZ(profilePts,segs=20){
+  const v2s=profilePts.map(([r,y])=>new THREE.Vector2(Math.max(.001,r),y));
+  const geo=new THREE.LatheGeometry(v2s,segs);
+  geo.rotateX(-Math.PI/2);
   return geo;
 }
 
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
-/* 1. 돌격소총(곡선 리시버 + 피카티니 레일 + 소염기 + 곡선 탄창 + 각도 그립 + 장갑 손) */
+/* 1. 돌격소총(AR) */
 {const g=wModels[0];
- addTo(g,new THREE.BoxGeometry(.068,.102,.46),gm1,0,0,0);
- const recSideGeo=makeExtrudeShape([[-.23,-.045],[.23,-.045],[.21,.052],[-.12,.058],[-.23,.02]],.062,.006);
- addTo(g,recSideGeo,gm3,0,.004,0,0,-Math.PI/2,0);
- /* 상단 레일 & 슬롯 */
- addTo(g,new THREE.BoxGeometry(.058,.026,.44),gm3,0,.064,-.02);
- for(let rz=-.21;rz<=.17;rz+=.048){
-   addTo(g,new THREE.BoxGeometry(.062,.01,.018),gm2,0,.076,rz);
+ const recGeo=makeExtrudeShape([[-.24,-.046],[.23,-.046],[.22,.054],[-.14,.06],[-.24,.022]],.064,.007);
+ addTo(g,recGeo,gm1,0,.002,0,0,-Math.PI/2,0);
+ addTo(g,new THREE.BoxGeometry(.056,.022,.43),gm3,0,.064,-.02);
+ for(let rz=-.21;rz<=.17;rz+=.042){
+   addTo(g,new THREE.BoxGeometry(.061,.011,.016),gm2,0,.076,rz);
  }
- addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,-.03,.064,-.02);
- addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,.03,.064,-.02);
- /* 핸드가드 & 가스튜브 & 다공성 소염기 */
- addTo(g,new THREE.BoxGeometry(.062,.072,.24),gm2,0,-.008,-.31);
- for(let hr=-.41;hr>=-.23;hr-=.045){
-   addTo(g,new THREE.BoxGeometry(.066,.014,.02),gm3,0,-.008,hr);
+ addTo(g,new THREE.BoxGeometry(.012,.015,.39),gm2,-.03,.064,-.02);
+ addTo(g,new THREE.BoxGeometry(.012,.015,.39),gm2,.03,.064,-.02);
+ /* 4면 레일 핸드가드 + 냉각 슬롯 + 가스 블록 */
+ addTo(g,new THREE.BoxGeometry(.064,.074,.25),gm2,0,-.008,-.32);
+ for(let hr=-.42;hr>=-.22;hr-=.04){
+   addTo(g,new THREE.BoxGeometry(.068,.012,.016),gm3,0,-.008,hr);
+   addTo(g,new THREE.BoxGeometry(.014,.078,.016),gm3,0,-.008,hr);
  }
- addTo(g,new THREE.CylinderGeometry(.014,.014,.36,14),gm3,0,.014,-.51,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.024,.022,.095,14),gm2,0,.014,-.69,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.016,.016,.03,12),brassM,0,.014,-.74,Math.PI/2);
- /* 신축식 스톡 */
- addTo(g,new THREE.BoxGeometry(.054,.062,.28),gm2,0,-.012,.33);
- addTo(g,new THREE.BoxGeometry(.058,.115,.028),gm3,0,-.015,.47);
- /* 곡선 탄창 */
- const magGeo=makeExtrudeShape([[0,0],[.082,0],[.068,-.165],[-.012,-.165]],.042,.005);
- addTo(g,magGeo,gm2,0,-.042,.09,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.046,.022,.084),gm3,0,-.202,.125,.12);
- /* 권총 손잡이 */
- const gripGeo=makeExtrudeShape([[-.035,0],[.035,0],[.055,-.155],[-.015,-.165]],.044,.006);
+ const barrelGeo=makeLatheZ([[.015,0],[.015,.22],[.021,.23],[.021,.25],[.013,.26],[.013,.37],[.023,.38],[.023,.45],[.015,.46]],20);
+ addTo(g,barrelGeo,snM,0,.014,-.34);
+ /* 다공성 컴펜세이터/소염기 */
+ addTo(g,new THREE.CylinderGeometry(.025,.024,.095,18),gm3,0,.014,-.72,Math.PI/2);
+ for(let ms=-.74;ms>=-.69;ms-=.018){
+   addTo(g,new THREE.BoxGeometry(.054,.008,.007),gm2,0,.014,ms);
+ }
+ addTo(g,new THREE.CylinderGeometry(.016,.016,.024,14),brassM,0,.014,-.768,Math.PI/2);
+ /* 스톡 튜브 + 윙 스톡 + 러버 패드 */
+ addTo(g,new THREE.CylinderGeometry(.022,.022,.26,16),gm3,0,-.004,.33,Math.PI/2);
+ const stockGeo=makeExtrudeShape([[0,.032],[.24,.048],[.25,-.068],[.12,-.038],[0,-.032]],.048,.007);
+ addTo(g,stockGeo,gm2,0,-.016,.34,0,-Math.PI/2,0);
+ addTo(g,new THREE.BoxGeometry(.056,.116,.024),glv,0,-.012,.472);
+ /* 곡선 탄창 + 베이스플레이트 + 노출 탄두 */
+ const magGeo=makeExtrudeShape([[0,0],[.086,0],[.068,-.175],[-.014,-.175]],.042,.006);
+ addTo(g,magGeo,gm2,0,-.042,.092,0,-Math.PI/2,0);
+ addTo(g,new THREE.BoxGeometry(.048,.02,.088),gm3,0,-.212,.128,.12);
+ addTo(g,new THREE.CylinderGeometry(.009,.009,.036,10),brassM,0,-.045,.155,Math.PI/2);
+ /* 각도 권총 손잡이 + 트리거 가드 */
+ const gripGeo=makeExtrudeShape([[-.036,0],[.036,0],[.058,-.165],[-.014,-.175]],.044,.007);
  addTo(g,gripGeo,gm1,0,-.045,-.12,0,-Math.PI/2,0);
- /* 홀로그램 사이트 */
- addTo(g,new THREE.BoxGeometry(.06,.042,.085),gm2,0,.098,-.03);
- addTo(g,new THREE.BoxGeometry(.044,.026,.008),accRed,0,.104,-.03);
- /* 장갑 낀 양손 */
- addTo(g,new THREE.BoxGeometry(.082,.082,.125),glv,0,-.075,-.24);
- addTo(g,new THREE.BoxGeometry(.082,.092,.105),glv,0,-.12,.1);
+ const guardGeo=makeExtrudeShape([[0,0],[-.085,0],[-.075,-.036],[0,-.036]],.016,.003);
+ addTo(g,guardGeo,gm3,0,-.042,-.045,0,-Math.PI/2,0);
+ /* 리플렉스/홀로그램 사이트 + 렌즈 */
+ addTo(g,new THREE.BoxGeometry(.062,.044,.09),gm2,0,.098,-.03);
+ addTo(g,new THREE.BoxGeometry(.046,.028,.006),lensM,0,.104,-.03);
+ addTo(g,new THREE.BoxGeometry(.012,.012,.004),accRed,0,.104,-.026);
+ /* 장갑 손 */
+ addTo(g,new THREE.BoxGeometry(.082,.08,.125),glv,0,-.076,-.26);
+ addTo(g,new THREE.BoxGeometry(.082,.09,.105),glv,0,-.122,.1);
 }
 
-/* 2. 샷건(곡선 리시버 + 우드 포어엔드/스톡 + 듀얼 배럴 + 탄피 홀더) */
+/* 2. 샷건(Shotgun - 14dmg/pellet) */
 {const g=wModels[1];
- addTo(g,new THREE.BoxGeometry(.078,.112,.46),snM,0,0,0);
- const sgRec=makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.056],[-.15,.06]],.072,.007);
+ const sgRec=makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.058],[-.15,.062],[-.23,.02]],.072,.008);
  addTo(g,sgRec,gm3,0,.002,0,0,-Math.PI/2,0);
- /* 상단/하단 배럴 */
- addTo(g,new THREE.CylinderGeometry(.024,.024,.5,16),snM,0,.02,-.44,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.021,.021,.5,16),snM,0,-.016,-.44,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.052,.018,.42),gm3,0,.045,-.44);
- addTo(g,new THREE.CylinderGeometry(.019,.019,.4,14),gm2,0,-.032,-.38,Math.PI/2);
- /* 우드 펌프 포어엔드 & 곡선 우드 개머리판 */
- addTo(g,new THREE.CylinderGeometry(.044,.048,.24,16),wd,0,-.032,-.38,Math.PI/2);
- for(let r=-.47;r>=-.29;r-=.03){
-   addTo(g,new THREE.BoxGeometry(.092,.012,.012),gm2,0,-.032,r);
+ /* 이중 총열 & 리브 & 튜브 매거진 */
+ const sgBarGeo=makeLatheZ([[.022,0],[.022,.48],[.026,.49],[.026,.52],[.02,.53]],20);
+ addTo(g,sgBarGeo,snM,0,.022,-.22);
+ addTo(g,new THREE.BoxGeometry(.052,.016,.46),gm2,0,.046,-.44);
+ addTo(g,new THREE.CylinderGeometry(.021,.021,.46,16),gm1,0,-.022,-.41,Math.PI/2);
+ /* 우드 펌프 포어엔드 & 곡선 우드 스톡 */
+ addTo(g,new THREE.CylinderGeometry(.045,.049,.25,18),wd,0,-.034,-.38,Math.PI/2);
+ for(let r=-.48;r>=-.28;r-=.026){
+   addTo(g,new THREE.BoxGeometry(.095,.011,.01),gm2,0,-.034,r);
  }
- const stockGeo=makeExtrudeShape([[0,.055],[.32,.04],[.34,-.085],[.14,-.05],[0,-.045]],.058,.008);
+ const stockGeo=makeExtrudeShape([[0,.056],[.33,.042],[.35,-.092],[.14,-.052],[0,-.046]],.058,.009);
  addTo(g,stockGeo,wd,0,-.01,.18,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.062,.122,.026),gm3,0,-.02,.51);
- /* 사이드 쉘 홀더(붉은 샷건 탄피 3발) */
- [-.04,0,.04].forEach(zOff=>{
-   addTo(g,new THREE.CylinderGeometry(.012,.012,.075,10),accRed,-.043,.005,zOff,Math.PI/2);
-   addTo(g,new THREE.CylinderGeometry(.012,.012,.022,10),brassM,-.043,.005,zOff+.045,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.064,.126,.024),glv,0,-.02,.522);
+ /* 사이드 쉘 홀더(붉은 샷건 탄피 4발 + 황동 림) */
+ [-.052,-.017,.017,.052].forEach(zOff=>{
+   addTo(g,new THREE.CylinderGeometry(.012,.012,.072,12),accRed,-.044,.005,zOff,Math.PI/2);
+   addTo(g,new THREE.CylinderGeometry(.0125,.0125,.02,12),brassM,-.044,.005,zOff+.044,Math.PI/2);
  });
- addTo(g,new THREE.BoxGeometry(.09,.088,.125),glv,0,-.075,-.36);
- addTo(g,new THREE.BoxGeometry(.09,.096,.11),glv,0,-.12,.12);
+ addTo(g,new THREE.BoxGeometry(.09,.086,.125),glv,0,-.076,-.37);
+ addTo(g,new THREE.BoxGeometry(.09,.094,.11),glv,0,-.12,.12);
 }
 
-/* 3. 저격총(롱 플루티드 배럴 + 머즐 브레이크 + 대구경 스코프 터렛 + 칙패드 스톡) */
+/* 3. 저격총(Sniper Rifle) */
 {const g=wModels[2];
- addTo(g,new THREE.BoxGeometry(.064,.102,.66),scpM,0,0,-.06);
- const snRec=makeExtrudeShape([[-.34,-.045],[.32,-.045],[.3,.054],[-.22,.058],[-.34,.02]],.058,.006);
+ const snRec=makeExtrudeShape([[-.35,-.045],[.33,-.045],[.31,.055],[-.23,.06],[-.35,.022]],.058,.007);
  addTo(g,snRec,gm3,0,.004,-.06,0,-Math.PI/2,0);
- /* 롱 배럴 & 머즐 브레이크 */
- addTo(g,new THREE.CylinderGeometry(.013,.017,.74,16),snM,0,.016,-.68,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.024,.022,.11,14),gm3,0,.016,-1.05,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.054,.014,.065),gm2,0,.016,-1.05);
- /* 대구경 스코프 + 터렛 + 접안렌즈 */
- addTo(g,new THREE.CylinderGeometry(.038,.042,.42,18),scpM,0,.104,-.14,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.044,.044,.032,18),gm3,0,.104,-.34,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.044,.044,.032,18),gm3,0,.104,.06,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.018,.018,.045,14),gm3,0,.158,-.14);
- addTo(g,new THREE.CylinderGeometry(.018,.018,.045,14),gm3,.058,.104,-.14,0,0,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.026,.028,.07),gm2,0,.058,-.26);
- addTo(g,new THREE.BoxGeometry(.026,.028,.07),gm2,0,.058,0);
- /* 칙패드 스톡 & 바이포드 다리 */
- addTo(g,new THREE.BoxGeometry(.058,.094,.32),scpM,0,-.014,.38,.04);
- addTo(g,new THREE.BoxGeometry(.064,.032,.22),wd,0,.032,.36,.04);
- [-.045,.045].forEach(bx=>addTo(g,new THREE.CylinderGeometry(.009,.007,.2,10),gm3,bx,-.045,-.66,.28));
- addTo(g,new THREE.BoxGeometry(.078,.08,.105),glv,0,-.07,-.24);
+ /* 볼트 핸들 + 플루티드 배럴 + 머즐 브레이크 */
+ addTo(g,new THREE.CylinderGeometry(.011,.011,.055,12),gm3,.042,.016,.06,0,0,Math.PI/2);
+ addTo(g,new THREE.SphereGeometry(.018,14,12),gm2,.068,.016,.06);
+ const snBarGeo=makeLatheZ([[.018,0],[.018,.34],[.015,.36],[.015,.68],[.025,.69],[.025,.78],[.016,.79]],22);
+ addTo(g,snBarGeo,snM,0,.016,-.38);
+ addTo(g,new THREE.CylinderGeometry(.026,.025,.11,18),gm3,0,.016,-1.12,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.058,.014,.068),gm2,0,.016,-1.12);
+ /* 대구경 스코프(Lathe 벨 + 터렛 + 블루 코팅 렌즈) */
+ const scpBodyGeo=makeLatheZ([[.036,0],[.044,.04],[.044,.12],[.037,.15],[.037,.29],[.045,.32],[.045,.4],[.038,.42]],24);
+ addTo(g,scpBodyGeo,scpM,0,.104,.06);
+ addTo(g,new THREE.CircleGeometry(.04,20),lensM,0,.104,-.362);
+ addTo(g,new THREE.CylinderGeometry(.019,.019,.048,16),gm3,0,.16,-.14);
+ addTo(g,new THREE.CylinderGeometry(.019,.019,.048,16),gm3,.06,.104,-.14,0,0,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.028,.03,.075),gm2,0,.058,-.26);
+ addTo(g,new THREE.BoxGeometry(.028,.03,.075),gm2,0,.058,0);
+ /* 칙패드 우드 스톡 + 바이포드 */
+ const snStockGeo=makeExtrudeShape([[0,.046],[.32,.038],[.34,-.082],[.15,-.048],[0,-.042]],.056,.008);
+ addTo(g,snStockGeo,scpM,0,-.012,.22,0,-Math.PI/2,0);
+ addTo(g,new THREE.BoxGeometry(.066,.032,.23),wd,0,.034,.38,.04);
+ [-.048,.048].forEach(bx=>addTo(g,new THREE.CylinderGeometry(.01,.007,.22,12),gm3,bx,-.048,-.72,.28));
+ addTo(g,new THREE.BoxGeometry(.078,.08,.105),glv,0,-.072,-.25);
  addTo(g,new THREE.BoxGeometry(.078,.09,.105),glv,0,-.11,.08);
 }
 
 function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
 syncWeaponModel();
-const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.28,.28),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.014,-.86);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
+const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.32,.32),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.016,-.92);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
 const trc=[];for(let i=0;i<14;i++){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xffffff}));l.visible=false;l.frustumCulled=false;sc.add(l);trc.push({l,t:0})}
 let ti=0;function tracer(a,b,col){const o=trc[ti++%14],p=o.l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;o.l.material.color.setHex(col);o.l.visible=true;o.t=.075}
 const spk=new THREE.Mesh(new THREE.SphereGeometry(.14,6,4),new THREE.MeshBasicMaterial({color:0xffb84d}));spk.visible=false;sc.add(spk);
@@ -1230,7 +1317,7 @@ function fx(dt){
  gun.rotation.x=rec*.1+rPitch+bobY*2.2;gun.rotation.y=rYaw+bobX*2.4;gun.rotation.z=rRoll-bobX*1.8;
  const badge=$('rlBadge');
  if(badge){const showRl=(rl>0 && st==1 && !pl.dead);badge.classList.toggle('on',showRl);if(showRl)$('rlText').textContent='재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s'}
- mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?2.8:0;
+ mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?3.2:0;
  trc.forEach(o=>{if(o.t>0&&(o.t-=dt)<=0)o.l.visible=false});if(spt>0&&(spt-=dt)<=0)spk.visible=false;pp.forEach(o=>{if(o.t<=0)return;o.t-=dt;if(o.t<=0){o.m.visible=false;return}o.v.y-=12*dt;o.m.position.addScaledVector(o.v,dt);if(o.m.position.y<.04){o.m.position.y=.04;o.v.set(0,0,0)}})}
 
 let lastMag=-1,lastAm=-1,lastRl=-1;
