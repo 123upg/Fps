@@ -4,10 +4,10 @@
 <title>택티컬 스윕 3D</title>
 <style>
 :root{
-  --bg:#0b0e14;--fg:#eef2f7;
-  --pn:rgba(12,16,24,.76);--pn-border:rgba(255,255,255,.12);
-  --ac:#ff7a2f;--ac-soft:rgba(255,122,47,.18);--ab:#0b0e14;
-  --muted:#9aa5b4;
+  --bg:#090c12;--fg:#f1f5f9;
+  --pn:rgba(11,15,23,.72);--pn-border:rgba(255,255,255,.1);
+  --ac:#ff7a2f;--ac-soft:rgba(255,122,47,.18);--ab:#090c12;
+  --muted:#94a3b8;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -16,33 +16,35 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"N
 #app{position:relative;height:100%;overflow:hidden}
 canvas{position:absolute;inset:0;display:block}
 
-#hud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:7px;pointer-events:none;font-weight:700;font-size:12.5px;z-index:22}
+/* 좌측 상단: 체력 & 탄약 HUD */
+#hud{position:absolute;top:14px;left:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none;font-weight:700;font-size:12px;z-index:22}
 .hud-top-row{display:flex;gap:8px;align-items:stretch}
 .hud-sub-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-#hud .hud-meta{background:var(--pn);color:var(--muted);padding:4px 9px;border-radius:7px;border:1px solid var(--pn-border);backdrop-filter:blur(8px);font-size:11.5px}
+#hud .hud-meta{background:var(--pn);color:var(--muted);padding:4px 8px;border-radius:7px;border:1px solid var(--pn-border);backdrop-filter:blur(8px);font-size:11px}
 
-#hpPanel{background:var(--pn);color:var(--fg);padding:7px 11px;border-radius:10px;min-width:142px;border:1px solid var(--pn-border);backdrop-filter:blur(8px)}
+#hpPanel{background:var(--pn);color:var(--fg);padding:7px 11px;border-radius:10px;min-width:136px;border:1px solid var(--pn-border);backdrop-filter:blur(8px)}
 .hp-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
-.hp-label{font-size:10.5px;letter-spacing:.8px;color:var(--muted)}
+.hp-label{font-size:10px;letter-spacing:.8px;color:var(--muted)}
 .hp-num{font-size:17px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
-.hp-track{width:100%;height:7px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+.hp-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;position:relative}
 .hp-fill{height:100%;width:100%;border-radius:999px;background:#38d9a9;transition:width .16s ease,background .2s ease}
 .hp-fill.mid{background:#fcc419}
 .hp-fill.low{background:#fa5252}
 
-#ammoPanel{background:var(--pn);color:var(--fg);padding:7px 11px;border-radius:10px;min-width:152px;border:1px solid var(--pn-border);backdrop-filter:blur(8px)}
+#ammoPanel{background:var(--pn);color:var(--fg);padding:7px 11px;border-radius:10px;min-width:146px;border:1px solid var(--pn-border);backdrop-filter:blur(8px)}
 .am-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
-.am-wep{font-size:11.5px;font-weight:800;color:var(--ac)}
+.am-wep{font-size:11px;font-weight:800;color:var(--ac)}
 .am-num{font-size:17px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
-.am-res{font-size:11.5px;color:var(--muted);font-weight:700}
-.am-pips{display:grid;gap:2.5px;margin-top:4px;max-width:170px}
-.am-pip{height:5px;border-radius:2px;background:var(--ac);opacity:.9;transition:opacity .12s ease}
-.am-pip.empty{background:rgba(255,255,255,.12);opacity:.5}
-.am-reloading{font-size:11.5px;font-weight:800;color:var(--ac);padding:2px 0}
+.am-res{font-size:11px;color:var(--muted);font-weight:700}
+.am-pips{display:grid;gap:2.5px;margin-top:4px;max-width:166px}
+.am-pip{height:4px;border-radius:2px;background:var(--ac);opacity:.92;transition:opacity .12s ease}
+.am-pip.empty{background:rgba(255,255,255,.12);opacity:.45}
+.am-reloading{font-size:11px;font-weight:800;color:var(--ac);padding:2px 0}
 
 /* 불투명 하얀색 작은 점 조준점 */
-#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none;z-index:23}
-#xh.h{background:#ff3b30;transform:scale(1.35)}
+#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
+#xh.h{background:#ff3b30;transform:scale(1.4)}
+
 #scopeOverlay{
   display:none;position:fixed;inset:0;z-index:18;pointer-events:none;
   background:radial-gradient(circle at center,
@@ -71,11 +73,12 @@ canvas{position:absolute;inset:0;display:block}
     0 -14px 0 -1px rgba(250,82,82,.75),
     0 14px 0 -1px rgba(250,82,82,.75);
 }
-#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 130px 36px rgba(224,49,49,.75);opacity:0;z-index:19}
-#js,#jk{position:fixed;display:none;border-radius:50%;pointer-events:none;border:1.5px solid rgba(255,255,255,.45);z-index:24}
+#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 32px rgba(224,49,49,.72);opacity:0;z-index:19}
+#js,#jk{position:fixed;display:none;border-radius:50%;pointer-events:none;border:1.5px solid rgba(255,255,255,.38);z-index:24}
 #js{width:92px;height:92px;margin:-46px 0 0 -46px;background:rgba(255,255,255,.05)}
 #jk{width:38px;height:38px;margin:-19px 0 0 -19px;background:rgba(255,255,255,.28)}
 
+/* 메인 메뉴 */
 #ov{
   position:absolute;inset:0;z-index:40;
   display:flex;flex-direction:row;align-items:stretch;justify-content:space-between;
@@ -146,52 +149,50 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   .menu-right{align-items:flex-start}
 }
 
-#bt{display:none;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));flex-direction:column;align-items:flex-end;gap:9px;pointer-events:none;z-index:25}
-#bt div{display:flex;gap:8px}
-#bt button{width:54px;height:54px;border-radius:50%;padding:0;pointer-events:auto;font-size:11.5px;background:var(--pn);border:1.5px solid rgba(255,255,255,.28);color:#f1f5f9;backdrop-filter:blur(6px)}
-#bt #bf{width:76px;height:76px;font-size:14px;font-weight:900;background:rgba(255,122,47,.32);border-color:rgba(255,122,47,.75)}
-@media (pointer:coarse){#bt{display:flex}#bf2{display:block}}
+/* 깔끔하게 정돈된 모바일 조작 버튼 */
+#bt{display:none;position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;z-index:25}
+#bt .sub-row{display:flex;gap:8px;align-items:center}
+#bt .main-row{display:flex;gap:10px;align-items:center}
+#bt button{width:48px;height:48px;border-radius:50%;padding:0;pointer-events:auto;font-size:11px;font-weight:800;background:var(--pn);border:1px solid rgba(255,255,255,.22);color:#e2e8f0;backdrop-filter:blur(8px)}
+#bt #bf{width:74px;height:74px;font-size:13.5px;font-weight:900;background:rgba(255,122,47,.34);border:1.5px solid rgba(255,122,47,.85);color:#fff}
+@media (pointer:coarse){#bt{display:flex}}
 
-#sk{position:fixed;right:14px;bottom:calc(168px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;z-index:25}
-#sk button{width:50px;height:50px;border-radius:50%;padding:0;font-size:10.5px;background:var(--pn);border:1.5px solid rgba(255,255,255,.24);color:#f1f5f9;backdrop-filter:blur(6px)}
-#sk button:active,#bt button:active,#bf2:active{background:rgba(255,255,255,.24)}
+#sk{position:fixed;right:18px;bottom:calc(146px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;z-index:25}
+#sk button{width:46px;height:46px;border-radius:50%;padding:0;font-size:10px;font-weight:800;background:var(--pn);border:1px solid rgba(255,255,255,.2);color:#e2e8f0;backdrop-filter:blur(8px)}
+#sk button:active,#bt button:active{background:rgba(255,255,255,.22)}
 
-#tip{position:absolute;left:50%;top:30%;transform:translateX(-50%);background:var(--pn);color:var(--fg);padding:7px 15px;border-radius:9px;border:1px solid var(--pn-border);font-weight:800;font-size:16px;pointer-events:none;z-index:24;backdrop-filter:blur(8px)}
-#sb{position:absolute;top:154px;right:12px;background:var(--pn);color:var(--fg);padding:6px 10px;border-radius:8px;border:1px solid var(--pn-border);font-size:11.5px;font-weight:700;pointer-events:none;z-index:22;backdrop-filter:blur(8px)}
+/* 화면 중앙~상단 알림: 겹치지 않도록 위치·위계 통일 */
+#pop{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-weight:900;font-size:24px;letter-spacing:.6px;color:#ff2e2e;text-shadow:0 0 10px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(255,46,46,.45);pointer-events:none;opacity:0;white-space:nowrap;z-index:26}
+#tip{position:absolute;left:50%;top:27%;transform:translateX(-50%);background:var(--pn);color:var(--fg);padding:6px 14px;border-radius:8px;border:1px solid var(--pn-border);font-weight:800;font-size:14px;pointer-events:none;z-index:24;backdrop-filter:blur(8px)}
+#sb{position:absolute;top:124px;right:14px;background:var(--pn);color:var(--fg);padding:6px 10px;border-radius:8px;border:1px solid var(--pn-border);font-size:11px;font-weight:700;pointer-events:none;z-index:22;backdrop-filter:blur(8px)}
 #tip:empty,#sb:empty{display:none}
 #chs{display:flex;gap:7px;flex-wrap:wrap}
 #ov .card{flex:1;min-width:110px;background:rgba(255,255,255,.03);color:#cbd5e1;border:1px solid rgba(255,255,255,.12);opacity:.78;padding:8px 9px;font-size:11.5px;font-weight:600;text-align:center;border-radius:9px;line-height:1.45}
 #ov .card.on{opacity:1;border-color:var(--ac);background:var(--ac-soft);color:#fff}
 #sd{position:absolute;inset:0;pointer-events:none;transition:box-shadow .2s;z-index:19}
-#hud span,#sb{opacity:.92}
+#hud span,#sb{opacity:.94}
 
-#fsb{position:absolute;left:12px;top:128px;width:32px;height:32px;padding:0;font-size:14px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:25;backdrop-filter:blur(6px)}
-#roomtag{position:absolute;top:128px;left:50px;background:var(--pn);color:var(--ac);padding:6px 10px;border-radius:8px;border:1px solid var(--pn-border);font-weight:800;font-size:12px;pointer-events:none;display:none;z-index:22;backdrop-filter:blur(6px)}
-#editBtn{position:absolute;left:12px;top:166px;height:32px;padding:0 10px;font-size:11.5px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:25;backdrop-filter:blur(6px)}
-
-#bf2{display:none;position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:66px;height:66px;border-radius:50%;padding:0;font-size:13px;background:rgba(255,122,47,.28);border:1.5px solid rgba(255,122,47,.7);color:#fff;z-index:25;backdrop-filter:blur(6px)}
+#roomtag{position:absolute;top:98px;left:14px;background:var(--pn);color:var(--ac);padding:4px 9px;border-radius:7px;border:1px solid var(--pn-border);font-weight:800;font-size:11px;pointer-events:none;display:none;z-index:22;backdrop-filter:blur(8px)}
 #ov label{font-size:13px;display:flex;gap:8px;align-items:center}
 
-#rotBtn{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));height:32px;padding:0 11px;font-size:11.5px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:65;backdrop-filter:blur(6px)}
-#rdr{inset:auto;top:50px;right:12px;width:96px;height:96px;pointer-events:none;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:22}
+/* 우측 상단 미니맵 */
+#rdr{inset:auto;top:14px;right:14px;width:96px;height:96px;pointer-events:none;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:22}
 
-/* 헤드샷 / 멀티킬 강조 빨간 글씨 */
-#pop{position:absolute;left:50%;top:21%;transform:translateX(-50%);font-weight:900;font-size:24px;letter-spacing:.6px;color:#ff2e2e;text-shadow:0 0 10px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(255,46,46,.45);pointer-events:none;opacity:0;white-space:nowrap;z-index:26}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
 #ov .sub{background:rgba(255,255,255,.05);color:#e2e8f0;border:1px solid rgba(255,255,255,.18)}
 #mpbox{display:none;flex-direction:column;gap:8px;padding:12px;border:1px solid rgba(255,122,47,.45);border-radius:11px;background:rgba(10,13,20,.85)}
 #mpbox.on{display:flex}
 #rcode{font-size:17px;font-weight:900;padding:7px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);color:#fff;width:112px;text-align:center;text-transform:uppercase;letter-spacing:3px}
 
-#matchHud{display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:22;align-items:center;gap:10px;background:var(--pn);border:1px solid var(--pn-border);border-radius:11px;padding:6px 14px;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);backdrop-filter:blur(8px);pointer-events:none}
+#matchHud{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:22;align-items:center;gap:10px;background:var(--pn);border:1px solid var(--pn-border);border-radius:10px;padding:6px 14px;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(8px);pointer-events:none}
 #matchHud.on{display:flex}
-.mh-side{display:flex;align-items:center;gap:6px;font-size:12.5px}
+.mh-side{display:flex;align-items:center;gap:6px;font-size:12px}
 .mh-red{color:#ff6b6b}
 .mh-blue{color:#4dabf7}
-.mh-score{font-size:18px;font-weight:900;font-variant-numeric:tabular-nums}
+.mh-score{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums}
 .mh-mid{display:flex;flex-direction:column;align-items:center;padding:0 10px;border-left:1px solid rgba(255,255,255,.12);border-right:1px solid rgba(255,255,255,.12)}
 .mh-mode{font-size:10px;letter-spacing:.6px;color:var(--ac)}
-.mh-timer{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums}
+.mh-timer{font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
 
 .mp-seg{display:flex;gap:6px;width:100%}
 .mp-seg button{flex:1;padding:8px 6px;font-size:12px;border-radius:8px;background:rgba(255,255,255,.04);color:#cbd5e1;border:1px solid rgba(255,255,255,.12)}
@@ -217,24 +218,23 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 .me-sub{font-size:13.5px;color:#cbd5e1;line-height:1.5}
 .me-btns{display:flex;gap:10px;justify-content:center}
 
-#editBar{display:none;position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:60;background:var(--pn);color:var(--fg);border:1px solid var(--ac);border-radius:11px;padding:8px 13px;box-shadow:0 8px 24px rgba(0,0,0,.45);flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;max-width:94vw;backdrop-filter:blur(8px)}
+#editBar{display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;background:var(--pn);color:var(--fg);border:1px solid var(--ac);border-radius:10px;padding:8px 14px;box-shadow:0 8px 24px rgba(0,0,0,.45);flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;max-width:94vw;backdrop-filter:blur(8px)}
 #editBar.on{display:flex}
-#editBar .eb-title{font-weight:800;font-size:12.5px;color:var(--ac)}
+#editBar .eb-title{font-weight:800;font-size:12px;color:var(--ac)}
 #editBar button{padding:6px 11px;font-size:11.5px;border-radius:8px}
-#editBar .eb-ghost{background:transparent;color:var(--fg);border:1px solid rgba(255,255,255,.25)}
+#editBar .eb-ghost{background:transparent;color:var(--fg);border:1px solid rgba(255,255,255,.22)}
 .hud-edit-target{outline:2px dashed var(--ac) !important;outline-offset:3px;cursor:grab !important;touch-action:none !important;opacity:1 !important}
 .hud-edit-target.dragging{outline:2px solid #fff !important;background:rgba(255,122,47,.35) !important;cursor:grabbing !important;transform:scale(1.05)}
 
-#rlBadge{display:none;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pn);color:var(--fg);border:1px solid var(--ac);border-radius:999px;padding:6px 14px;font-weight:800;font-size:12px;box-shadow:0 6px 16px rgba(0,0,0,.35);pointer-events:none;z-index:25;gap:7px;align-items:center;backdrop-filter:blur(8px)}
-#rlBadge.on{display:flex;animation:rlPulse .55s ease-in-out infinite alternate}
-#rlBadge .rl-dot{width:8px;height:8px;border-radius:50%;background:var(--ac)}
-@keyframes rlPulse{from{transform:translateX(-50%) scale(.98)}to{transform:translateX(-50%) scale(1.03)}}
+#rlBadge{display:none;position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pn);color:var(--fg);border:1px solid var(--ac);border-radius:8px;padding:5px 12px;font-weight:800;font-size:11.5px;box-shadow:0 6px 16px rgba(0,0,0,.35);pointer-events:none;z-index:25;gap:6px;align-items:center;backdrop-filter:blur(8px)}
+#rlBadge.on{display:flex}
+#rlBadge .rl-dot{width:7px;height:7px;border-radius:50%;background:var(--ac)}
 
 #nickInp{font:inherit;font-weight:800;font-size:14.5px;padding:9px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.35);color:#fff;width:100%;box-sizing:border-box;text-align:center}
 #colGrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:340px}
 .col-sw{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);cursor:pointer;padding:0;transition:transform .12s ease}
 .col-sw.on{transform:scale(1.15);border:2.5px solid #fff;box-shadow:0 0 0 2px var(--ac)}
-.name-tag{position:fixed;transform:translate(-50%,-100%);background:var(--pn);color:#fff;padding:2px 8px;border-radius:7px;font-weight:800;font-size:12.5px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.2);box-shadow:0 3px 8px rgba(0,0,0,.45);z-index:18;transform-origin:50% 100%;line-height:1.2;backdrop-filter:blur(4px)}
+.name-tag{position:fixed;transform:translate(-50%,-100%);background:var(--pn);color:#fff;padding:2px 8px;border-radius:7px;font-weight:800;font-size:12px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.18);box-shadow:0 3px 8px rgba(0,0,0,.45);z-index:18;transform-origin:50% 100%;line-height:1.2;backdrop-filter:blur(4px)}
 </style></head><body><div id="app">
 <div id="hud">
   <div class="hud-top-row">
@@ -269,9 +269,15 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 </div>
 <div id="scopeOverlay"></div>
 <div id="roomtag"></div><div id="nameTags"></div>
-<div id="xh"></div><canvas id="rdr"></canvas><button id="fsb" title="전체화면">⛶</button><button id="editBtn">버튼 배치</button><button id="rotBtn">가로 전환</button><div id="pop"></div><div id="tip"></div><div id="rlBadge"><span class="rl-dot"></span><span id="rlText">재장전 중…</span></div><div id="sb"></div><div id="dv"></div><div id="js"></div><div id="jk"></div>
-<div id="bt"><div><button id="bw">무기</button><button id="ba">조준</button><button id="bj">점프</button><button id="br">재장전</button></div><button id="bf">발사</button></div>
-<div id="sk"><button id="s0"></button><button id="s1"></button><button id="s2"></button></div><div id="sd"></div><button id="bf2">발사</button>
+<div id="xh"></div><canvas id="rdr"></canvas>
+<div id="pop"></div><div id="tip"></div>
+<div id="rlBadge"><span class="rl-dot"></span><span id="rlText">재장전 중…</span></div>
+<div id="sb"></div><div id="dv"></div><div id="js"></div><div id="jk"></div>
+<div id="bt">
+  <div class="sub-row"><button id="bw">무기</button><button id="ba">조준</button><button id="br">재장전</button></div>
+  <div class="main-row"><button id="bj">점프</button><button id="bf">발사</button></div>
+</div>
+<div id="sk"><button id="s0"></button><button id="s1"></button><button id="s2"></button></div><div id="sd"></div>
 <div id="editBar">
   <span class="eb-title">버튼 위치 편집</span>
   <button id="editReset" class="eb-ghost">기본 위치</button>
@@ -357,10 +363,6 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
         <span>자동사격 (조준 시 발사)</span>
         <input type="checkbox" id="au">
       </label>
-      <div class="set-row">
-        <span>조작 버튼 위치 커스텀</span>
-        <button type="button" id="openLayoutBtn" class="sub" style="padding:7px 14px;font-size:12px">버튼 배치 편집</button>
-      </div>
       <label class="set-row">
         <span>조준 감도</span>
         <input type="range" id="sn" min=".5" max="2" step=".1" value="1.1">
@@ -369,8 +371,13 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
         <span>버튼 투명도</span>
         <input type="range" id="bo" min=".15" max="1" step=".05" value=".75">
       </label>
-      <div class="row" style="justify-content:flex-end">
-        <button type="button" id="fs" class="sub" style="padding:8px 16px;font-size:13px">전체화면 전환</button>
+      <div class="set-row">
+        <span>조작 버튼 위치</span>
+        <button type="button" id="openLayoutBtn" class="sub" style="padding:7px 14px;font-size:12px">버튼 배치 편집</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <button type="button" id="rotBtn" class="sub" style="padding:8px 14px;font-size:12px">가로 화면 전환</button>
+        <button type="button" id="fs" class="sub" style="padding:8px 14px;font-size:12px">전체화면 전환</button>
       </div>
     </div>
 
@@ -563,11 +570,12 @@ function mkChar(c){
 const pl={x:4.5,y:0,z:4.5,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=70;
 let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,dm=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0;
 const WP=[
-  {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.0045,rl:1.4,rc:.004,canAds:true},
-  {n:'샷건',mag:6,res:30,cd:.8,dmg:7,hd:10,pel:8,spr:.042,rl:2,rc:.026,canAds:false},
-  {n:'저격총',mag:5,res:20,cd:1.1,dmg:52,hd:120,pel:1,spr:0,rl:2.2,rc:.05,canAds:true}
+  {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true},
+  {n:'샷건',mag:6,res:30,cd:.8,dmg:7,hd:10,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
+  {n:'저격총',mag:5,res:20,cd:1.1,dmg:52,hd:120,pel:1,spr:0,rl:2.2,rc:.045,canAds:true}
 ];
-let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false;
+let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
+let lookTargetYaw=null,lookTargetPit=null,lookVelYaw=0,lookVelPit=0;
 const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.45,.6),gm2=MT(0x101114,.5,.5),gm3=MT(0x3b3f46,.35,.7),glv=MT(0x1b1b1d,.8,0),wd=MT(0x7c3f1d,.75,.05),snM=MT(0x1b1e24,.35,.8),scpM=MT(0x14171c,.25,.85);
 const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
@@ -630,12 +638,19 @@ function flow(){const D=Array.from({length:R},()=>Array(R).fill(999)),q=[[pl.z/S
 function spawn(n){en.forEach(e=>sc.remove(e.g));en=[];const fr=[];HM.forEach((r,j)=>r.forEach((h,i)=>{if(!h&&Math.hypot((i+.5)*S-pl.x,(j+.5)*S-pl.z)>20)fr.push([i,j])}));
  for(let k=0;k<n;k++){const[i,j]=fr.splice(Math.random()*fr.length|0,1)[0],hv=!mm&&k%4==3,c=mkChar(hv?[0x4a2554,0x1d2026,0xc89b72,0x14171c]:[0x7a3232,0x272b33,0xc89b72,0x1e2229]),e={...c,hv,x:(i+.5)*S,z:(j+.5)*S,hp:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
   if(hv){c.g.scale.setScalar(1.22);e.hp=260}c.g.traverse(m=>{if(m.isMesh)m.userData.e=e});c.g.position.set(e.x,0,e.z);sc.add(c.g);en.push(e)}}
-function reset(skipSpawn){pl.x=pl.z=4.5;pl.y=0;pl.vy=0;pl.yaw=-2.36;pl.pit=0;pl.hp=100;wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;fcd=rl=rec=mf=hm=dm=0;pl.dead=0;spawn(mm?0:Math.min(9,5+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn()}
+function reset(skipSpawn){pl.x=pl.z=4.5;pl.y=0;pl.vy=0;pl.yaw=-2.36;pl.pit=0;lookTargetYaw=pl.yaw;lookTargetPit=pl.pit;lookVelYaw=lookVelPit=0;bloom=0;pl.hp=100;wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;fcd=rl=rec=mf=hm=dm=0;pl.dead=0;spawn(mm?0:Math.min(9,5+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn()}
 function reload(){const w=WP[wi];if(rl>0||am>=w.mag||res<=0||st!=1)return;rl=w.rl;SX.reload()}
 function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
- am--;bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;mf=.05;shk=Math.max(shk,w.rc*30);SX.shot(1,wi);pl.pit=cl(pl.pit+w.rc,-1.4,1.4);pl.yaw+=(Math.random()-.5)*w.rc*.8;
+ am--;bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;mf=.05;shk=Math.max(shk,w.rc*26);SX.shot(1,wi);
+ const recoilScale=ads?(wi===2?.45:.65):1;
+ pl.pit=cl(pl.pit+w.rc*recoilScale,-1.4,1.4);
+ pl.yaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
+ if(lookTargetPit!==null)lookTargetPit=cl(lookTargetPit+w.rc*recoilScale,-1.4,1.4);
+ if(lookTargetYaw!==null)lookTargetYaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
+ const effSpread=(w.spr+bloom)*(ads?(wi===2?.08:.36):1);
+ bloom=Math.min(.032,bloom+w.rc*1.4);
  const o=new THREE.Vector3(.2,-.18,-.9),tg=[world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)];cam.localToWorld(o);
- for(let k=0;k<w.pel;k++){V.set((Math.random()-.5)*w.spr*(ads?.4:1),(Math.random()-.5)*w.spr*(ads?.4:1));RC.setFromCamera(V,cam);
+ for(let k=0;k<w.pel;k++){V.set((Math.random()-.5)*effSpread,(Math.random()-.5)*effSpread);RC.setFromCamera(V,cam);
   const h=RC.intersectObjects(tg,true)[0];let end;
   if(h){end=h.point;const e=h.object.userData.e,hd=h.object.userData.hd;
    if(e){blood(h.point,RC.ray.direction,hd?22:12);const dg=(hd?w.hd:w.dmg)*(bu.dmg>0?2:1);
@@ -658,6 +673,22 @@ function stickAxis(dx,dy){
   return[(dx/dist)*scaled,(dy/dist)*scaled];
 }
 
+function stepLookSmoothing(dt){
+  if(lookTargetYaw===null||lookTargetPit===null){
+    lookTargetYaw=pl.yaw;lookTargetPit=pl.pit;return;
+  }
+  const hasActiveLook=Object.values(T).some(o=>o.r==='l');
+  const smooth=hasActiveLook?Math.min(1,dt*34):Math.min(1,dt*22);
+  let dyaw=lookTargetYaw-pl.yaw;
+  dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw));
+  pl.yaw+=dyaw*smooth;
+  pl.pit=cl(pl.pit+(lookTargetPit-pl.pit)*smooth,-1.4,1.4);
+  if(!hasActiveLook){
+    lookTargetYaw=pl.yaw;
+    lookTargetPit=pl.pit;
+  }
+}
+
 function upd(dt){
  const now=performance.now()/1e3;spr=K.Shift?1:0;let f=(K.w?1:0)-(K.s?1:0),sd=(K.d?1:0)-(K.a?1:0);
  for(const k in T){
@@ -670,12 +701,14 @@ function upd(dt){
   }
  }
  if(pl.dead){f=sd=0}const l=Math.hypot(f,sd);if(l>1){f/=l;sd/=l}
+ bloom=Math.max(0,bloom-(l>.1?.012:.038)*dt);
  const sp=(spr&&l>.1?9.6:6.8)*(1+(bu.spd>0?.4:0)+(ch==2?.1:0))*dt,sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw),vx=(-sy*f+cy*sd)*sp-(bu.dash>0?sy*25*dt:0),vz=(-cy*f-sy*sd)*sp-(bu.dash>0?cy*25*dt:0);
  if(!blk(pl.x+vx,pl.z,pl.y))pl.x+=vx;if(!blk(pl.x,pl.z+vz,pl.y))pl.z+=vz;
  if((J||K[' '])&&pl.og&&!pl.dead){pl.vy=8.6;pl.og=0;SX.jump()}
  pl.vy-=24*dt;pl.y+=pl.vy*dt;const g0=gnd(pl.x,pl.z,pl.y);
  if(pl.y<=g0){if(!pl.og&&pl.vy<-5)SX.land();pl.y=g0;pl.vy=0;pl.og=1}else pl.og=0;
  if(pl.og&&l>.1){stp+=dt*6.5;if(stp>2.4){stp=0;SX.step()}}
+ stepLookSmoothing(dt);
  cam.position.set(pl.x,pl.y+(pl.dead?.35:1.6),pl.z);shk=Math.max(0,shk-dt*8);cam.rotation.set(pl.pit+(Math.random()-.5)*shk*.01,pl.yaw,(Math.random()-.5)*shk*.02);cam.updateMatrixWorld();
  for(const k in bu)if(bu[k]>0)bu[k]-=dt;for(let i=0;i<3;i++)if(cd[i]>0)cd[i]-=dt;fcd-=dt;rec=Math.max(0,rec-dt*8);mf-=dt;hm-=dt;dm=Math.max(0,dm-dt*1.5);
  if(rl>0){rl-=dt;if(rl<=0){const n=Math.min(WP[wi].mag-am,res);am+=n;res-=n}}
@@ -744,7 +777,7 @@ function hud(){
   if(rl>0){
     $('amCur').textContent='RELOAD';
     if(lastRl!==1){lastRl=1;lastMag=-1;pips.style.gridTemplateColumns='1fr';pips.innerHTML='<div class="am-reloading">재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s</div>'}
-    else{const prog=Math.max(0,Math.min(100,(1-rl/w.rl)*100));pips.innerHTML='<div class="hp-track" style="height:5px"><div class="hp-fill" style="width:'+prog+'%"></div></div>'}
+    else{const prog=Math.max(0,Math.min(100,(1-rl/w.rl)*100));pips.innerHTML='<div class="hp-track" style="height:4px"><div class="hp-fill" style="width:'+prog+'%"></div></div>'}
   }else{
     lastRl=0;
     $('amCur').textContent=am;
@@ -800,7 +833,13 @@ cv.addEventListener('mousedown',e=>{
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mouseup',e=>{if(e.button==2){md=0;ads=false}else fi=0});
-addEventListener('mousemove',e=>{if(st==1&&(document.pointerLockElement||md)){pl.yaw-=e.movementX*.0025;pl.pit=cl(pl.pit-e.movementY*.0025,-1.4,1.4)}});
+addEventListener('mousemove',e=>{
+  if(st==1&&(document.pointerLockElement||md)){
+    const sens=(+$('sn').value||1.1)*(ads?(wi===2?.36:.65):1);
+    lookTargetYaw=(lookTargetYaw??pl.yaw)-e.movementX*.0024*sens;
+    lookTargetPit=cl((lookTargetPit??pl.pit)-e.movementY*.0024*sens,-1.4,1.4);
+  }
+});
 const js=$('js'),jk=$('jk');
 function pj(o){
   js.style.display=jk.style.display=o?'block':'none';
@@ -816,7 +855,7 @@ cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedT
 const te=e=>{for(const t of e.changedTouches){const o=T[t.identifier];if(o&&o.r=='m')pj(null);delete T[t.identifier]}};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
 const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();on()};if(off)b.onpointerup=b.onpointerleave=b.onpointercancel=e=>{e.stopPropagation();off()}};
 hold('bf',()=>fi=1,()=>fi=0);hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
-hold('bf2',()=>fi=1,()=>fi=0);hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));['bf','bf2'].forEach(id=>{const b=$(id);let lx=0,ly=0,aimPid=null;b.addEventListener('pointerdown',e=>{lx=e.clientX;ly=e.clientY;aimPid=e.pointerId;try{b.setPointerCapture(e.pointerId)}catch(_){}});b.addEventListener('pointermove',e=>{if(!fi||st!=1||e.pointerId!==aimPid)return;const dx=e.clientX-lx,dy=e.clientY-ly;look(dx*.75,dy*.75);lx=e.clientX;ly=e.clientY});const clr=e=>{if(e.pointerId===aimPid)aimPid=null};b.addEventListener('pointerup',clr);b.addEventListener('pointercancel',clr)});
+hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));
 
 let mm=0,rp={},dth=0,lsend=0,sbt=0,roomCode='',isHost=false,kaTimer=0;
 let myId='',inLobby=false,peer=null,conns={};
@@ -1443,7 +1482,7 @@ function mpSpawn(){
     const scVal=enemyDist+sideBonus;
     if(scVal>bs){bs=scVal;b=c}
   }
-  pl.x=b[0];pl.z=b[1];pl.y=0;pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;am=WP[wi].mag;res=WP[wi].res;rl=0;pl.yaw=Math.random()*6.28;pl.pit=0;
+  pl.x=b[0];pl.z=b[1];pl.y=0;pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;am=WP[wi].mag;res=WP[wi].res;rl=0;pl.yaw=Math.random()*6.28;pl.pit=0;lookTargetYaw=pl.yaw;lookTargetPit=pl.pit;
   sendState(true);
 }
 
@@ -1635,8 +1674,8 @@ function fx2(dt){
  const k=[.8,.95,.75][wi];gun.scale.set(k,k,[.8,.7,1.15][wi]);
  const isZoomed=(ads && st==1 && !pl.dead && WP[wi].canAds);
  const targetFov=isZoomed?(wi===2?22:54):(spr&&st==1?79:72);
- cam.fov+=(targetFov-cam.fov)*Math.min(1,dt*12);
- if(rl<=0){gun.position.x+=((isZoomed?0:.2)-gun.position.x)*.25;gun.position.y+=((isZoomed?-.15:-.19)-gun.position.y)*.25}
+ cam.fov+=(targetFov-cam.fov)*Math.min(1,dt*14);
+ if(rl<=0){gun.position.x+=((isZoomed?0:.2)-gun.position.x)*.28;gun.position.y+=((isZoomed?-.15:-.19)-gun.position.y)*.28}
  cam.updateProjectionMatrix();
  if(popT>0){popT-=dt;const p=$('pop');p.style.opacity=Math.min(1,popT*2.5);p.style.transform='translateX(-50%) scale('+(1+Math.max(0,popT-.9)*.8)+')'}
 }
@@ -1649,19 +1688,43 @@ function radar(){rg.clearRect(0,0,120,120);rg.fillStyle='rgba(10,14,20,.62)';rg.
  rg.restore();rg.fillStyle='#fff';rg.beginPath();rg.moveTo(60,52);rg.lineTo(65,66);rg.lineTo(55,66);rg.fill()}
 
 function look(dx,dy){
-  if(Math.abs(dx)<.15&&Math.abs(dy)<.15)return;
-  const k=(+$('sn').value||1.1);
-  pl.yaw-=dx*.0082*k;
-  pl.pit=cl(pl.pit-dy*.0068*k,-1.4,1.4);
+  if(Math.abs(dx)<.2&&Math.abs(dy)<.2)return;
+  const zoomSens=ads?(wi===2?.36:.65):1;
+  const k=(+$('sn').value||1.1)*zoomSens;
+  lookTargetYaw=(lookTargetYaw??pl.yaw)-dx*.0072*k;
+  lookTargetPit=cl((lookTargetPit??pl.pit)-dy*.0058*k,-1.4,1.4);
 }
-function aimAssist(dt){if(pl.dead||st!=1)return;
- if(!fi&&LO&&$('au').checked){RC.setFromCamera(V.set(0,0),cam);const tg=[...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!r.clk&&!isFriendly(r)).map(r=>r.g)];if(RC.intersectObjects(tg,true).length>0)shoot()}}
+function aimAssist(dt){
+  if(pl.dead||st!=1)return;
+  const tg=[...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!r.clk&&!isFriendly(r)).map(r=>r.g)];
+  if(LO&&$('au').checked){
+    RC.setFromCamera(V.set(0,0),cam);
+    if(RC.intersectObjects(tg,true).length>0){shoot();return}
+  }
+  if(!LO||(!fi&&!ads))return;
+  const sampleOffsets=[[-0.035,0],[0.035,0],[0,0.045],[0,-0.045]];
+  for(const[ox,oy]of sampleOffsets){
+    RC.setFromCamera(V.set(ox,oy),cam);
+    const h=RC.intersectObjects(tg,true)[0];
+    if(h&&h.distance<28){
+      const pull=Math.min(1,dt*(ads?6.5:4.2));
+      const curYaw=lookTargetYaw??pl.yaw;
+      const curPit=lookTargetPit??pl.pit;
+      const desiredYaw=curYaw-ox*.45;
+      const desiredPit=cl(curPit+oy*.45,-1.4,1.4);
+      let dy=desiredYaw-curYaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+      lookTargetYaw=curYaw+dy*pull;
+      lookTargetPit=cl(curPit+(desiredPit-curPit)*pull,-1.4,1.4);
+      break;
+    }
+  }
+}
 
 function fsMsg(){const t='전체화면이 막혀 있어요. 브라우저에서 링크를 직접 열어 보세요.';if(!$('ov').hidden)$('msg').textContent=t;else pop(t)}
 function fsT(q){const d=document,e=d.documentElement;try{if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d);return}
  const f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f){if(!q)fsMsg();return}const r=f.call(e);if(r&&r.catch)r.catch(()=>{if(!q)fsMsg()})}catch(_){if(!q)fsMsg()}}
-$('fs').onclick=()=>fsT();$('fsb').onclick=()=>fsT();
-const bo=$('bo'),bop=()=>{$('bt').style.opacity=$('bf2').style.opacity=$('sk').style.opacity=bo.value};bo.oninput=bop;bop();
+$('fs').onclick=()=>fsT();
+const bo=$('bo'),bop=()=>{$('bt').style.opacity=$('sk').style.opacity=bo.value};bo.oninput=bop;bop();
 
 const PALETTE=[
   {n:'레드',hex:0xe03131,css:'#e03131'},
@@ -1752,17 +1815,17 @@ function shock(){burst(new THREE.Vector3(pl.x,pl.y+1,pl.z),0x38d9a9,9);tone(200,
  Object.values(rp).forEach(r=>{if(r.al&&!isFriendly(r)&&Math.hypot(r.x-pl.x,r.z-pl.z)<=9){r.fl=.2;hm=.3;mpSend({t:'hit',to:r.peer,dmg:35,hd:0},r.peer)}})}
 
 const LAYOUT_KEY='tsweep3d_btn_layout_v1';
-const EDITABLE_IDS=['bf','bf2','ba','bj','br','bw','s0','s1','s2'];
+const EDITABLE_IDS=['bf','ba','bj','br','bw','s0','s1','s2'];
 let layoutMode=false,dragState=null,savedLayout={};
 
 function ensureEditTargetsVisible(show){
-  const bt=$('bt'),bf2=$('bf2'),sk=$('sk');
+  const bt=$('bt'),sk=$('sk');
   if(show){
-    bt.style.display='flex';bf2.style.display='block';sk.style.display='flex';
+    bt.style.display='flex';sk.style.display='flex';
     bt.style.pointerEvents='auto';sk.style.pointerEvents='auto';
     [...bt.querySelectorAll('div')].forEach(d=>d.style.pointerEvents='auto');
   }else{
-    bt.style.display='';bf2.style.display='';sk.style.display='';
+    bt.style.display='';sk.style.display='';
     bt.style.pointerEvents='';sk.style.pointerEvents='';
     [...bt.querySelectorAll('div')].forEach(d=>d.style.pointerEvents='');
   }
@@ -1790,7 +1853,6 @@ function setLayoutMode(on){
   if(layoutMode)pop('버튼을 원하는 위치로 드래그하세요');
   else if(dragState){dragState.el.classList.remove('dragging');dragState=null}
 }
-$('editBtn').onclick=()=>{aud();setLayoutMode(!layoutMode)};
 $('editDone').onclick=()=>{aud();saveLayout();setLayoutMode(false)};
 $('editReset').onclick=()=>{aud();savedLayout={};saveLayout();applySavedLayout();pop('기본 버튼 위치로 복원됨')};
 
@@ -1821,7 +1883,7 @@ addEventListener('pointerup',e=>{
 addEventListener('resize',()=>{
   for(const id of EDITABLE_IDS){
     const pos=savedLayout[id],el=$(id);if(!pos||!el)continue;
-    const r=el.getBoundingClientRect(),w=r.width||56,h=r.height||56;
+    const r=el.getBoundingClientRect(),w=r.width||48,h=r.height||48;
     const nx=Math.max(0,Math.min(Math.max(0,innerWidth-w),pos.left)),ny=Math.max(0,Math.min(Math.max(0,innerHeight-h),pos.top));
     savedLayout[id]={left:Math.round(nx),top:Math.round(ny)};
     el.style.left=savedLayout[id].left+'px';el.style.top=savedLayout[id].top+'px';
