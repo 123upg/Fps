@@ -1188,10 +1188,10 @@ const MT=(c,r,m,em=0,ei=0)=>new THREE.MeshStandardMaterial({
 const gm1=MT(0x232832,.44,.72);
 const gm2=MT(0x101319,.6,.45);
 const gm3=MT(0x525c6e,.26,.86);
-const steelBright=MT(0x8d99ad,.2,.92);
+const steelBright=MT(0x9aa6ba,.18,.92);
 const bladeEdgeMat=new THREE.MeshStandardMaterial({
-  color:0xe8f1ff,roughness:.14,metalness:.92,flatShading:true,
-  emissive:new THREE.Color(0x93c5fd),emissiveIntensity:.28
+  color:0xeef6ff,roughness:.12,metalness:.94,flatShading:true,
+  emissive:new THREE.Color(0xbae6fd),emissiveIntensity:.25
 });
 const wd=MT(0x7a3b18,.62,.14);
 const snM=MT(0x1b2028,.32,.84);
@@ -1401,41 +1401,54 @@ let knifeLeftArmRoot=null;
 {
   const g=wModels[4];
 
+  const knifeAssembly=new THREE.Group();
+  knifeAssembly.position.set(0.05,-0.06,-0.22);
+  knifeAssembly.rotation.order='YXZ';
+  knifeAssembly.rotation.set(0.28,-0.26,0.22);
+  g.add(knifeAssembly);
+  knifeBladePivot=knifeAssembly;
+
+  addTo(knifeAssembly,new THREE.CylinderGeometry(.023,.025,.14,16),gm2,0,0,.05,Math.PI/2);
+  addTo(knifeAssembly,new THREE.CylinderGeometry(.027,.027,.014,16),steelBright,0,0,.01,Math.PI/2);
+  addTo(knifeAssembly,new THREE.CylinderGeometry(.027,.027,.014,16),steelBright,0,0,.09,Math.PI/2);
+  addTo(knifeAssembly,new THREE.CylinderGeometry(.028,.029,.024,16),gm3,0,0,.126,Math.PI/2);
+
+  addTo(knifeAssembly,new THREE.BoxGeometry(.096,.024,.034),gm3,0,0,-.028);
+  addTo(knifeAssembly,new THREE.BoxGeometry(.102,.01,.014),accRed,0,.013,-.028);
+  addTo(knifeAssembly,new THREE.BoxGeometry(.102,.01,.014),accRed,0,-.013,-.028);
+
+  const bowieBladeShape=makeExtrudeShape([
+    [0.000,-0.022],
+    [0.240,-0.024],
+    [0.370,-0.012],
+    [0.440, 0.012],
+    [0.350, 0.026],
+    [0.000, 0.024]
+  ],.012,.003);
+  addTo(knifeAssembly,bowieBladeShape,bladeEdgeMat,0,0,-.26,0,-Math.PI/2,0);
+
+  addTo(knifeAssembly,new THREE.BoxGeometry(.005,.006,.34),gm2,0,.008,-.21);
+  addTo(knifeAssembly,new THREE.BoxGeometry(.005,.007,.41),new THREE.MeshBasicMaterial({color:0xffffff}),0,-.021,-.245);
+
   const rightArm=buildTacticalArm(g,{
     side:1,
-    handPos:[0.035,-0.12,-0.12],
-    handRot:[-0.25,-0.1,0.12],
-    elbowOffset:[0.26,-0.32,0.36],
-    gripWrap:.86,
-    scale:.82
+    handPos:[0.05,-0.085,-0.185],
+    handRot:[-0.22,-0.25,0.22],
+    elbowOffset:[0.26,-0.32,0.34],
+    gripWrap:.95,
+    scale:.86
   });
   knifeRightArmRoot=rightArm.armRoot;
 
   const leftArm=buildTacticalArm(g,{
     side:-1,
-    handPos:[-0.28,-0.15,-0.28],
-    handRot:[0.15,0.25,-0.35],
-    elbowOffset:[-0.42,-0.34,0.22],
-    gripWrap:.35,
-    scale:.82
+    handPos:[-0.015,-0.082,-0.225],
+    handRot:[-0.14,0.35,-0.38],
+    elbowOffset:[-0.36,-0.32,0.26],
+    gripWrap:.88,
+    scale:.84
   });
   knifeLeftArmRoot=leftArm.armRoot;
-
-  const bladePivot=new THREE.Group();
-  bladePivot.position.set(0.035,-0.075,-0.22);
-  bladePivot.rotation.order='YXZ';
-  bladePivot.rotation.set(0.22,-0.08,0.12);
-  g.add(bladePivot);
-  knifeBladePivot=bladePivot;
-
-  addTo(bladePivot,new THREE.CylinderGeometry(.022,.024,.13,16),gm2,0,0,.04,Math.PI/2);
-  addTo(bladePivot,new THREE.CylinderGeometry(.026,.026,.022,16),steelBright,0,0,.11,Math.PI/2);
-  addTo(bladePivot,new THREE.BoxGeometry(.085,.02,.032),gm3,0,.006,-.032);
-  addTo(bladePivot,new THREE.BoxGeometry(.09,.01,.014),accRed,0,.011,-.032);
-
-  const knifeBladeShape=makeExtrudeShape([[0,-.024],[.54,-.016],[.64,.002],[.50,.026],[0,.024]],.011,.003);
-  addTo(bladePivot,knifeBladeShape,bladeEdgeMat,0,.006,-.355,0,-Math.PI/2,0);
-  addTo(bladePivot,new THREE.BoxGeometry(.007,.008,.56),new THREE.MeshBasicMaterial({color:0xffffff}),0,.026,-.325);
 }
 
 function syncWeaponModel(){
@@ -1760,29 +1773,37 @@ function fx(dt){
 
  let swYaw=0,swPitch=0,swRoll=0,swX=0,swY=0,swZ=0;
  if(wi===4){
-  if(knifeRightArmRoot){
-    knifeRightArmRoot.position.set(0.06,-0.16,0.06);
-    knifeRightArmRoot.rotation.set(0.18,-0.08,0.06);
-  }
-  if(knifeLeftArmRoot){
-    knifeLeftArmRoot.position.set(-0.08,-0.18,0.04);
-    knifeLeftArmRoot.rotation.set(0.12,0.1,-0.06);
-  }
   if(knifeSwingT>0){
    const spProg=1-(knifeSwingT/.22);
    const slash=Math.sin(spProg*Math.PI);
-   swPitch=-0.22*slash;
-   swRoll=0.14*slash;
-   swY=-0.06*slash;
+   swPitch=-0.26*slash;
+   swRoll=0.18*slash;
+   swY=-0.05*slash;
    swZ=-0.12*slash;
    if(knifeBladePivot){
-     knifeBladePivot.position.set(0.02 - 0.14*slash, -0.04 - 0.16*slash, -0.24 - 0.14*slash);
-     knifeBladePivot.rotation.set(0.22 - 1.25*slash, -0.08 + 0.35*slash, 0.12 + 0.45*slash);
+     knifeBladePivot.position.set(0.03 - 0.14*slash, -0.05 - 0.13*slash, -0.22 - 0.12*slash);
+     knifeBladePivot.rotation.set(0.28 - 1.15*slash, -0.26 + 0.42*slash, 0.22 + 0.35*slash);
+   }
+   if(knifeRightArmRoot){
+     knifeRightArmRoot.position.set(-0.02 - 0.14*slash, -0.02 - 0.13*slash, -0.02 - 0.12*slash);
+     knifeRightArmRoot.rotation.set(-1.15*slash, 0.42*slash, 0.35*slash);
+   }
+   if(knifeLeftArmRoot){
+     knifeLeftArmRoot.position.set(-0.02 - 0.14*slash, -0.02 - 0.13*slash, -0.02 - 0.12*slash);
+     knifeLeftArmRoot.rotation.set(-1.15*slash, 0.42*slash, 0.35*slash);
    }
   }else{
    if(knifeBladePivot){
-     knifeBladePivot.position.set(0.035,-0.075,-0.22);
-     knifeBladePivot.rotation.set(0.22,-0.08,0.12);
+     knifeBladePivot.position.set(0.05,-0.06,-0.22);
+     knifeBladePivot.rotation.set(0.28,-0.26,0.22);
+   }
+   if(knifeRightArmRoot){
+     knifeRightArmRoot.position.set(0,0,0);
+     knifeRightArmRoot.rotation.set(0,0,0);
+   }
+   if(knifeLeftArmRoot){
+     knifeLeftArmRoot.position.set(0,0,0);
+     knifeLeftArmRoot.rotation.set(0,0,0);
    }
   }
  }
