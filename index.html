@@ -1548,8 +1548,10 @@ function shoot(){
 }
 
 function swSlot(slotIdx){
-  if(slotIdx<0||slotIdx>2||st!=1||rl>0)return;
+  if(slotIdx<0||slotIdx>2||st!=1)return;
   if(slotIdx===activeSlot)return;
+  const cancelledReload=rl>0;
+  if(cancelledReload)rl=0;
   if(WP[wi]&&WP[wi].isGun)WA[wi]=[am,res];
   activeSlot=slotIdx;
   wi=loadoutSlots[activeSlot];
@@ -1558,7 +1560,7 @@ function swSlot(slotIdx){
   syncWeaponModel();
   fcd=.32;
   tone(500,300,.06,.15);
-  pop(WP[wi].n);
+  pop(cancelledReload?(WP[wi].n+' · 장전 취소됨'):WP[wi].n);
 }
 
 function syncBackBtn(){const b=$('backBtn');if(b)b.classList.toggle('on',st===1)}
