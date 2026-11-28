@@ -68,33 +68,34 @@ canvas{position:absolute;inset:0;display:block}
 #dmgDir{position:absolute;left:50%;top:50%;width:128px;height:128px;margin:-64px 0 0 -64px;pointer-events:none;z-index:21;opacity:0;transition:opacity .12s ease}
 #dmgDir::before{content:"";position:absolute;left:50%;top:4px;margin-left:-14px;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:18px solid rgba(255,59,48,.88);filter:drop-shadow(0 0 6px rgba(0,0,0,.7))}
 
+/* 저격 조준 시 주변부 비네팅만 살짝 주고 중앙과 양손·팔은 그대로 노출 */
 #scopeOverlay{
   display:none;position:fixed;inset:0;z-index:18;pointer-events:none;
   background:radial-gradient(circle at center,
     transparent 0%,
-    transparent 21%,
-    rgba(0,0,0,.88) 22%,
-    rgba(0,0,0,.96) 100%);
+    transparent 34%,
+    rgba(0,0,0,.52) 56%,
+    rgba(0,0,0,.78) 100%);
 }
 #scopeOverlay.on{display:block}
 #scopeOverlay::before{
   content:"";position:absolute;left:50%;top:50%;
-  width:min(44vh,44vw);height:min(44vh,44vw);
+  width:min(54vh,54vw);height:min(54vh,54vw);
   transform:translate(-50%,-50%);
   border-radius:50%;
-  border:2px solid rgba(255,255,255,.55);
-  box-shadow:0 0 0 2px rgba(0,0,0,.7), inset 0 0 24px rgba(0,0,0,.45);
+  border:1.5px solid rgba(255,255,255,.32);
+  box-shadow:0 0 24px rgba(0,0,0,.45);
 }
 #scopeOverlay::after{
   content:"";position:absolute;left:50%;top:50%;
-  width:6px;height:6px;margin:-3px 0 0 -3px;
+  width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
   border-radius:50%;
-  background:rgba(250,82,82,.92);
+  background:rgba(250,82,82,.95);
   box-shadow:
-    -14px 0 0 -1px rgba(250,82,82,.75),
-    14px 0 0 -1px rgba(250,82,82,.75),
-    0 -14px 0 -1px rgba(250,82,82,.75),
-    0 14px 0 -1px rgba(250,82,82,.75);
+    -16px 0 0 -1px rgba(250,82,82,.75),
+    16px 0 0 -1px rgba(250,82,82,.75),
+    0 -16px 0 -1px rgba(250,82,82,.75),
+    0 16px 0 -1px rgba(250,82,82,.75);
 }
 #dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 110px 26px rgba(224,49,49,.62);opacity:0;z-index:19}
 #lowHpVignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 34px rgba(214,32,32,.48);opacity:0;z-index:18;transition:opacity .22s ease}
@@ -427,7 +428,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 
     <div id="pane-profile" class="tab-pane">
       <div class="pane-title"><span>닉네임 & 캐릭터 색상</span></div>
-      <p class="pane-desc">선택한 색상이 닉네임, 1인칭 손, 캐릭터에 반영됩니다. 6대6 팀전에서는 팀(레드/블루) 색상으로 구분됩니다.</p>
+      <p class="pane-desc">선택한 색상이 닉네임, 1인칭 양손·팔, 캐릭터에 반영됩니다. 6대6 팀전에서는 팀(레드/블루) 색상으로 구분됩니다.</p>
       <input id="nickInp" maxlength="12" placeholder="플레이어" style="color:#ff3b30">
       <div id="colGrid" style="max-width:none"></div>
     </div>
@@ -717,7 +718,7 @@ function los(x0,z0,x1,z1,y0=1.2,y1=1.2){
 }
 
 const sc=new THREE.Scene();
-const cam=new THREE.PerspectiveCamera(72,1,.06,150);cam.rotation.order='YXZ';sc.add(cam);
+const cam=new THREE.PerspectiveCamera(72,1,.05,150);cam.rotation.order='YXZ';sc.add(cam);
 let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch(e){$('msg').textContent='이 환경에서는 3D(WebGL)를 쓸 수 없어요.';throw e}
 const cv=ren.domElement;
 const LO=matchMedia('(pointer:coarse)').matches;
@@ -1076,19 +1077,27 @@ const accRed=MT(0xd92b2b,.38,.35,0xd92b2b,.55);
 const brassM=MT(0xc48e29,.26,.88);
 const lensM=MT(0x38bdf8,.12,.3,0x0ea5e9,.85);
 
-/* 1인칭 손 머티리얼: 본인 설정 색상 반영 */
+/* 1인칭 양손·전완근 머티리얼 (프로필 선택 색상을 그대로 반영) */
 const handColorMat=new THREE.MeshStandardMaterial({
   color:0xff3b30,
-  roughness:.58,
-  metalness:.18,
+  roughness:.54,
+  metalness:.16,
   flatShading:true,
   emissive:new THREE.Color(0xff3b30),
-  emissiveIntensity:.08
+  emissiveIntensity:.1
+});
+const sleeveColorMat=new THREE.MeshStandardMaterial({
+  color:0xff3b30,
+  roughness:.68,
+  metalness:.22,
+  flatShading:true,
+  emissive:new THREE.Color(0xff3b30),
+  emissiveIntensity:.06
 });
 const handTrimMat=new THREE.MeshStandardMaterial({
-  color:0x171b24,
-  roughness:.68,
-  metalness:.35,
+  color:0x131720,
+  roughness:.62,
+  metalness:.42,
   flatShading:true
 });
 
@@ -1096,7 +1105,11 @@ function syncFirstPersonHandColor(){
   const hex=getChosenHex();
   handColorMat.color.setHex(hex);
   handColorMat.emissive.setHex(hex);
-  handColorMat.emissiveIntensity=.08;
+  handColorMat.emissiveIntensity=.1;
+
+  sleeveColorMat.color.setHex(hex).multiplyScalar(.78);
+  sleeveColorMat.emissive.setHex(hex);
+  sleeveColorMat.emissiveIntensity=.06;
 }
 
 const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
@@ -1108,28 +1121,76 @@ const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
   return o;
 };
 
-/* 시야를 가리지 않는 컴팩트한 손 조립 헬퍼 */
-function buildCompactHand(parent,x,y,z,rx,ry,rz,scale=1){
-  const hg=new THREE.Group();
-  hg.position.set(x,y,z);
-  hg.rotation.order='YXZ';
-  hg.rotation.set(rx||0,ry||0,rz||0);
-  hg.scale.setScalar(scale);
+/* 정통 FPS 뷰모델: 손바닥·손가락·엄지·손목 스트랩·전완근(팔뚝)까지 자연스럽게 뻗어 나오는 양손 조립 */
+function buildTacticalArm(parent,opts){
+  const {
+    side=1,          // 1: 오른팔(우하단에서 그립), -1: 왼팔(좌하단에서 핸드가드 지지)
+    handPos=[0,0,0], // 손 중심 위치
+    handRot=[0,0,0], // 손 각도
+    elbowOffset=[side*.26,-.24,.46], // 팔꿈치가 향하는 방향 (화면 하단 바깥쪽)
+    scale=1
+  }=opts;
 
-  // 손바닥 / 손등 (설정 컬러)
-  addTo(hg,new THREE.BoxGeometry(.056,.038,.066),handColorMat,0,0,0);
-  // 너클 스트립
-  addTo(hg,new THREE.BoxGeometry(.058,.014,.022),handTrimMat,0,.015,-.022);
-  // 손가락 (3개 블록으로 자연스러운 그립 실루엣)
-  addTo(hg,new THREE.BoxGeometry(.052,.024,.028),handColorMat,0,-.006,-.042,.22);
-  // 엄지손가락
-  addTo(hg,new THREE.BoxGeometry(.022,.022,.042),handColorMat,.034,-.002,-.014,0,0,-.35);
-  // 손목 커프스 & 팔목 연장 (화면 하단 방향으로 뻗음)
-  addTo(hg,new THREE.BoxGeometry(.054,.034,.042),handTrimMat,0,-.003,.046);
-  addTo(hg,new THREE.CylinderGeometry(.024,.028,.16,12),handColorMat,0,-.016,.135,Math.PI/2.15);
+  const armRoot=new THREE.Group();
+  armRoot.scale.setScalar(scale);
+  parent.add(armRoot);
 
-  parent.add(hg);
-  return hg;
+  // 1) 손(글러브) 그룹
+  const handGrp=new THREE.Group();
+  handGrp.position.set(handPos[0],handPos[1],handPos[2]);
+  handGrp.rotation.order='YXZ';
+  handGrp.rotation.set(handRot[0]||0,handRot[1]||0,handRot[2]||0);
+  armRoot.add(handGrp);
+
+  // 손등 & 손바닥 본체
+  addTo(handGrp,new THREE.BoxGeometry(.072,.046,.086),handColorMat,0,0,0);
+  // 너클 아머 패드
+  addTo(handGrp,new THREE.BoxGeometry(.075,.018,.028),handTrimMat,0,.018,-.022);
+  // 네 손가락 (총기 그립/핸드가드를 감싸 쥐는 형태)
+  const fingerCurl=side===1?.52:-.68;
+  for(let f=0;f<4;f++){
+    const fz=-.032+f*.018;
+    const fg=new THREE.Group();
+    fg.position.set(-side*.032,-.008,fz);
+    fg.rotation.z=fingerCurl;
+    handGrp.add(fg);
+    addTo(fg,new THREE.BoxGeometry(.038,.016,.014),handColorMat,-side*.016,0,0);
+    addTo(fg,new THREE.BoxGeometry(.032,.014,.013),handTrimMat,-side*.032,-.012,0,0,0,fingerCurl*.6);
+  }
+  // 엄지손가락 (반대편에서 감싸 쥠)
+  const thumbGrp=new THREE.Group();
+  thumbGrp.position.set(side*.034,.004,-.018);
+  thumbGrp.rotation.set(-.25,side*.35,-side*.45);
+  handGrp.add(thumbGrp);
+  addTo(thumbGrp,new THREE.BoxGeometry(.024,.022,.054),handColorMat,0,0,-.016);
+
+  // 손목 전술 벨크로 스트랩
+  addTo(handGrp,new THREE.BoxGeometry(.074,.048,.034),handTrimMat,0,-.002,.054);
+  addTo(handGrp,new THREE.BoxGeometry(.077,.014,.014),steelBright,0,.02,.054);
+
+  // 2) 전완근(팔뚝) 그룹: 손목에서 화면 하단 모서리(elbowOffset) 방향으로 길게 연결
+  const wristLocal=new THREE.Vector3(0,-.004,.068);
+  handGrp.updateMatrix();
+  const wristWorldInArm=wristLocal.clone().applyMatrix4(handGrp.matrix);
+  const elbowTarget=new THREE.Vector3(elbowOffset[0],elbowOffset[1],elbowOffset[2]);
+  const armVec=elbowTarget.clone().sub(wristWorldInArm);
+  const armLen=Math.max(.36,armVec.length());
+
+  const forearmPivot=new THREE.Group();
+  forearmPivot.position.copy(wristWorldInArm);
+  forearmPivot.lookAt(elbowTarget);
+  armRoot.add(forearmPivot);
+
+  // 전완근 소매 본체 (손목 쪽은 날렵하고 팔꿈치 쪽으로 갈수록 두꺼워짐)
+  const sleeveGeo=new THREE.CylinderGeometry(.044,.064,armLen,14);
+  sleeveGeo.rotateX(Math.PI/2);
+  addTo(forearmPivot,sleeveGeo,sleeveColorMat,0,0,armLen*.5);
+
+  // 전완근 상단 전술 보호대/라인 디테일
+  const padGeo=new THREE.BoxGeometry(.056,.024,armLen*.72);
+  addTo(forearmPivot,padGeo,handTrimMat,0,.038,armLen*.48);
+
+  return{armRoot,handGrp,forearmPivot};
 }
 
 function makeExtrudeShape(pts,depth,bevel=.008){
@@ -1152,6 +1213,7 @@ function makeLatheZ(profilePts,segs=18){
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
+/* 0: 돌격소총 + 양손/양팔 */
 {
   const g=wModels[0];
   const upperRec=makeExtrudeShape([[-.25,-.032],[.24,-.032],[.23,.058],[-.15,.064],[-.25,.024]],.066,.007);
@@ -1205,11 +1267,25 @@ wModels.forEach(g=>gun.add(g));
   addTo(holo,new THREE.PlaneGeometry(.044,.034),lensM,0,.008,-.036,0,Math.PI,0);
   addTo(holo,new THREE.BoxGeometry(.007,.007,.005),accRed,0,.008,-.032);
 
-  // 오른손(그립) & 왼손(핸드가드 하부 받침) - 시야 간섭 최소화
-  buildCompactHand(g,.015,-.115,-.11,-.38,-.25,.12,.82);
-  buildCompactHand(g,-.015,-.052,-.33,.28,.35,-.28,.82);
+  // 오른손 & 오른팔 (우측 하단에서 올라와 권총 손잡이 파지)
+  buildTacticalArm(g,{
+    side:1,
+    handPos:[.022,-.115,-.115],
+    handRot:[-.42,-.18,.24],
+    elbowOffset:[.28,-.32,.42],
+    scale:1
+  });
+  // 왼손 & 왼팔 (좌측 하단에서 대각선으로 뻗어 핸드가드 하부 받침)
+  buildTacticalArm(g,{
+    side:-1,
+    handPos:[-.034,-.054,-.34],
+    handRot:[.22,.34,-.48],
+    elbowOffset:[-.44,-.28,.24],
+    scale:1
+  });
 }
 
+/* 1: 샷건 + 양손/양팔 */
 {
   const g=wModels[1];
   addTo(g,makeExtrudeShape([[-.24,-.052],[.24,-.052],[.23,.06],[-.16,.064],[-.24,.022]],.074,.008),gm3,0,.002,0,0,-Math.PI/2,0);
@@ -1234,11 +1310,25 @@ wModels.forEach(g=>gun.add(g));
     addTo(g,new THREE.CylinderGeometry(.013,.013,.022,12),brassM,-.045,.006,zOff+.045,Math.PI/2);
   });
 
-  // 샷건 오른손(그립) & 왼손(펌프 핸드가드)
-  buildCompactHand(g,.016,-.115,-.13,-.38,-.25,.12,.82);
-  buildCompactHand(g,-.016,-.065,-.39,.25,.32,-.26,.82);
+  // 샷건 오른손/오른팔 (그립 & 방아쇠울)
+  buildTacticalArm(g,{
+    side:1,
+    handPos:[.024,-.068,-.14],
+    handRot:[-.36,-.16,.22],
+    elbowOffset:[.28,-.29,.44],
+    scale:.95
+  });
+  // 샷건 왼손/왼팔 (나무 펌프 핸드가드를 아래에서 감싸 쥠)
+  buildTacticalArm(g,{
+    side:-1,
+    handPos:[-.036,-.064,-.4],
+    handRot:[.2,.32,-.5],
+    elbowOffset:[-.44,-.27,.2],
+    scale:.95
+  });
 }
 
+/* 2: 저격총 + 양손/양팔 */
 {
   const g=wModels[2];
   addTo(g,makeExtrudeShape([[-.36,-.046],[.34,-.046],[.32,.056],[-.24,.062],[-.36,.024]],.06,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
@@ -1277,9 +1367,22 @@ wModels.forEach(g=>gun.add(g));
     addTo(g,new THREE.BoxGeometry(.014,.01,.028),gm2,bx,-.154,-.85);
   });
 
-  // 저격총 오른손(그립) & 왼손(포어엔드 지지)
-  buildCompactHand(g,.015,-.108,-.12,-.36,-.25,.12,.82);
-  buildCompactHand(g,-.015,-.048,-.36,.26,.34,-.26,.82);
+  // 저격총 오른손/오른팔
+  buildTacticalArm(g,{
+    side:1,
+    handPos:[.022,-.072,-.12],
+    handRot:[-.38,-.16,.22],
+    elbowOffset:[.28,-.3,.44],
+    scale:1
+  });
+  // 저격총 왼손/왼팔 (포어엔드 하단 파지 - 조준 시에도 화면 좌측 하단에 명확히 보임)
+  buildTacticalArm(g,{
+    side:-1,
+    handPos:[-.034,-.052,-.36],
+    handRot:[.22,.34,-.48],
+    elbowOffset:[-.46,-.28,.22],
+    scale:1
+  });
 }
 
 function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
@@ -1484,14 +1587,20 @@ function fx(dt){
  }
  const activeAds=(ads && st==1 && !pl.dead && w && w.canAds);
  const isSniperScope=(activeAds && wi===2);
- gun.visible=(st==1 && !pl.dead && !isSniperScope);
+ // 조준 시에도 양손과 팔, 총기가 화면에서 사라지지 않고 함께 따라옴
+ gun.visible=(st==1 && !pl.dead);
  $('scopeOverlay').classList.toggle('on',isSniperScope);
  $('xh').style.opacity=isSniperScope?'0':'0.85';
  const swayAmp=activeAds?.0025:(spr?.012:.0075);
  const bobX=Math.cos(bobPhase*.5)*swayAmp,bobY=Math.abs(Math.sin(bobPhase))*swayAmp;
- gun.position.x=((activeAds?0:.2)+rSide+bobX);
- gun.position.y=((activeAds?-.15:-.19)+rDrop-bobY);
- gun.position.z=-.45+rec*.085+(rl>0?rDrop*.35:0);
+
+ const targetX=activeAds?(wi===2?.02:0):.2;
+ const targetY=activeAds?(wi===2?-.165:-.15):-.19;
+ const targetZ=activeAds?(wi===2?-.31:-.36):-.45;
+
+ gun.position.x=(targetX+rSide+bobX);
+ gun.position.y=(targetY+rDrop-bobY);
+ gun.position.z=targetZ+rec*.085+(rl>0?rDrop*.35:0);
  gun.rotation.x=rec*.1+rPitch+bobY*2.2;gun.rotation.y=rYaw+bobX*2.4;gun.rotation.z=rRoll-bobX*1.8;
  const badge=$('rlBadge');
  if(badge){const showRl=(rl>0 && st==1 && !pl.dead);badge.classList.toggle('on',showRl);if(showRl)$('rlText').textContent='재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s'}
@@ -2204,8 +2313,13 @@ function fx2(dt){
  if(ext>0){ext-=dt;const q=1-Math.max(0,ext)/.4;exm.scale.setScalar(.5+q*exr);exm.material.opacity=.8*(1-q);if(ext<=0)exm.visible=false}
  const k=[.8,.95,.75][wi];gun.scale.set(k,k,[.8,.7,1.15][wi]);
  const isZoomed=(ads&&st==1&&!pl.dead&&WP[wi].canAds);
- cam.fov+=((isZoomed?(wi===2?22:54):(spr&&st==1?79:72))-cam.fov)*Math.min(1,dt*14);
- if(rl<=0){gun.position.x+=((isZoomed?0:.2)-gun.position.x)*.28;gun.position.y+=((isZoomed?-.15:-.19)-gun.position.y)*.28}
+ cam.fov+=((isZoomed?(wi===2?24:54):(spr&&st==1?79:72))-cam.fov)*Math.min(1,dt*14);
+ if(rl<=0){
+  const tx=isZoomed?(wi===2?.02:0):.2;
+  const ty=isZoomed?(wi===2?-.165:-.15):-.19;
+  gun.position.x+=(tx-gun.position.x)*.28;
+  gun.position.y+=(ty-gun.position.y)*.28;
+ }
  cam.updateProjectionMatrix();
  if(popT>0){popT-=dt;const p=$('pop');p.style.opacity=Math.min(1,popT*2.5)}
 }
