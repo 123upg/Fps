@@ -46,7 +46,7 @@ canvas{position:absolute;inset:0;display:block}
 .hp-fill.mid{background:#fcc419}
 .hp-fill.low{background:#fa5252}
 
-#ammoPanel{padding:8px 12px;min-width:148px}
+#ammoPanel{padding:8px 12px;min-width:154px}
 .am-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
 .am-wep{font-size:var(--fs-xs);font-weight:800;color:var(--ac)}
 .am-num{font-size:var(--fs-md);font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
@@ -56,8 +56,10 @@ canvas{position:absolute;inset:0;display:block}
 .am-pip.empty{background:rgba(255,255,255,.14);opacity:.45}
 .am-reloading{font-size:var(--fs-xs);font-weight:800;color:var(--ac);padding:2px 0}
 
-#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;opacity:.85;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.75);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
-#xh.h{background:#ff3b30;transform:scale(1.4)}
+/* 동적 무빙/점프 스프레드 크로스헤어 */
+#xh{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;background:#fff;opacity:.9;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.8);pointer-events:none;z-index:23;transition:background .08s ease}
+#xh.h{background:#ff3b30}
+.xh-bar{position:fixed;left:50%;top:50%;background:rgba(255,255,255,.82);box-shadow:0 0 2px rgba(0,0,0,.85);pointer-events:none;z-index:23;border-radius:1px}
 #hitMarker{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;pointer-events:none;z-index:23;opacity:0;transform:scale(.85);transition:opacity .09s ease,transform .09s ease}
 #hitMarker.on{opacity:1;transform:scale(1.12)}
 #hitMarker::before,#hitMarker::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid transparent}
@@ -65,10 +67,43 @@ canvas{position:absolute;inset:0;display:block}
 #hitMarker::after{border-left-color:#ff5252;border-right-color:#ff5252;transform:rotate(45deg)}
 #hitMarker.crit::before,#hitMarker.crit::after{border-top-color:#ffd43b;border-bottom-color:#ffd43b;border-left-color:#ffd43b;border-right-color:#ffd43b}
 
-#dmgDir{position:absolute;left:50%;top:50%;width:128px;height:128px;margin:-64px 0 0 -64px;pointer-events:none;z-index:21;opacity:0;transition:opacity .12s ease}
-#dmgDir::before{content:"";position:absolute;left:50%;top:4px;margin-left:-14px;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:18px solid rgba(255,59,48,.88);filter:drop-shadow(0 0 6px rgba(0,0,0,.7))}
+#dmgDir{position:absolute;left:50%;top:50%;width:144px;height:144px;margin:-72px 0 0 -72px;pointer-events:none;z-index:21;opacity:0;transition:opacity .1s ease}
+#dmgDir::before{content:"";position:absolute;left:50%;top:2px;margin-left:-16px;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:22px solid rgba(255,46,46,.95);filter:drop-shadow(0 0 8px rgba(255,0,0,.85))}
 
-/* 저격 조준 시 주변부 비네팅만 살짝 주고 중앙과 양손·팔은 그대로 노출 */
+/* 우측 상단 실시간 킬피드 */
+#killFeed{
+  position:fixed;top:124px;right:14px;z-index:24;
+  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+  pointer-events:none;max-width:300px;
+}
+.kf-item{
+  background:rgba(8,11,17,.86);border:1px solid rgba(255,255,255,.12);
+  border-left:3px solid var(--ac);border-radius:var(--r-sm);
+  padding:5px 10px;font-size:11.5px;font-weight:800;color:#f1f5f9;
+  backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.45);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+  animation:kfIn .16s ease-out;
+}
+.kf-item.mine{border-left-color:#ffd43b;background:rgba(24,20,12,.92)}
+.kf-wep{color:#cbd5e1;font-size:10.5px;font-weight:700}
+.kf-hs{color:#ffd43b;font-weight:900}
+@keyframes kfIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+
+/* 더블킬 / 트리플킬 / 멀티킬 연출 배지 */
+#multiKillBanner{
+  position:fixed;left:50%;top:24%;transform:translate(-50%,-50%) scale(.88);
+  z-index:27;pointer-events:none;opacity:0;
+  padding:8px 22px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,59,48,.92),rgba(255,122,47,.95));
+  border:1.5px solid rgba(255,235,150,.75);
+  color:#fff;font-weight:900;font-size:20px;letter-spacing:.8px;
+  text-shadow:0 2px 10px rgba(0,0,0,.75);
+  box-shadow:0 10px 28px rgba(255,90,30,.45);
+  transition:opacity .14s ease,transform .16s ease;
+  white-space:nowrap;
+}
+#multiKillBanner.on{opacity:1;transform:translate(-50%,-50%) scale(1.04)}
+
 #scopeOverlay{
   display:none;position:fixed;inset:0;z-index:18;pointer-events:none;
   background:radial-gradient(circle at center,
@@ -97,7 +132,7 @@ canvas{position:absolute;inset:0;display:block}
     0 -16px 0 -1px rgba(250,82,82,.75),
     0 16px 0 -1px rgba(250,82,82,.75);
 }
-#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 110px 26px rgba(224,49,49,.62);opacity:0;z-index:19}
+#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 30px rgba(224,49,49,.68);opacity:0;z-index:19}
 #lowHpVignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 34px rgba(214,32,32,.48);opacity:0;z-index:18;transition:opacity .22s ease}
 #js,#jk{position:fixed;display:none;border-radius:50%;pointer-events:none;border:1.5px solid rgba(255,255,255,.38);z-index:24}
 #js{width:92px;height:92px;margin:-46px 0 0 -46px;background:rgba(255,255,255,.05)}
@@ -143,7 +178,7 @@ h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.4px;color:#fff}
 .prof-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(255,255,255,.8);flex-shrink:0}
 .menu-right{position:relative;z-index:1;flex:1;display:flex;align-items:center;justify-content:center;min-width:280px}
 .tab-pane{
-  display:none;flex-direction:column;gap:13px;width:100%;max-width:450px;
+  display:none;flex-direction:column;gap:12px;width:100%;max-width:460px;
   background:rgba(12,16,24,.88);border:1px solid rgba(255,255,255,.11);
   border-radius:var(--r-lg);padding:20px;box-shadow:0 16px 36px rgba(0,0,0,.55);
   backdrop-filter:blur(10px);
@@ -151,6 +186,17 @@ h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.4px;color:#fff}
 .tab-pane.active{display:flex}
 .pane-title{font-size:var(--fs-md);font-weight:900;color:#fff;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.09);padding-bottom:9px}
 .pane-desc{font-size:var(--fs-sm);line-height:1.55;color:var(--muted);margin:0}
+
+.wep-pick-box{display:flex;flex-direction:column;gap:6px}
+.wep-pick-lbl{font-size:11.5px;font-weight:800;color:#cbd5e1}
+.wep-pick-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.wep-pick-btn{
+  padding:8px 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.13);color:#cbd5e1;font-size:12px;font-weight:800;
+  text-align:center;transition:all .12s ease;
+}
+.wep-pick-btn.on{background:var(--ac-soft);border-color:var(--ac);color:#fff}
+
 .mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mode-btn{
   display:flex;flex-direction:column;align-items:flex-start;gap:3px;
@@ -171,6 +217,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   .nav-item{padding:9px 10px;font-size:var(--fs-sm);justify-content:center}
   .nav-item .nav-tag,.menu-profile-pill{display:none}
   .menu-right{align-items:flex-start}
+  #killFeed{top:106px;right:10px;max-width:210px}
 }
 
 #bt{display:none;position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;z-index:25}
@@ -184,9 +231,9 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #sk button{width:46px;height:46px;border-radius:50%;padding:0;font-size:var(--fs-xs);font-weight:800;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;backdrop-filter:blur(8px)}
 #sk button:active,#bt button:active{background:rgba(255,255,255,.22)}
 
-#pop{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-weight:900;font-size:var(--fs-lg);letter-spacing:.6px;color:#ff2e2e;text-shadow:0 0 10px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.95);pointer-events:none;opacity:0;white-space:nowrap;z-index:26}
-#tip{position:absolute;left:50%;top:27%;transform:translateX(-50%);padding:6px 14px;border-radius:var(--r-sm);font-weight:800;font-size:var(--fs-sm);pointer-events:none;z-index:24}
-#sb{position:absolute;top:124px;right:14px;padding:7px 11px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:700;pointer-events:none;z-index:22}
+#pop{position:absolute;left:50%;top:16%;transform:translateX(-50%);font-weight:900;font-size:var(--fs-lg);letter-spacing:.6px;color:#ff2e2e;text-shadow:0 0 10px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.95);pointer-events:none;opacity:0;white-space:nowrap;z-index:26}
+#tip{position:absolute;left:50%;top:32%;transform:translateX(-50%);padding:6px 14px;border-radius:var(--r-sm);font-weight:800;font-size:var(--fs-sm);pointer-events:none;z-index:24}
+#sb{position:absolute;top:220px;right:14px;padding:7px 11px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:700;pointer-events:none;z-index:22}
 #tip:empty,#sb:empty{display:none}
 #chs{display:flex;gap:7px;flex-wrap:wrap}
 #ov .card{flex:1;min-width:110px;background:rgba(255,255,255,.03);color:#cbd5e1;border:1px solid rgba(255,255,255,.12);opacity:.78;padding:8px 9px;font-size:var(--fs-xs);font-weight:600;text-align:center;border-radius:var(--r-sm);line-height:1.45}
@@ -265,7 +312,19 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #colGrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:340px}
 .col-sw{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);cursor:pointer;padding:0;transition:transform .12s ease}
 .col-sw.on{transform:scale(1.15);border:2.5px solid #fff;box-shadow:0 0 0 2px var(--ac)}
-.name-tag{position:fixed;transform:translate(-50%,-100%);background:rgba(10,14,22,.82);color:#fff;padding:2px 8px;border-radius:var(--r-sm);font-weight:900;font-size:var(--fs-xs);white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.26);box-shadow:0 3px 10px rgba(0,0,0,.65);z-index:18;transform-origin:50% 100%;line-height:1.25;backdrop-filter:blur(4px)}
+
+.name-tag{
+  position:fixed;transform:translate(-50%,-100%);
+  background:rgba(10,14,22,.84);color:#fff;
+  padding:2px 8px 4px;border-radius:var(--r-sm);
+  font-weight:900;font-size:var(--fs-xs);white-space:nowrap;
+  pointer-events:none;border:1px solid rgba(255,255,255,.26);
+  box-shadow:0 3px 10px rgba(0,0,0,.65);z-index:18;
+  transform-origin:50% 100%;line-height:1.25;backdrop-filter:blur(4px);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.tag-hp-track{width:46px;height:3.5px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
+.tag-hp-fill{height:100%;width:100%;background:#38d9a9;transition:width .12s linear}
 </style></head><body><div id="app">
 <button type="button" id="backBtn" class="ui-panel">← 뒤로가기</button>
 <div id="hud">
@@ -300,8 +359,13 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   </div>
 </div>
 <div id="scopeOverlay"></div>
-<div id="roomtag" class="ui-panel"></div><div id="nameTags"></div>
-<div id="xh"></div><div id="hitMarker"></div><div id="dmgDir"></div><canvas id="rdr"></canvas>
+<div id="roomtag" class="ui-panel"></div>
+<div id="nameTags"></div>
+<div id="killFeed"></div>
+<div id="multiKillBanner"></div>
+<div id="xh"></div>
+<div id="xhT" class="xh-bar"></div><div id="xhB" class="xh-bar"></div><div id="xhL" class="xh-bar"></div><div id="xhR" class="xh-bar"></div>
+<div id="hitMarker"></div><div id="dmgDir"></div><canvas id="rdr"></canvas>
 <div id="pop"></div><div id="tip" class="ui-panel"></div>
 <div id="rlBadge" class="ui-panel"><span class="rl-dot"></span><span id="rlText">재장전 중…</span></div>
 <div id="sb" class="ui-panel"></div><div id="lowHpVignette"></div><div id="dv"></div><div id="js"></div><div id="jk"></div>
@@ -335,7 +399,17 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   <div class="menu-right">
     <div id="pane-play" class="tab-pane active">
       <div class="pane-title"><span>출격 모드 & 클래스</span></div>
-      <p id="msg" class="pane-desc">어두운 콘크리트 전술 아레나의 육교와 2층 회랑, 하부 통로를 오가며 적을 소탕하세요.<br>PC: WASD 이동 · 마우스 조준 · R 재장전 · Q/E/F 스킬</p>
+      <p id="msg" class="pane-desc">기본 편성: [1번 주무기 + 2번 권총 + 3번 칼] · 칼 보유 시 달리기 가능, 총기 이동/점프 사격 시 에임 확산(브레이킹 활용).</p>
+
+      <div class="wep-pick-box">
+        <div class="wep-pick-lbl">1번 주무기 선택 (사망 시에도 변경 가능 · 2번 권총 / 3번 칼 고정)</div>
+        <div class="wep-pick-row" id="primaryPickRow">
+          <button type="button" class="wep-pick-btn on" data-prim="0">돌격소총</button>
+          <button type="button" class="wep-pick-btn" data-prim="1">샷건</button>
+          <button type="button" class="wep-pick-btn" data-prim="2">저격총</button>
+        </div>
+      </div>
+
       <div id="chs"></div>
       <div class="mode-cards">
         <button type="button" id="go" class="mode-btn primary">
@@ -529,7 +603,29 @@ function nz(d,fc,v,dl=0,pos=null){
   s.connect(f);f.connect(g);g.connect(createSpatialPanner(a,pos));s.start(a.currentTime+dl);
 }
 const SX={
-  shot:(v=1,w=0,pos=null)=>{nz(w==1?.25:.14,w==2?4200:2600,.5*v,0,pos);tone(w==1?100:w==2?120:180,40,w==1?.25:.14,.35*v,w==1?'sawtooth':'square',0,pos)},
+  shot:(v=1,w=0,pos=null)=>{
+    if(w===2){nz(.07,5200,.22*v,0,pos);tone(820,240,.07,.16*v,'triangle',0,pos)}
+    else{nz(w==1?.25:.14,w==2?4200:2600,.5*v,0,pos);tone(w==1?100:w==2?120:180,40,w==1?.25:.14,.35*v,w==1?'sawtooth':'square',0,pos)}
+  },
+  whiz:(pan=0)=>{
+    const a=aud();if(!a)return;
+    try{
+      const dur=.16,len=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,len,a.sampleRate),ch0=buf.getChannelData(0);
+      for(let i=0;i<len;i++){const env=Math.sin((i/len)*Math.PI);ch0[i]=(Math.random()*2-1)*env}
+      const src=a.createBufferSource();src.buffer=buf;
+      const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=3.2;
+      const now=a.currentTime;
+      bp.frequency.setValueAtTime(2400,now);
+      bp.frequency.exponentialRampToValueAtTime(620,now+dur);
+      const g=a.createGain();g.gain.setValueAtTime(.34,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);
+      src.connect(bp);bp.connect(g);
+      if(a.createStereoPanner){
+        const sp=a.createStereoPanner();sp.pan.value=Math.max(-1,Math.min(1,pan));
+        g.connect(sp);sp.connect(a.destination);
+      }else g.connect(a.destination);
+      src.start(now);src.stop(now+dur);
+    }catch(_){}
+  },
   reload:()=>{tone(700,400,.04,.15);tone(500,300,.05,.15,'square',.8);tone(900,500,.04,.2,'square',1.2)},
   hit:(crit=false)=>{tone(crit?1850:1300,crit?2100:1300,.055,.24,'triangle');if(crit)tone(920,1480,.06,.16,'sine',.02)},
   kill:()=>tone(420,85,.32,.28,'sawtooth'),
@@ -540,6 +636,27 @@ const SX={
   win:()=>[523,659,784].forEach((f,i)=>tone(f,f,.25,.2,'triangle',i*.15)),
   lose:()=>[330,262,196].forEach((f,i)=>tone(f,f*.9,.35,.2,'sawtooth',i*.25))
 };
+
+let lastWhizAt=0;
+function checkBulletWhiz(a,b){
+  const now=performance.now();
+  if(now-lastWhizAt<170)return;
+  const ear=new THREE.Vector3(pl.x,pl.y+1.45,pl.z);
+  const ab=b.clone().sub(a);
+  const lenSq=ab.lengthSq();
+  if(lenSq<.0001)return;
+  const t=Math.max(0,Math.min(1,ear.clone().sub(a).dot(ab)/lenSq));
+  if(t<=0.02||t>=0.98)return;
+  const closest=a.clone().addScaledVector(ab,t);
+  const dist=closest.distanceTo(ear);
+  if(dist<1.65){
+    lastWhizAt=now;
+    const rightX=Math.cos(pl.yaw),rightZ=-Math.sin(pl.yaw);
+    const sideDot=(closest.x-ear.x)*rightX+(closest.z-ear.z)*rightZ;
+    SX.whiz(Math.max(-1,Math.min(1,sideDot*1.1)));
+    if(dm<.25){dm=Math.max(dm,.28);dmgAngle=Math.atan2(closest.x-pl.x,closest.z-pl.z)-pl.yaw}
+  }
+}
 
 const ARENA_W=84,ARENA_D=84,WALL_H=8.5;
 const R=28,S=ARENA_W/R;
@@ -1035,18 +1152,99 @@ function mkChar(c){
 }
 
 const pl={x:8,y:0,z:8,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=95;
-let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,hCrit=0,dm=0,dmgAngle=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0,bobPhase=0;
+let st=0,fi=0,md=0,J=0,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,hCrit=0,dm=0,dmgAngle=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,bobPhase=0;
 
+/* 무기 정의:
+   0: 돌격소총(주무기), 1: 샷건(주무기), 2: 저격총(주무기), 3: 권총(2번 고정), 4: 칼(3번 고정)
+*/
 const WP=[
-  {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true},
-  {n:'샷건',mag:6,res:30,cd:.8,dmg:14,hd:24,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
-  {n:'저격총',mag:5,res:20,cd:1.1,dmg:52,hd:120,pel:1,spr:0,rl:2.2,rc:.045,canAds:true}
+  {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true,isGun:true,isKnife:false},
+  {n:'샷건',mag:6,res:30,cd:.8,dmg:14,hd:24,pel:8,spr:.038,rl:2,rc:.024,canAds:false,isGun:true,isKnife:false},
+  {n:'저격총',mag:5,res:20,cd:1.1,dmg:52,hd:120,pel:1,spr:0,rl:2.2,rc:.045,canAds:true,isGun:true,isKnife:false},
+  {n:'권총',mag:15,res:60,cd:.16,dmg:20,hd:54,pel:1,spr:.007,rl:1.05,rc:.0055,canAds:true,isGun:true,isKnife:false},
+  {n:'칼',mag:1,res:0,cd:.42,dmg:55,hd:95,pel:1,spr:0,rl:0,rc:.012,canAds:false,isGun:false,isKnife:true}
 ];
-let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,burstFxT=0;
+
+let selectedPrimary=0; // 0: 돌격소총, 1: 샷건, 2: 저격총
+let loadoutSlots=[0,3,4]; // [1번 선택주무기, 2번 권총, 3번 칼]
+let activeSlot=0; // 0, 1, 2
+let wi=0; // 실제 WP 인덱스
+let WA=WP.map(w=>[w.mag,w.res]),am=30,res=90;
+
+function rebuildLoadoutSlots(resetAmmo=false){
+  const prim=(selectedPrimary>=0&&selectedPrimary<=2)?selectedPrimary:0;
+  loadoutSlots=[prim,3,4];
+  if(resetAmmo){
+    WA=WP.map(w=>[w.mag,w.res]);
+  }
+  activeSlot=Math.max(0,Math.min(2,activeSlot));
+  wi=loadoutSlots[activeSlot];
+  am=WA[wi][0];
+  res=WA[wi][1];
+  syncWeaponModel();
+}
+
+function selectPrimaryWeapon(primIdx){
+  if(primIdx<0||primIdx>2)return;
+  selectedPrimary=primIdx;
+  document.querySelectorAll('#primaryPickRow .wep-pick-btn').forEach(btn=>{
+    btn.classList.toggle('on',+btn.dataset.prim===primIdx);
+  });
+  const wasOnSlot0=(activeSlot===0);
+  if(wasOnSlot0&&rl<=0)WA[wi]=[am,res];
+  loadoutSlots[0]=primIdx;
+  if(wasOnSlot0){
+    wi=primIdx;
+    am=WA[wi][0];
+    res=WA[wi][1];
+    rl=0;
+    syncWeaponModel();
+  }
+}
+
+document.querySelectorAll('#primaryPickRow .wep-pick-btn').forEach(btn=>{
+  btn.onclick=()=>{aud();selectPrimaryWeapon(+btn.dataset.prim);pop('주무기: '+WP[+btn.dataset.prim].n+' 선택됨')};
+});
+
+let shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,burstFxT=0,moveSpread=0;
 let lookTargetYaw=null,lookTargetPit=null;
+let killStreakCount=0,lastKillAt=0,bannerTimer=0;
+const killFeedItems=[];
+
+function pushKillFeed(killer,victim,wepName,isHd,isMine){
+  killFeedItems.unshift({
+    killer:String(killer||'플레이어').slice(0,12),
+    victim:String(victim||'적').slice(0,12),
+    wepName:String(wepName||'무기'),
+    isHd:!!isHd,
+    isMine:!!isMine,
+    born:performance.now()
+  });
+  if(killFeedItems.length>5)killFeedItems.length=5;
+  renderKillFeed();
+}
+function renderKillFeed(){
+  const box=$('killFeed');if(!box)return;
+  const now=performance.now();
+  while(killFeedItems.length&&now-killFeedItems[killFeedItems.length-1].born>5500)killFeedItems.pop();
+  box.innerHTML=killFeedItems.map(it=>
+    `<div class="kf-item${it.isMine?' mine':''}">`+
+    `<span>${escapeHtml(it.killer)}</span>`+
+    `<span class="kf-wep">[${escapeHtml(it.wepName)}]</span>`+
+    (it.isHd?'<span class="kf-hs">HS</span>':'')+
+    `<span>${escapeHtml(it.victim)}</span>`+
+    `</div>`
+  ).join('');
+}
+function triggerMultiKillBanner(text){
+  const el=$('multiKillBanner');if(!el||!text)return;
+  el.textContent=text;
+  el.classList.add('on');
+  bannerTimer=1.45;
+}
 
 function getDistanceFalloff(wIdx,dist){
-  if(wIdx===2)return 1;
+  if(wIdx===2||wIdx===4)return 1;
   if(wIdx===0){
     if(dist<=14)return 1;
     const t=Math.min(1,(dist-14)/36);
@@ -1056,6 +1254,11 @@ function getDistanceFalloff(wIdx,dist){
     if(dist<=7)return 1;
     const t=Math.min(1,(dist-7)/21);
     return 1-0.45*t;
+  }
+  if(wIdx===3){
+    if(dist<=10)return 1;
+    const t=Math.min(1,(dist-10)/26);
+    return 1-0.25*t;
   }
   return 1;
 }
@@ -1077,28 +1280,16 @@ const accRed=MT(0xd92b2b,.38,.35,0xd92b2b,.55);
 const brassM=MT(0xc48e29,.26,.88);
 const lensM=MT(0x38bdf8,.12,.3,0x0ea5e9,.85);
 
-/* 1인칭 양손·전완근 머티리얼 (프로필 선택 색상을 그대로 반영) */
 const handColorMat=new THREE.MeshStandardMaterial({
-  color:0xff3b30,
-  roughness:.54,
-  metalness:.16,
-  flatShading:true,
-  emissive:new THREE.Color(0xff3b30),
-  emissiveIntensity:.1
+  color:0xff3b30,roughness:.54,metalness:.16,flatShading:true,
+  emissive:new THREE.Color(0xff3b30),emissiveIntensity:.1
 });
 const sleeveColorMat=new THREE.MeshStandardMaterial({
-  color:0xff3b30,
-  roughness:.68,
-  metalness:.22,
-  flatShading:true,
-  emissive:new THREE.Color(0xff3b30),
-  emissiveIntensity:.06
+  color:0xff3b30,roughness:.68,metalness:.22,flatShading:true,
+  emissive:new THREE.Color(0xff3b30),emissiveIntensity:.06
 });
 const handTrimMat=new THREE.MeshStandardMaterial({
-  color:0x131720,
-  roughness:.62,
-  metalness:.42,
-  flatShading:true
+  color:0x131720,roughness:.62,metalness:.42,flatShading:true
 });
 
 function syncFirstPersonHandColor(){
@@ -1121,13 +1312,12 @@ const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
   return o;
 };
 
-/* 정통 FPS 뷰모델: 손바닥·손가락·엄지·손목 스트랩·전완근(팔뚝)까지 자연스럽게 뻗어 나오는 양손 조립 */
 function buildTacticalArm(parent,opts){
   const {
-    side=1,          // 1: 오른팔(우하단에서 그립), -1: 왼팔(좌하단에서 핸드가드 지지)
-    handPos=[0,0,0], // 손 중심 위치
-    handRot=[0,0,0], // 손 각도
-    elbowOffset=[side*.26,-.24,.46], // 팔꿈치가 향하는 방향 (화면 하단 바깥쪽)
+    side=1,
+    handPos=[0,0,0],
+    handRot=[0,0,0],
+    elbowOffset=[side*.26,-.24,.46],
     scale=1
   }=opts;
 
@@ -1135,18 +1325,14 @@ function buildTacticalArm(parent,opts){
   armRoot.scale.setScalar(scale);
   parent.add(armRoot);
 
-  // 1) 손(글러브) 그룹
   const handGrp=new THREE.Group();
   handGrp.position.set(handPos[0],handPos[1],handPos[2]);
   handGrp.rotation.order='YXZ';
   handGrp.rotation.set(handRot[0]||0,handRot[1]||0,handRot[2]||0);
   armRoot.add(handGrp);
 
-  // 손등 & 손바닥 본체
   addTo(handGrp,new THREE.BoxGeometry(.072,.046,.086),handColorMat,0,0,0);
-  // 너클 아머 패드
   addTo(handGrp,new THREE.BoxGeometry(.075,.018,.028),handTrimMat,0,.018,-.022);
-  // 네 손가락 (총기 그립/핸드가드를 감싸 쥐는 형태)
   const fingerCurl=side===1?.52:-.68;
   for(let f=0;f<4;f++){
     const fz=-.032+f*.018;
@@ -1157,18 +1343,15 @@ function buildTacticalArm(parent,opts){
     addTo(fg,new THREE.BoxGeometry(.038,.016,.014),handColorMat,-side*.016,0,0);
     addTo(fg,new THREE.BoxGeometry(.032,.014,.013),handTrimMat,-side*.032,-.012,0,0,0,fingerCurl*.6);
   }
-  // 엄지손가락 (반대편에서 감싸 쥠)
   const thumbGrp=new THREE.Group();
   thumbGrp.position.set(side*.034,.004,-.018);
   thumbGrp.rotation.set(-.25,side*.35,-side*.45);
   handGrp.add(thumbGrp);
   addTo(thumbGrp,new THREE.BoxGeometry(.024,.022,.054),handColorMat,0,0,-.016);
 
-  // 손목 전술 벨크로 스트랩
   addTo(handGrp,new THREE.BoxGeometry(.074,.048,.034),handTrimMat,0,-.002,.054);
   addTo(handGrp,new THREE.BoxGeometry(.077,.014,.014),steelBright,0,.02,.054);
 
-  // 2) 전완근(팔뚝) 그룹: 손목에서 화면 하단 모서리(elbowOffset) 방향으로 길게 연결
   const wristLocal=new THREE.Vector3(0,-.004,.068);
   handGrp.updateMatrix();
   const wristWorldInArm=wristLocal.clone().applyMatrix4(handGrp.matrix);
@@ -1181,12 +1364,10 @@ function buildTacticalArm(parent,opts){
   forearmPivot.lookAt(elbowTarget);
   armRoot.add(forearmPivot);
 
-  // 전완근 소매 본체 (손목 쪽은 날렵하고 팔꿈치 쪽으로 갈수록 두꺼워짐)
   const sleeveGeo=new THREE.CylinderGeometry(.044,.064,armLen,14);
   sleeveGeo.rotateX(Math.PI/2);
   addTo(forearmPivot,sleeveGeo,sleeveColorMat,0,0,armLen*.5);
 
-  // 전완근 상단 전술 보호대/라인 디테일
   const padGeo=new THREE.BoxGeometry(.056,.024,armLen*.72);
   addTo(forearmPivot,padGeo,handTrimMat,0,.038,armLen*.48);
 
@@ -1210,187 +1391,97 @@ function makeLatheZ(profilePts,segs=18){
   return geo;
 }
 
-const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
+const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
-/* 0: 돌격소총 + 양손/양팔 */
+/* 0: 돌격소총 */
 {
   const g=wModels[0];
-  const upperRec=makeExtrudeShape([[-.25,-.032],[.24,-.032],[.23,.058],[-.15,.064],[-.25,.024]],.066,.007);
-  const lowerRec=makeExtrudeShape([[-.18,-.068],[.16,-.068],[.15,-.028],[-.18,-.028]],.058,.006);
-  addTo(g,upperRec,gm1,0,.008,0,0,-Math.PI/2,0);
-  addTo(g,lowerRec,gm2,0,.002,.03,0,-Math.PI/2,0);
-
+  addTo(g,makeExtrudeShape([[-.25,-.032],[.24,-.032],[.23,.058],[-.15,.064],[-.25,.024]],.066,.007),gm1,0,.008,0,0,-Math.PI/2,0);
+  addTo(g,makeExtrudeShape([[-.18,-.068],[.16,-.068],[.15,-.028],[-.18,-.028]],.058,.006),gm2,0,.002,.03,0,-Math.PI/2,0);
   addTo(g,new THREE.BoxGeometry(.058,.018,.46),gm3,0,.068,-.03);
-  for(let rz=-.22;rz<=.16;rz+=.042){
-    addTo(g,new THREE.BoxGeometry(.064,.009,.016),steelBright,0,.076,rz);
-  }
-
+  for(let rz=-.22;rz<=.16;rz+=.042)addTo(g,new THREE.BoxGeometry(.064,.009,.016),steelBright,0,.076,rz);
   addTo(g,new THREE.BoxGeometry(.068,.076,.28),gm2,0,-.006,-.34);
-  for(let rz=-.46;rz<=-.22;rz+=.04){
-    addTo(g,new THREE.BoxGeometry(.074,.012,.015),gm3,0,.028,rz);
-    addTo(g,new THREE.BoxGeometry(.074,.012,.015),gm3,0,-.038,rz);
-  }
-  addTo(g,new THREE.BoxGeometry(.012,.05,.24),steelBright,.037,-.006,-.34);
-  addTo(g,new THREE.BoxGeometry(.012,.05,.24),steelBright,-.037,-.006,-.34);
-
-  addTo(g,makeLatheZ([
-    [.016,0],[.016,.24],[.022,.25],[.022,.28],
-    [.014,.29],[.014,.42],[.025,.43],[.025,.52],[.015,.53]
-  ],18),steelBright,0,.014,-.36);
-  addTo(g,new THREE.BoxGeometry(.044,.048,.048),gm1,0,.014,-.62);
+  addTo(g,makeLatheZ([[.016,0],[.016,.24],[.022,.25],[.022,.28],[.014,.29],[.014,.42],[.025,.43],[.025,.52],[.015,.53]],18),steelBright,0,.014,-.36);
   addTo(g,new THREE.CylinderGeometry(.026,.025,.1,16),gm3,0,.014,-.78,Math.PI/2);
-  for(let i=0;i<4;i++){
-    const ang=(i*Math.PI)/2;
-    addTo(g,new THREE.BoxGeometry(.012,.018,.07),gm2,Math.cos(ang)*.024,.014+Math.sin(ang)*.024,-.8);
-  }
-  addTo(g,new THREE.CylinderGeometry(.014,.014,.025,14),brassM,0,.014,-.835,Math.PI/2);
-
-  addTo(g,new THREE.CylinderGeometry(.022,.022,.28,16),gm3,0,-.004,.35,Math.PI/2);
   addTo(g,makeExtrudeShape([[0,.034],[.25,.05],[.26,-.072],[.12,-.04],[0,-.034]],.05,.007),gm2,0,-.016,.36,0,-Math.PI/2,0);
-  addTo(g,new THREE.BoxGeometry(.058,.122,.026),glv,0,-.012,.495);
-
-  const magGeo=makeExtrudeShape([[0,0],[.095,0],[.078,-.19],[-.018,-.19]],.042,.006);
-  addTo(g,magGeo,gm2,0,-.042,.1,0,-Math.PI/2,0);
-  addTo(g,new THREE.BoxGeometry(.046,.016,.105),steelBright,0,-.228,.12);
-
-  const gripGeo=makeExtrudeShape([[-.038,0],[.038,0],[.062,-.175],[-.016,-.185]],.044,.007);
-  addTo(g,gripGeo,gm1,0,-.045,-.12,0,-Math.PI/2,0);
-
-  const holo=new THREE.Group();
-  holo.position.set(0,.098,-.03);
-  g.add(holo);
+  addTo(g,makeExtrudeShape([[0,0],[.095,0],[.078,-.19],[-.018,-.19]],.042,.006),gm2,0,-.042,.1,0,-Math.PI/2,0);
+  addTo(g,makeExtrudeShape([[-.038,0],[.038,0],[.062,-.175],[-.016,-.185]],.044,.007),gm1,0,-.045,-.12,0,-Math.PI/2,0);
+  const holo=new THREE.Group();holo.position.set(0,.098,-.03);g.add(holo);
   addTo(holo,new THREE.BoxGeometry(.064,.014,.095),gm2,0,-.018,0);
-  addTo(holo,new THREE.BoxGeometry(.011,.046,.078),gm3,-.028,.008,0);
-  addTo(holo,new THREE.BoxGeometry(.011,.046,.078),gm3,.028,.008,0);
-  addTo(holo,new THREE.BoxGeometry(.068,.01,.078),gm3,0,.028,0);
   addTo(holo,new THREE.PlaneGeometry(.044,.034),lensM,0,.008,-.036,0,Math.PI,0);
   addTo(holo,new THREE.BoxGeometry(.007,.007,.005),accRed,0,.008,-.032);
-
-  // 오른손 & 오른팔 (우측 하단에서 올라와 권총 손잡이 파지)
-  buildTacticalArm(g,{
-    side:1,
-    handPos:[.022,-.115,-.115],
-    handRot:[-.42,-.18,.24],
-    elbowOffset:[.28,-.32,.42],
-    scale:1
-  });
-  // 왼손 & 왼팔 (좌측 하단에서 대각선으로 뻗어 핸드가드 하부 받침)
-  buildTacticalArm(g,{
-    side:-1,
-    handPos:[-.034,-.054,-.34],
-    handRot:[.22,.34,-.48],
-    elbowOffset:[-.44,-.28,.24],
-    scale:1
-  });
+  buildTacticalArm(g,{side:1,handPos:[.022,-.115,-.115],handRot:[-.42,-.18,.24],elbowOffset:[.28,-.32,.42],scale:1});
+  buildTacticalArm(g,{side:-1,handPos:[-.034,-.054,-.34],handRot:[.22,.34,-.48],elbowOffset:[-.44,-.28,.24],scale:1});
 }
 
-/* 1: 샷건 + 양손/양팔 */
+/* 1: 샷건 */
 {
   const g=wModels[1];
   addTo(g,makeExtrudeShape([[-.24,-.052],[.24,-.052],[.23,.06],[-.16,.064],[-.24,.022]],.074,.008),gm3,0,.002,0,0,-Math.PI/2,0);
-  addTo(g,new THREE.BoxGeometry(.01,.036,.12),steelBright,.04,.008,-.02);
   addTo(g,makeLatheZ([[.023,0],[.023,.5],[.028,.51],[.028,.55],[.021,.56]],18),steelBright,0,.023,-.24);
   addTo(g,new THREE.BoxGeometry(.054,.018,.52),gm2,0,.05,-.48);
-  addTo(g,new THREE.BoxGeometry(.012,.024,.016),accRed,0,.064,-.72);
-
   addTo(g,new THREE.CylinderGeometry(.022,.022,.54,16),gm1,0,-.022,-.45,Math.PI/2);
-  addTo(g,new THREE.CylinderGeometry(.025,.025,.03,16),steelBright,0,-.022,-.73,Math.PI/2);
-
   addTo(g,new THREE.CylinderGeometry(.048,.052,.26,16),wd,0,-.034,-.4,Math.PI/2);
-  for(let pz=-.51;pz<=-.29;pz+=.028){
-    addTo(g,new THREE.CylinderGeometry(.051,.051,.008,16),gm2,0,-.034,pz,Math.PI/2);
-  }
-
   addTo(g,makeExtrudeShape([[0,.058],[.34,.044],[.36,-.095],[.14,-.054],[0,-.048]],.06,.009),wd,0,-.01,.19,0,-Math.PI/2,0);
-  addTo(g,new THREE.BoxGeometry(.066,.128,.026),glv,0,-.02,.535);
-
-  [-.056,-.019,.019,.056].forEach(zOff=>{
-    addTo(g,new THREE.CylinderGeometry(.012,.012,.074,12),accRed,-.045,.006,zOff,Math.PI/2);
-    addTo(g,new THREE.CylinderGeometry(.013,.013,.022,12),brassM,-.045,.006,zOff+.045,Math.PI/2);
-  });
-
-  // 샷건 오른손/오른팔 (그립 & 방아쇠울)
-  buildTacticalArm(g,{
-    side:1,
-    handPos:[.024,-.068,-.14],
-    handRot:[-.36,-.16,.22],
-    elbowOffset:[.28,-.29,.44],
-    scale:.95
-  });
-  // 샷건 왼손/왼팔 (나무 펌프 핸드가드를 아래에서 감싸 쥠)
-  buildTacticalArm(g,{
-    side:-1,
-    handPos:[-.036,-.064,-.4],
-    handRot:[.2,.32,-.5],
-    elbowOffset:[-.44,-.27,.2],
-    scale:.95
-  });
+  buildTacticalArm(g,{side:1,handPos:[.024,-.068,-.14],handRot:[-.36,-.16,.22],elbowOffset:[.28,-.29,.44],scale:.95});
+  buildTacticalArm(g,{side:-1,handPos:[-.036,-.064,-.4],handRot:[.2,.32,-.5],elbowOffset:[-.44,-.27,.2],scale:.95});
 }
 
-/* 2: 저격총 + 양손/양팔 */
+/* 2: 저격총 */
 {
   const g=wModels[2];
   addTo(g,makeExtrudeShape([[-.36,-.046],[.34,-.046],[.32,.056],[-.24,.062],[-.36,.024]],.06,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
-
-  addTo(g,new THREE.CylinderGeometry(.01,.01,.055,12),steelBright,.04,.014,.06,0,0,Math.PI/2);
-  addTo(g,new THREE.SphereGeometry(.016,12,10),gm2,.068,.014,.06);
-
-  addTo(g,makeLatheZ([
-    [.019,0],[.019,.36],[.015,.38],[.015,.72],
-    [.026,.73],[.026,.82],[.016,.83]
-  ],18),steelBright,0,.016,-.4);
+  addTo(g,makeLatheZ([[.019,0],[.019,.36],[.015,.38],[.015,.72],[.026,.73],[.026,.82],[.016,.83]],18),steelBright,0,.016,-.4);
   addTo(g,new THREE.CylinderGeometry(.027,.026,.11,16),gm1,0,.016,-1.18,Math.PI/2);
-
-  const scopeGrp=new THREE.Group();
-  scopeGrp.position.set(0,.106,-.06);
-  g.add(scopeGrp);
-  addTo(scopeGrp,new THREE.BoxGeometry(.046,.014,.36),gm2,0,-.036,0);
-  [-.1,.1].forEach(mz=>{
-    addTo(scopeGrp,new THREE.BoxGeometry(.05,.024,.034),gm1,0,-.02,mz);
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(.038,.007,12,20),gm3);
-    ring.position.set(0,0,mz);
-    ring.castShadow=true;
-    scopeGrp.add(ring);
-  });
+  const scopeGrp=new THREE.Group();scopeGrp.position.set(0,.106,-.06);g.add(scopeGrp);
   addTo(scopeGrp,new THREE.CylinderGeometry(.033,.033,.12,18),scpM,0,0,.14,Math.PI/2);
   addTo(scopeGrp,new THREE.CylinderGeometry(.027,.027,.17,18),scpM,0,0,0,Math.PI/2);
   addTo(scopeGrp,new THREE.CylinderGeometry(.042,.042,.14,18),scpM,0,0,-.15,Math.PI/2);
-  addTo(scopeGrp,new THREE.CylinderGeometry(.02,.02,.016,16),brassM,0,.032,.02);
   addTo(scopeGrp,new THREE.CircleGeometry(.038,18),lensM,0,0,-.223,0,Math.PI,0);
-  addTo(scopeGrp,new THREE.CircleGeometry(.03,18),lensM,0,0,.202);
-
   addTo(g,makeExtrudeShape([[0,.048],[.33,.04],[.35,-.084],[.16,-.05],[0,-.044]],.058,.008),scpM,0,-.012,.22,0,-Math.PI/2,0);
   addTo(g,new THREE.BoxGeometry(.068,.034,.24),wd,0,.036,.38,.04);
-  [-.05,.05].forEach(bx=>{
-    addTo(g,new THREE.CylinderGeometry(.011,.008,.24,12),steelBright,bx,-.048,-.74,.28);
-    addTo(g,new THREE.BoxGeometry(.014,.01,.028),gm2,bx,-.154,-.85);
-  });
-
-  // 저격총 오른손/오른팔
-  buildTacticalArm(g,{
-    side:1,
-    handPos:[.022,-.072,-.12],
-    handRot:[-.38,-.16,.22],
-    elbowOffset:[.28,-.3,.44],
-    scale:1
-  });
-  // 저격총 왼손/왼팔 (포어엔드 하단 파지 - 조준 시에도 화면 좌측 하단에 명확히 보임)
-  buildTacticalArm(g,{
-    side:-1,
-    handPos:[-.034,-.052,-.36],
-    handRot:[.22,.34,-.48],
-    elbowOffset:[-.46,-.28,.22],
-    scale:1
-  });
+  buildTacticalArm(g,{side:1,handPos:[.022,-.072,-.12],handRot:[-.38,-.16,.22],elbowOffset:[.28,-.3,.44],scale:1});
+  buildTacticalArm(g,{side:-1,handPos:[-.034,-.052,-.36],handRot:[.22,.34,-.48],elbowOffset:[-.46,-.28,.22],scale:1});
 }
 
-function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
-syncWeaponModel();
+/* 3: 권총 (2번 슬롯) */
+{
+  const g=wModels[3];
+  addTo(g,new THREE.BoxGeometry(.046,.042,.24),gm3,0,.02,-.24);
+  addTo(g,new THREE.CylinderGeometry(.011,.011,.28,12),steelBright,0,.024,-.26,Math.PI/2);
+  addTo(g,new THREE.BoxGeometry(.042,.032,.2),gm1,0,-.008,-.23);
+  addTo(g,makeExtrudeShape([[-.026,0],[.026,0],[.042,-.135],[-.014,-.14]],.036,.005),gm2,0,-.024,-.14,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.012,.012,.01),accRed,0,.044,-.34);
+  buildTacticalArm(g,{side:1,handPos:[.018,-.078,-.12],handRot:[-.34,-.12,.18],elbowOffset:[.26,-.31,.42],scale:.92});
+  buildTacticalArm(g,{side:-1,handPos:[-.036,-.088,-.18],handRot:[.16,.44,-.52],elbowOffset:[-.34,-.32,.34],scale:.88});
+}
+
+/* 4: 전투 칼 (3번 슬롯 - 달리기 전용) */
+{
+  const g=wModels[4];
+  const blade=makeExtrudeShape([[-.02,0],[.02,0],[.01,.28],[0,.34],[-.016,.26]],.008,.002);
+  addTo(g,blade,steelBright,0,.02,-.42,-Math.PI/2.4,0,0);
+  addTo(g,new THREE.BoxGeometry(.054,.016,.024),gm3,0,.01,-.28);
+  addTo(g,new THREE.BoxGeometry(.032,.032,.12),gm2,0,-.004,-.21);
+  buildTacticalArm(g,{side:1,handPos:[.03,-.06,-.18],handRot:[-.28,-.22,.25],elbowOffset:[.28,-.3,.42],scale:.95});
+  buildTacticalArm(g,{side:-1,handPos:[-.08,-.12,-.24],handRot:[.18,.28,-.35],elbowOffset:[-.42,-.34,.32],scale:.88});
+}
+
+function syncWeaponModel(){
+  wModels.forEach((g,idx)=>{g.visible=(idx===wi)});
+  if(!WP[wi]||!WP[wi].canAds)ads=false;
+}
+rebuildLoadoutSlots(true);
 syncFirstPersonHandColor();
 const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.016,-.96);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
 const trc=[];for(let i=0;i<14;i++){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xffffff}));l.visible=false;l.frustumCulled=false;sc.add(l);trc.push({l,t:0})}
-let ti=0;function tracer(a,b,col){const o=trc[ti++%14],p=o.l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;o.l.material.color.setHex(col);o.l.visible=true;o.t=.075}
+let ti=0;function tracer(a,b,col,fromEnemy=false){
+  const o=trc[ti++%14],p=o.l.geometry.attributes.position;
+  p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;
+  o.l.material.color.setHex(col);o.l.visible=true;o.t=.09;
+  if(fromEnemy)checkBulletWhiz(a,b);
+}
 const spk=new THREE.Mesh(new THREE.SphereGeometry(.14,6,4),new THREE.MeshBasicMaterial({color:0xffb84d}));spk.visible=false;sc.add(spk);
 const PN=120,pg=new THREE.BoxGeometry(.07,.07,.07),pms=[0xb30000,0x7a0000].map(c=>new THREE.MeshBasicMaterial({color:c})),pp=[];
 for(let i=0;i<PN;i++){const m=new THREE.Mesh(pg,pms[i%2]);m.visible=false;sc.add(m);pp.push({m,v:new THREE.Vector3(),t:0})}
@@ -1434,7 +1525,7 @@ function spawn(n){
     const hv=!mm&&k%4==3;
     const aiHex=hv?0x1576c4:0x1d8fe1;
     const c=mkChar([aiHex]);
-    const e={...c,hv,aiHex,x:sx,y:sy,z:sz,hp:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
+    const e={...c,hv,aiHex,x:sx,y:sy,z:sz,hp:100,maxHp:hv?260:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
     if(hv){c.g.scale.setScalar(1.18);e.hp=260}
     c.g.traverse(m=>{if(m.isMesh)m.userData.e=e});
     c.g.position.set(e.x,e.y,e.z);sc.add(c.g);en.push(e);
@@ -1462,33 +1553,84 @@ function mkMedMesh(x,z,y=.45){
 function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
 
 function reset(skipSpawn){
-  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;burstFxT=0;pl.hp=100;
-  wi=0;syncWeaponModel();syncFirstPersonHandColor();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
+  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;burstFxT=0;moveSpread=0;pl.hp=100;
+  activeSlot=0;rebuildLoadoutSlots(true);syncFirstPersonHandColor();
+  kills=0;score=0;strk=0;killStreakCount=0;lastKillAt=0;
   pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;
   fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();syncShadowFrustumToPlayer();
 }
 
-function reload(){const w=WP[wi];if(rl>0||am>=w.mag||res<=0||st!=1)return;rl=w.rl;SX.reload()}
-function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
- am--;bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;mf=.055;shk=Math.max(shk,w.rc*24);SX.shot(1,wi,{x:pl.x,y:pl.y+1.4,z:pl.z});
- const recoilScale=ads?(wi===2?.45:.65):1;
- pl.pit=cl(pl.pit+w.rc*recoilScale,-1.4,1.4);
- pl.yaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
- if(lookTargetPit!==null)lookTargetPit=cl(lookTargetPit+w.rc*recoilScale,-1.4,1.4);
- if(lookTargetYaw!==null)lookTargetYaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
- const effSpread=(w.spr+burstFxT)*(ads?(wi===2?.08:.36):1);
- burstFxT=Math.min(.032,burstFxT+w.rc*1.4);
- const o=new THREE.Vector3(.2,-.18,-.9),tg=[world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)];cam.localToWorld(o);
- for(let k=0;k<w.pel;k++){V.set((Math.random()-.5)*effSpread,(Math.random()-.5)*effSpread);RC.setFromCamera(V,cam);
-  const h=RC.intersectObjects(tg,true)[0];let end;
-  if(h){end=h.point;const e=h.object.userData.e,hd=h.object.userData.hd;
-   if(e){blood(h.point,RC.ray.direction,hd?24:13);const falloff=getDistanceFalloff(wi,h.distance);const dg=(hd?w.hd:w.dmg)*falloff*(bu.dmg>0?2:1);
-    if(e.rem){if(!isFriendly(e)){e.fl=.11;triggerHitFeedback(hd);mpSend({t:'hit',to:e.peer,dmg:dg,hd:hd?1:0,w:wi},e.peer)}}
-    else{e.hp-=dg;e.fl=.11;e.see=1;e.lt=1;triggerHitFeedback(hd);if(e.hp<=0&&!e.dead){e.dead=1;e.t=0;kill(e,hd,h.point)}}}
-   else{spk.position.copy(h.point);spk.visible=true;spt=.08}}
-  else{end=new THREE.Vector3(0,0,-75);cam.localToWorld(end)}
-  tracer(o,end,0xfff0b0);if(k==0&&mm)mpSend({t:'shot',ep:[+end.x.toFixed(1),+end.y.toFixed(1),+end.z.toFixed(1)]})}}
-function sw(i){if(i==wi||st!=1||rl>0||i<0||i>2)return;WA[wi]=[am,res];wi=i;am=WA[i][0];res=WA[i][1];syncWeaponModel();fcd=.35;tone(500,300,.06,.15)}
+function reload(){const w=WP[wi];if(!w||!w.isGun||rl>0||am>=w.mag||res<=0||st!=1)return;rl=w.rl;SX.reload()}
+
+function shoot(){
+  const w=WP[wi];if(!w||fcd>0||rl>0)return;
+  if(w.isGun&&am<=0){reload();return}
+  if(w.isGun)am--;
+  bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;
+  if(w.isGun)mf=.055;
+  shk=Math.max(shk,w.rc*(w.isKnife?14:24));
+  SX.shot(1,wi,{x:pl.x,y:pl.y+1.4,z:pl.z});
+
+  const recoilScale=ads?(wi===2?.45:.65):1;
+  pl.pit=cl(pl.pit+w.rc*recoilScale,-1.4,1.4);
+  pl.yaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
+  if(lookTargetPit!==null)lookTargetPit=cl(lookTargetPit+w.rc*recoilScale,-1.4,1.4);
+  if(lookTargetYaw!==null)lookTargetYaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
+
+  // 달리기(moveSpread) 및 점프(!pl.og) 시 탄퍼짐 상승 (브레이킹으로 멈춰야 집탄율 회복)
+  const totalSpread=(w.spr+burstFxT+moveSpread)*(ads?(wi===2?.08:.38):1);
+  burstFxT=Math.min(.038,burstFxT+w.rc*1.45);
+
+  const o=new THREE.Vector3(.2,-.18,-.9);
+  const tg=[world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)];
+  cam.localToWorld(o);
+
+  for(let k=0;k<w.pel;k++){
+    V.set((Math.random()-.5)*totalSpread,(Math.random()-.5)*totalSpread);
+    RC.setFromCamera(V,cam);
+    RC.far=w.isKnife?3.2:95;
+    const h=RC.intersectObjects(tg,true)[0];let end;
+    if(h){
+      end=h.point;const e=h.object.userData.e,hd=h.object.userData.hd;
+      if(e){
+        blood(h.point,RC.ray.direction,hd?24:13);
+        const falloff=getDistanceFalloff(wi,h.distance);
+        const dg=(hd?w.hd:w.dmg)*falloff*(bu.dmg>0?2:1);
+        if(e.rem){
+          if(!isFriendly(e)){
+            e.fl=.11;triggerHitFeedback(hd);
+            mpSend({t:'hit',to:e.peer,dmg:dg,hd:hd?1:0,w:wi,wepName:w.n,killerNick:getNick(),victimNick:e.nick||'상대'},e.peer);
+          }
+        }else{
+          e.hp-=dg;e.fl=.11;e.see=1;e.lt=1;triggerHitFeedback(hd);
+          if(e.hp<=0&&!e.dead){e.dead=1;e.t=0;kill(e,hd,h.point)}
+        }
+      }else{
+        spk.position.copy(h.point);spk.visible=true;spt=.08;
+      }
+    }else{
+      const reach=w.isKnife?2.6:75;
+      end=new THREE.Vector3(0,0,-reach);cam.localToWorld(end);
+    }
+    if(w.isGun)tracer(o,end,0xfff0b0,false);
+    if(k==0&&mm&&w.isGun)mpSend({t:'shot',ep:[+end.x.toFixed(1),+end.y.toFixed(1),+end.z.toFixed(1)]});
+  }
+}
+
+/* 무기 슬롯 전환 (0: 주무기, 1: 권총, 2: 칼) */
+function swSlot(slotIdx){
+  if(slotIdx<0||slotIdx>2||st!=1||rl>0)return;
+  if(slotIdx===activeSlot)return;
+  if(WP[wi]&&WP[wi].isGun)WA[wi]=[am,res];
+  activeSlot=slotIdx;
+  wi=loadoutSlots[activeSlot];
+  am=WA[wi][0];
+  res=WA[wi][1];
+  syncWeaponModel();
+  fcd=.32;
+  tone(500,300,.06,.15);
+  pop(WP[wi].n);
+}
 
 function syncBackBtn(){const b=$('backBtn');if(b)b.classList.toggle('on',st===1)}
 function returnToMenu(reasonText){
@@ -1500,9 +1642,9 @@ function returnToMenu(reasonText){
 }
 $('backBtn').onclick=e=>{e.stopPropagation();aud();returnToMenu('메뉴로 돌아왔습니다.')};
 
-function end(w){st=2;fi=0;J=0;try{document.exitPointerLock()}catch(_){}
- $('msg').textContent=w?'라운드 '+(rnd+1)+' 클리어! 다음 라운드는 적이 더 늘어납니다.':'전사했습니다. 처음부터 다시 도전하세요.';
- $('go').innerHTML=w?'<b>다음 라운드</b><span>라운드 '+(rnd+2)+' 계속하기</span>':'<b>일반플레이</b><span>처음부터 다시 시작</span>';
+function end(w){st=2;fi=0;J=0;ads=false;try{document.exitPointerLock()}catch(_){}
+ $('msg').textContent=w?'라운드 '+(rnd+1)+' 클리어! 다음 라운드는 적이 더 늘어납니다.':'전사했습니다. 주무기를 변경하거나 다시 출격하세요.';
+ $('go').innerHTML=w?'<b>다음 라운드</b><span>라운드 '+(rnd+2)+' 계속하기</span>':'<b>일반플레이</b><span>선택 주무기로 출격</span>';
  if(w)rnd++;else rnd=0;(w?SX.win:SX.lose)();$('ov').hidden=false;st=0;syncBackBtn()}
 
 const joyDeadzone=4,joyMaxRadius=38;
@@ -1522,11 +1664,26 @@ function stepLookSmoothing(dt){
 }
 
 function upd(dt){
- const now=performance.now()/1e3;spr=K.Shift?1:0;let f=(K.w?1:0)-(K.s?1:0),sd=(K.d?1:0)-(K.a?1:0);
- for(const k in T){const o=T[k];if(o.r=='m'){const dx=o.x-o.x0,dy=o.y-o.y0;const[ax,ay]=stickAxis(dx,dy);f=-ay;sd=ax;if(Math.hypot(dx,dy)>joyMaxRadius*1.45)spr=1}}
+ const now=performance.now()/1e3;
+ const wantsSprint=K.Shift?1:0;
+ let f=(K.w?1:0)-(K.s?1:0),sd=(K.d?1:0)-(K.a?1:0);
+ let joySprint=0;
+ for(const k in T){const o=T[k];if(o.r=='m'){const dx=o.x-o.x0,dy=o.y-o.y0;const[ax,ay]=stickAxis(dx,dy);f=-ay;sd=ax;if(Math.hypot(dx,dy)>joyMaxRadius*1.45)joySprint=1}}
  if(pl.dead){f=sd=0}const l=Math.hypot(f,sd);if(l>1){f/=l;sd/=l}
+
+ // 칼(wi===4)을 들었을 때만 달리기(스프린트) 허용, 총기 착용 시에는 달리기 불가
+ const canSprintNow=(wi===4)&&!ads&&!pl.dead;
+ spr=((wantsSprint||joySprint)&&canSprintNow&&l>.1)?1:0;
+
+ // 이동/점프 탄퍼짐 계산 (브레이킹 시 빠르게 감소)
+ const moveFactor=Math.min(1,l);
+ const airborneFactor=pl.og?0:1;
+ const targetSpread=moveFactor*(spr?.052:.024)+airborneFactor*.045;
+ const spreadRate=(targetSpread<moveSpread)?11:15;
+ moveSpread+=(targetSpread-moveSpread)*Math.min(1,dt*spreadRate);
+
  burstFxT=Math.max(0,burstFxT-(l>.1?.012:.038)*dt);
- const sp=(spr&&l>.1?10.2:7.2)*(1+(bu.spd>0?.4:0)+(ch==2?.1:0))*dt,sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw),vx=(-sy*f+cy*sd)*sp-(bu.dash>0?sy*26*dt:0),vz=(-cy*f-sy*sd)*sp-(bu.dash>0?cy*26*dt:0);
+ const sp=(spr&&l>.1?10.5:7.2)*(1+(bu.spd>0?.4:0)+(ch==2?.1:0))*dt,sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw),vx=(-sy*f+cy*sd)*sp-(bu.dash>0?sy*26*dt:0),vz=(-cy*f-sy*sd)*sp-(bu.dash>0?cy*26*dt:0);
  if(!blk(pl.x+vx,pl.z,pl.y))pl.x+=vx;if(!blk(pl.x,pl.z+vz,pl.y))pl.z+=vz;
 
  const targetFloor=gnd(pl.x,pl.z,pl.y+.45);
@@ -1546,12 +1703,21 @@ function upd(dt){
  syncAudioListener(pl.x,pl.y,pl.z,pl.yaw);
 
  for(const k in bu)if(bu[k]>0)bu[k]-=dt;for(let i=0;i<3;i++)if(cd[i]>0)cd[i]-=dt;fcd-=dt;rec=Math.max(0,rec-dt*8);mf-=dt;hm-=dt;if(hm<=0)hCrit=0;dm=Math.max(0,dm-dt*1.8);
+ if(bannerTimer>0){bannerTimer-=dt;if(bannerTimer<=0)$('multiKillBanner').classList.remove('on')}
+ if(killFeedItems.length)renderKillFeed();
+
  if(rl>0){rl-=dt;if(rl<=0){const n=Math.min(WP[wi].mag-am,res);am+=n;res-=n}}
  if(fi&&!pl.dead)shoot();pickups(dt,now);aimAssist(dt);
  if(now-lh>=10&&pl.hp<100)pl.hp=Math.min(100,pl.hp+3*(ch==1?2:1)*dt);
  ft-=dt;if(ft<=0){ft=.4;flow()}
+
+ const enemyNameTags=$('nameTags');
  en.forEach(e=>{
-  if(e.dead){e.t+=dt;e.g.rotation.x=-Math.min(1.5,e.t*4);if(e.t>4)e.g.visible=false;return}
+  if(e.dead){
+    e.t+=dt;e.g.rotation.x=-Math.min(1.5,e.t*4);if(e.t>4)e.g.visible=false;
+    if(e.tagEl)e.tagEl.style.display='none';
+    return;
+  }
   const dx=pl.x-e.x,dz=pl.z-e.z,d=Math.hypot(dx,dz)||1;if(e.stun>0){e.stun-=dt;return}
   e.lt-=dt;if(e.lt<=0){e.lt=.3;const s=d<42&&!(bu.cloak>0)&&los(e.x,e.z,pl.x,pl.z,(e.y||0)+1.3,pl.y+1.2);if(s&&!e.see)e.cd=Math.max(e.cd,.5);e.see=s}
   let mx=0,mz=0,sp=3.4*(e.hv?.7:1)*dt;
@@ -1571,8 +1737,30 @@ function upd(dt){
   e.fl-=dt;
   if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.65}
   else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.06}
+
+  // AI 적군: 에임을 갖다 댔을 때만 빨간 닉네임 표시
+  if(enemyNameTags){
+    if(!e.tagEl){
+      const tEl=document.createElement('div');
+      tEl.className='name-tag';
+      tEl.style.color='#ff4d4d';
+      tEl.style.borderColor='rgba(255,77,77,.65)';
+      tEl.textContent=e.hv?'중장갑 적':'적 병사';
+      enemyNameTags.appendChild(tEl);
+      e.tagEl=tEl;
+    }
+    const aimed=isAimedAtObjectGroup(e.g);
+    const p=new THREE.Vector3(e.x,e.y+2.05,e.z).project(cam);
+    if(!aimed||p.z>1||p.z<-1){e.tagEl.style.display='none'}
+    else{
+      e.tagEl.style.display='flex';
+      e.tagEl.style.left=((p.x*.5+.5)*innerWidth).toFixed(1)+'px';
+      e.tagEl.style.top=((-p.y*.5+.5)*innerHeight).toFixed(1)+'px';
+    }
+  }
+
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
-   tracer(o,t,0x74c0fc);SX.shot(Math.min(.75,6/d),0,{x:e.x,y:(e.y||0)+1.3,z:e.z});if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,3.6);SX.hurt()}}}
+   tracer(o,t,0x74c0fc,true);SX.shot(Math.min(.75,6/d),0,{x:e.x,y:(e.y||0)+1.3,z:e.z});if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,3.6);SX.hurt()}}}
  });
  if(mm)mpTick(dt,now);else if(pl.hp<=0)end(0);else if(en.every(e=>e.dead))end(1)}
 
@@ -1587,10 +1775,23 @@ function fx(dt){
  }
  const activeAds=(ads && st==1 && !pl.dead && w && w.canAds);
  const isSniperScope=(activeAds && wi===2);
- // 조준 시에도 양손과 팔, 총기가 화면에서 사라지지 않고 함께 따라옴
  gun.visible=(st==1 && !pl.dead);
  $('scopeOverlay').classList.toggle('on',isSniperScope);
- $('xh').style.opacity=isSniperScope?'0':'0.85';
+
+ // 동적 스프레드 크로스헤어 업데이트
+ const showCrosshair=(st==1 && !pl.dead && !isSniperScope);
+ $('xh').style.display=showCrosshair?'block':'none';
+ $('xh').style.opacity=showCrosshair?'0.92':'0';
+ const gapPx=Math.round(7+moveSpread*240+(rec*10));
+ const barLen=10,barThick=2.2;
+ [['xhT',0,-gapPx-barLen,barThick,barLen],['xhB',0,gapPx,barThick,barLen],['xhL',-gapPx-barLen,0,barLen,barThick],['xhR',gapPx,0,barLen,barThick]].forEach(([id,ox,oy,bw,bh])=>{
+   const el=$(id);if(!el)return;
+   el.style.display=showCrosshair?'block':'none';
+   el.style.width=bw+'px';el.style.height=bh+'px';
+   el.style.marginLeft=(ox-bw/2)+'px';el.style.marginTop=(oy-bh/2)+'px';
+   el.style.background=hm>0?'#ff3b30':'rgba(255,255,255,.85)';
+ });
+
  const swayAmp=activeAds?.0025:(spr?.012:.0075);
  const bobX=Math.cos(bobPhase*.5)*swayAmp,bobY=Math.abs(Math.sin(bobPhase))*swayAmp;
 
@@ -1611,9 +1812,21 @@ let lastMag=-1,lastAm=-1,lastRl=-1;
 function hud(){
   const hpVal=Math.max(0,Math.ceil(pl.hp)),hpPct=Math.max(0,Math.min(100,(pl.hp/100)*100));
   $('hpNum').textContent=hpVal;const hpBar=$('hpBar');hpBar.style.width=hpPct+'%';hpBar.className='hp-fill'+(hpPct<=25?' low':hpPct<=55?' mid':'');
-  const w=WP[wi];$('amWep').textContent=w.n;$('amRes').textContent='/ '+res;const pips=$('amPips');
-  if(rl>0){$('amCur').textContent='RELOAD';if(lastRl!==1){lastRl=1;lastMag=-1;pips.style.gridTemplateColumns='1fr';pips.innerHTML='<div class="am-reloading">재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s</div>'}}
-  else{lastRl=0;$('amCur').textContent=am;if(lastMag!==w.mag){lastMag=w.mag;lastAm=-1;const cols=w.mag<=8?w.mag:15;pips.style.gridTemplateColumns='repeat('+cols+',1fr)';pips.innerHTML=Array.from({length:w.mag},(_,i)=>'<div class="am-pip"></div>').join('')}if(lastAm!==am){lastAm=am;const nodes=pips.children;for(let i=0;i<nodes.length;i++)nodes[i].className='am-pip'+(i>=am?' empty':'')}}
+  const w=WP[wi]||{n:'무기',mag:1,res:0,isGun:false};
+  const slotPrefix=(activeSlot+1)+'. ';
+  $('amWep').textContent=slotPrefix+w.n;
+  const pips=$('amPips');
+  if(!w.isGun){
+    $('amCur').textContent='∞';$('amRes').textContent='달리기 가능';
+    if(lastRl!==2){lastRl=2;lastMag=-1;pips.style.gridTemplateColumns='1fr';pips.innerHTML='<div class="am-reloading">칼 착용 중 · 스프린트 활성</div>'}
+  }else if(rl>0){
+    $('amCur').textContent='RELOAD';$('amRes').textContent='/ '+res;
+    if(lastRl!==1){lastRl=1;lastMag=-1;pips.style.gridTemplateColumns='1fr';pips.innerHTML='<div class="am-reloading">재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s</div>'}
+  }else{
+    lastRl=0;$('amCur').textContent=am;$('amRes').textContent='/ '+res;
+    if(lastMag!==w.mag){lastMag=w.mag;lastAm=-1;const cols=w.mag<=8?w.mag:15;pips.style.gridTemplateColumns='repeat('+cols+',1fr)';pips.innerHTML=Array.from({length:w.mag},(_,i)=>'<div class="am-pip"></div>').join('')}
+    if(lastAm!==am){lastAm=am;const nodes=pips.children;for(let i=0;i<nodes.length;i++)nodes[i].className='am-pip'+(i>=am?' empty':'')}
+  }
   $('kl').textContent=mm?'킬 '+kills+' / 데스 '+dth:'소탕 '+kills+' / '+en.length+' · '+score+'점';
   $('rd').textContent=mm?(matchCfg.mode==='1v1'?'1대1 R'+matchState.round:(myTeam==='red'?'레드팀':'블루팀')):(CH[ch].n+' · R'+(rnd+1));
   const lowVig=$('lowHpVignette');
@@ -1622,7 +1835,7 @@ function hud(){
     const hitBoost=(dm>.05&&hpVal<50)?dm*.35:0;
     lowVig.style.opacity=Math.min(.92,(lowRatio*.62+hitBoost)).toFixed(3);
   }
-  $('dv').style.opacity=(dm*.78).toFixed(3);$('dmgDir').style.opacity=(dm>.05&&st==1&&!pl.dead)?Math.min(1,dm*1.1):'0';$('dmgDir').style.transform='rotate('+dmgAngle.toFixed(3)+'rad)';
+  $('dv').style.opacity=(dm*.82).toFixed(3);$('dmgDir').style.opacity=(dm>.05&&st==1&&!pl.dead)?Math.min(1,dm*1.15):'0';$('dmgDir').style.transform='rotate('+dmgAngle.toFixed(3)+'rad)';
   $('xh').className=hm>0?'h':'';$('hitMarker').className=(hm>0?'on':'')+(hCrit?' crit':'');
   for(let i=0;i<3;i++){const b=$('s'+i),t=cd[i]>0?Math.ceil(cd[i])+'':CH[ch].k[i][0];if(b.textContent!=t)b.textContent=t;b.style.opacity=cd[i]>0?.45:1}
   const c=bu.shield>0?'56,217,169':bu.cloak>0?'176,107,255':bu.spd>0?'255,122,47':bu.dmg>0?'252,196,25':'';$('sd').style.boxShadow=c?'inset 0 0 80px 10px rgba('+c+',.42)':'none';
@@ -1647,7 +1860,12 @@ $('go').onclick=()=>{
   if(LO)enterLandscapeMode();
   if(!matchMedia('(pointer:coarse)').matches)lock();
 };
-addEventListener('keydown',e=>{const k=e.key.length>1?e.key:e.key.toLowerCase();K[k]=1;if(k=='r')reload();if(k=='q')skill(0);if(k=='e')skill(1);if(k=='f')skill(2);if(k>='1'&&k<='3')sw(+k-1);if(k==' ')e.preventDefault()});
+addEventListener('keydown',e=>{
+  const k=e.key.length>1?e.key:e.key.toLowerCase();K[k]=1;
+  if(k=='r')reload();if(k=='q')skill(0);if(k=='e')skill(1);if(k=='f')skill(2);
+  if(k=='1')swSlot(0);if(k=='2')swSlot(1);if(k=='3')swSlot(2);
+  if(k==' ')e.preventDefault();
+});
 addEventListener('keyup',e=>{K[e.key.length>1?e.key:e.key.toLowerCase()]=0});
 cv.addEventListener('mousedown',e=>{if(e.button==2){md=1;if(document.pointerLockElement&&WP[wi].canAds)ads=true}else{fi=1;if(st==1&&!document.pointerLockElement)lock()}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1710,7 +1928,7 @@ const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.
   addEventListener('mouseup',()=>{if(fireTouchId===null)fi=0});
 }
 
-hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
+hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>swSlot((activeSlot+1)%3));
 hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));
 
 const LOBBY_HUB_ID='TSWEEP3D-LOBBY-HUB-V1';
@@ -1993,8 +2211,8 @@ function launchMultiMatch(fromHost){
 }
 function startNewRound(nextRoundNum,redSc,blueSc,msgText){
   matchState.round=nextRoundNum;matchState.redScore=redSc;matchState.blueScore=blueSc;matchState.phase='playing';matchState.timer=(matchCfg.mode==='1v1')?60:100;
-  pl.dead=0;pl.hp=100;pl.dt=0;WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];wi=0;syncWeaponModel();rl=0;
-  for(const id in rp){rp[id].al=1;rp[id].g.rotation.x=0;rp[id].g.visible=true}
+  pl.dead=0;pl.hp=100;pl.dt=0;activeSlot=0;rebuildLoadoutSlots(true);rl=0;
+  for(const id in rp){rp[id].al=1;rp[id].hp=100;rp[id].g.rotation.x=0;rp[id].g.visible=true}
   mpSpawn();$('tip').textContent='';pop(msgText||('라운드 '+nextRoundNum+' 시작!'));updateMatchHud();
 }
 function finishMatch(title,sub){
@@ -2069,6 +2287,10 @@ function handleMsg(fromId,d){
   else if(d.t==='round_next')startNewRound(d.round,d.redScore,d.blueScore,d.msg);
   else if(d.t==='score_sync'){matchState.redScore=d.redScore|0;matchState.blueScore=d.blueScore|0;if(typeof d.timer==='number')matchState.timer=d.timer;updateMatchHud()}
   else if(d.t==='match_over')finishMatch(d.title,d.sub);
+  else if(d.t==='killfeed'){
+    relayIfHost(pkt,fromId);
+    pushKillFeed(d.killer,d.victim,d.wepName,d.isHd,false);
+  }
   else if(d.t==='state'){
     relayIfHost(pkt,fromId);
     let r=rp[sender];
@@ -2080,11 +2302,16 @@ function handleMsg(fromId,d){
       const c=mkChar([colHex]);applyCharColor(c,colHex);
       const tagEl=document.createElement('div');tagEl.className='name-tag';
       const baseNick=(typeof d.nick==='string'&&d.nick.trim())?d.nick.trim().slice(0,12):'플레이어';
-      tagEl.textContent=matchCfg.mode==='6v6'?`[${rTeam==='red'?'RED':'BLUE'}] ${baseNick}`:baseNick;
+      const labelText=matchCfg.mode==='6v6'?`[${rTeam==='red'?'RED':'BLUE'}] ${baseNick}`:baseNick;
+      const nameSpan=document.createElement('span');nameSpan.textContent=labelText;
+      const hpTrack=document.createElement('div');hpTrack.className='tag-hp-track';
+      const hpFill=document.createElement('div');hpFill.className='tag-hp-fill';
+      hpTrack.appendChild(hpFill);
+      tagEl.append(nameSpan,hpTrack);
       tagEl.style.color=nameCss;
       tagEl.style.borderColor=rTeam==='red'?'#ff6b6b':'#4dabf7';
       $('nameTags').appendChild(tagEl);
-      r=rp[sender]={...c,peer:sender,rem:1,team:rTeam,x:0,y:0,z:0,yaw:0,tx:0,ty:0,tz:0,tyaw:0,ph:0,fl:0,al:1,k:0,d:0,t:0,hue:hueOf(sender),init:0,clk:0,colHex,nameCss,nick:baseNick,tagEl,visCached:false,visTimer:0};
+      r=rp[sender]={...c,peer:sender,rem:1,team:rTeam,x:0,y:0,z:0,yaw:0,tx:0,ty:0,tz:0,tyaw:0,ph:0,fl:0,al:1,hp:100,k:0,d:0,t:0,hue:hueOf(sender),init:0,clk:0,colHex,nameCss,nick:baseNick,tagEl,hpFill,visCached:false,visTimer:0};
       c.g.traverse(m=>{if(m.isMesh)m.userData.e=r});sc.add(c.g);pop(baseNick+' 입장!');
       if(isHost)broadcastRoomToHub();
     }else if(r.colHex!==colHex||r.nameCss!==nameCss){
@@ -2092,10 +2319,11 @@ function handleMsg(fromId,d){
       if(r.tagEl)r.tagEl.style.color=nameCss;
     }
     r.tx=d.x;r.ty=d.y;r.tz=d.z;r.tyaw=d.yaw;r.team=rTeam;
+    if(typeof d.hp==='number')r.hp=Math.max(0,Math.min(100,d.hp));
     if(!r.init){r.init=1;r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw}
     r.k=d.k|0;r.d=d.d|0;r.clk=d.clk?1:0;
     const was=r.al;r.al=d.al?1:0;
-    if(!was&&r.al){r.g.rotation.x=0;r.g.visible=true;r.x=r.tx;r.y=r.ty;r.z=r.tz}
+    if(!was&&r.al){r.g.rotation.x=0;r.g.visible=true;r.hp=100;r.x=r.tx;r.y=r.ty;r.z=r.tz}
     if(was&&!r.al){r.t=0;check6v6RoundEndByAlive()}
     updateMatchHud();
   }
@@ -2103,14 +2331,14 @@ function handleMsg(fromId,d){
     relayIfHost(pkt,fromId);
     const r=rp[sender];
     if(r&&r.al&&Array.isArray(d.ep)){
-      tracer(new THREE.Vector3(r.x,r.y+1.3,r.z),new THREE.Vector3(d.ep[0],d.ep[1],d.ep[2]),0x7ac8ff);
+      tracer(new THREE.Vector3(r.x,r.y+1.3,r.z),new THREE.Vector3(d.ep[0],d.ep[1],d.ep[2]),0x7ac8ff,!isFriendly(r));
       SX.shot(.65,0,{x:r.x,y:r.y+1.3,z:r.z});
     }
   }
   else if(d.t==='hit'){
     if(d.to===myId){
       const safeDmg=clampIncomingDamage(d.dmg,d.w,!!d.hd);
-      const srcObj=rp[sender];hitMe(safeDmg,sender,d.hd,srcObj?srcObj.x:undefined,srcObj?srcObj.z:undefined);
+      const srcObj=rp[sender];hitMe(safeDmg,sender,d.hd,srcObj?srcObj.x:undefined,srcObj?srcObj.z:undefined,d.wepName,d.killerNick);
     }else{
       relayIfHost(pkt,fromId);
     }
@@ -2118,7 +2346,13 @@ function handleMsg(fromId,d){
   else if(d.t==='kill'){
     relayIfHost(pkt,fromId);
     if(d.to===myId){
-      kills++;SX.kill();pop(d.hd?'헤드샷 킬!':'처치!');
+      kills++;SX.kill();
+      const nowS=performance.now()/1e3;
+      killStreakCount=(nowS-lastKillAt<=4.2)?killStreakCount+1:1;
+      lastKillAt=nowS;
+      const multiLabel=killStreakCount>=4?'멀티킬!':(killStreakCount===3?'트리플킬!':(killStreakCount===2?'더블킬!':(d.hd?'헤드샷!':'')));
+      if(multiLabel)triggerMultiKillBanner(multiLabel);
+      pop(d.hd?'헤드샷 킬!':'처치!');
       if(matchCfg.mode==='1v1'){
         updateMatchHud();
         if(kills>=5){
@@ -2169,18 +2403,24 @@ $('jnroom').onclick=()=>joinRoomByCode($('rcode').value);
 
 function sendState(force){
   if(!mm||!myId)return;const n=performance.now();if(!force&&n-lsend<80)return;lsend=n;
-  mpSend({t:'state',x:+pl.x.toFixed(2),y:+pl.y.toFixed(2),z:+pl.z.toFixed(2),yaw:+pl.yaw.toFixed(2),al:pl.dead?0:1,k:kills,d:dth,c:ch,clk:bu.cloak>0?1:0,nick:getNick(),col:getChosenHex(),team:myTeam});
+  mpSend({t:'state',x:+pl.x.toFixed(2),y:+pl.y.toFixed(2),z:+pl.z.toFixed(2),yaw:+pl.yaw.toFixed(2),hp:Math.max(0,Math.round(pl.hp)),al:pl.dead?0:1,k:kills,d:dth,c:ch,clk:bu.cloak>0?1:0,nick:getNick(),col:getChosenHex(),team:myTeam});
 }
 function mpSpawn(){
   const spot=SPAWN_SPOTS[Math.random()*SPAWN_SPOTS.length|0]||[14.8,42,0];
-  pl.x=spot[0];pl.z=spot[1];pl.y=spot[2];pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;am=WP[wi].mag;res=WP[wi].res;rl=0;sendState(true);syncShadowFrustumToPlayer();
+  pl.x=spot[0];pl.z=spot[1];pl.y=spot[2];pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;
+  activeSlot=0;rebuildLoadoutSlots(true);rl=0;sendState(true);syncShadowFrustumToPlayer();
 }
-function hitMe(n,from,hd,srcX,srcZ){
+function hitMe(n,from,hd,srcX,srcZ,wepName,killerNick){
   const t=performance.now()/1e3;if(pl.dead||t<pl.inv||matchState.phase!=='playing'||n<=0)return;
   pl.hp-=n*(bu.shield>0?.3:1);triggerDamageFeedback(srcX,srcZ);lh=t;shk=Math.max(shk,3.6);SX.hurt();
   if(pl.hp<=0){
     pl.hp=0;pl.dead=1;dth++;
     pl.dt=((matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round'))?999:3;
+    const kName=killerNick||((rp[from]&&rp[from].nick)||'상대');
+    const vName=getNick();
+    const wLbl=wepName||(WP[wi]?WP[wi].n:'무기');
+    pushKillFeed(kName,vName,wLbl,!!hd,false);
+    mpSend({t:'killfeed',killer:kName,victim:vName,wepName:wLbl,isHd:!!hd});
     mpSend({t:'kill',to:from,hd:hd?1:0},from);
     if(isHost&&matchCfg.mode==='6v6'&&matchCfg.sub==='tdm'){
       const kt=(lobbyRoster[from]&&lobbyRoster[from].team)||'red';
@@ -2261,8 +2501,23 @@ function isTargetVisibleToCamera(x,y,z){
   return nameRaycaster.intersectObject(world,true).length===0;
 }
 
+function isAimedAtObjectGroup(obj3d){
+  if(!obj3d)return false;
+  RC.setFromCamera(V.set(0,0),cam);
+  RC.far=75;
+  const hits=RC.intersectObjects([world,obj3d],true);
+  if(!hits.length)return false;
+  let cur=hits[0].object;
+  while(cur){
+    if(cur===obj3d)return true;
+    cur=cur.parent;
+  }
+  return false;
+}
+
 function mpFx(dt){
   const a=1-Math.exp(-14*dt);
+  const is6v6=(matchCfg.mode==='6v6');
   for(const id in rp){
     const r=rp[id];r.g.visible=r.al?(!r.clk):r.t<=4;
     if(r.al){const dx=r.tx-r.x,dz=r.tz-r.z;r.x+=dx*a;r.y+=(r.ty-r.y)*a;r.z+=dz*a;let dy=r.tyaw-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*a;r.g.rotation.y=r.yaw+Math.PI}
@@ -2270,18 +2525,44 @@ function mpFx(dt){
     r.g.position.set(r.x,r.y,r.z);r.fl-=dt;
     if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.65}
     else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.06}
+
     if(r.tagEl){
       if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
       else{
-        r.visTimer=(r.visTimer||0)-dt;
-        if(r.visTimer<=0){
-          r.visTimer=.1;
-          r.visCached=isTargetVisibleToCamera(r.x,r.y+1.75,r.z);
+        const friendly=isFriendly(r);
+        let shouldShow=false;
+        if(is6v6){
+          // 6대6 팀전: 아군은 항상 닉네임+체력바 표시, 적군은 에임 조준 시에만 빨간 닉네임 표시
+          if(friendly){
+            shouldShow=true;
+            r.tagEl.style.color=r.team==='blue'?'#4dabf7':'#38d9a9';
+            r.tagEl.style.borderColor=r.team==='blue'?'#4dabf7':'#38d9a9';
+            if(r.hpFill){
+              r.hpFill.parentElement.style.display='block';
+              const hRatio=Math.max(0,Math.min(100,r.hp||100));
+              r.hpFill.style.width=hRatio+'%';
+              r.hpFill.style.background=hRatio<=30?'#fa5252':(r.team==='blue'?'#4dabf7':'#38d9a9');
+            }
+          }else{
+            shouldShow=isAimedAtObjectGroup(r.g);
+            r.tagEl.style.color='#ff4d4d';
+            r.tagEl.style.borderColor='#ff4d4d';
+            if(r.hpFill)r.hpFill.parentElement.style.display='none';
+          }
+        }else{
+          r.visTimer=(r.visTimer||0)-dt;
+          if(r.visTimer<=0){
+            r.visTimer=.1;
+            r.visCached=isTargetVisibleToCamera(r.x,r.y+1.75,r.z);
+          }
+          shouldShow=r.visCached;
+          if(r.hpFill)r.hpFill.parentElement.style.display='none';
         }
+
         const p=new THREE.Vector3(r.x,r.y+2.05,r.z).project(cam);
-        if(!r.visCached||p.z>1||p.z<-1){r.tagEl.style.display='none'}
+        if(!shouldShow||p.z>1||p.z<-1){r.tagEl.style.display='none'}
         else{
-          r.tagEl.style.display='block';
+          r.tagEl.style.display='flex';
           r.tagEl.style.left=((p.x*.5+.5)*innerWidth).toFixed(1)+'px';
           r.tagEl.style.top=((-p.y*.5+.5)*innerHeight).toFixed(1)+'px';
         }
@@ -2302,7 +2583,19 @@ function mpStop(){
 
 const rdc=$('rdr'),rg=rdc.getContext('2d');rdc.width=rdc.height=120;
 function pop(t){if(!t)return;const p=$('pop');p.textContent=t;popT=1.5}
-function kill(e,hd,pt){kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));if(hd)slow=.3;drop(e)}
+function kill(e,hd,pt){
+  kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);
+  const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;
+  killStreakCount=(t-lastKillAt<=4.2)?killStreakCount+1:1;
+  lastKillAt=t;
+  const wLbl=(WP[wi]?WP[wi].n:'무기');
+  const vLbl=(e.hv?'중장갑 적':'적 병사');
+  pushKillFeed(getNick(),vLbl,wLbl,!!hd,true);
+  const multiLabel=killStreakCount>=4?'멀티킬!':(killStreakCount===3?'트리플킬!':(killStreakCount===2?'더블킬!':(hd?'헤드샷!':'')));
+  if(multiLabel)triggerMultiKillBanner(multiLabel);
+  pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));
+  if(hd)slow=.3;drop(e);
+}
 
 function drop(e){if(mm||(!e.hv&&Math.random()>.55))return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
 function pickups(dt,now){
@@ -2311,7 +2604,9 @@ function pickups(dt,now){
 }
 function fx2(dt){
  if(ext>0){ext-=dt;const q=1-Math.max(0,ext)/.4;exm.scale.setScalar(.5+q*exr);exm.material.opacity=.8*(1-q);if(ext<=0)exm.visible=false}
- const k=[.8,.95,.75][wi];gun.scale.set(k,k,[.8,.7,1.15][wi]);
+ const scMap={0:[.8,.8,.8],1:[.95,.95,.7],2:[.75,.75,1.15],3:[.78,.78,.78],4:[.88,.88,.92]};
+ const ks=scMap[wi]||[.8,.8,.8];
+ gun.scale.set(ks[0],ks[1],ks[2]);
  const isZoomed=(ads&&st==1&&!pl.dead&&WP[wi].canAds);
  cam.fov+=((isZoomed?(wi===2?24:54):(spr&&st==1?79:72))-cam.fov)*Math.min(1,dt*14);
  if(rl<=0){
@@ -2346,6 +2641,7 @@ function look(dx,dy){
 function aimAssist(dt){
   if(pl.dead||st!=1||!$('au').checked)return;
   RC.setFromCamera(V.set(0,0),cam);
+  RC.far=WP[wi].isKnife?3.0:95;
   const hits=RC.intersectObjects([world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!r.clk&&!isFriendly(r)).map(r=>r.g)],true);
   if(hits.length>0){
     const first=hits[0];
