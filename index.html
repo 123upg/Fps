@@ -367,6 +367,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id),cl=(v,a=-1,b=1)=>Math.max(a,Math.min(b,v));
 if(!window.THREE){$('msg').textContent='3D 엔진을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.';throw new Error('three.js missing')}
@@ -800,9 +801,9 @@ const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.
 hold('bf',()=>fi=1,()=>fi=0);hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
 hold('bf2',()=>fi=1,()=>fi=0);hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));['bf','bf2'].forEach(id=>{const b=$(id);let lx=0,ly=0,aimPid=null;b.addEventListener('pointerdown',e=>{lx=e.clientX;ly=e.clientY;aimPid=e.pointerId;try{b.setPointerCapture(e.pointerId)}catch(_){}});b.addEventListener('pointermove',e=>{if(!fi||st!=1||e.pointerId!==aimPid)return;const dx=e.clientX-lx,dy=e.clientY-ly;look(dx*.75,dy*.75);lx=e.clientX;ly=e.clientY});const clr=e=>{if(e.pointerId===aimPid)aimPid=null};b.addEventListener('pointerup',clr);b.addEventListener('pointercancel',clr)});
 
-// HTTPS(443) 릴레이 멀티플레이 엔진 (학교/공용 방화벽 UDP·P2P 차단 우회용)
+// PeerJS 멀티플레이 엔진 (원래 쓰던 P2P 방식 복구)
 let mm=0,rp={},dth=0,lsend=0,sbt=0,roomCode='',isHost=false,kaTimer=0;
-let myId='',inLobby=false,relayAbort=null,relayPollTimer=null,lastRelayMsgId='';
+let myId='',inLobby=false,peer=null,conns={};
 let myTeam='red';
 const matchCfg={mode:'1v1',sub:'tdm'};
 const lobbyRoster={};
@@ -818,10 +819,8 @@ const matchState={
   winnerSub:''
 };
 
-const RELAY_BASE='https://ntfy.sh';
-const topicOf=code=>'tsweep3d-school-'+code.toUpperCase();
+const peerIdOf=code=>'tsweep3d-'+code.toUpperCase();
 const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
-function genClientId(){return 'p-'+Math.random().toString(36).slice(2,8)+'-'+(Date.now()%1e5)}
 
 function isFriendly(r){
   if(!mm||!r)return false;
@@ -898,54 +897,55 @@ $('gm').onclick=()=>$('mpbox').classList.toggle('on');
 
 function makeCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.random()*c.length|0];return s}
 
-function mpSend(data){
-  if(!roomCode||!myId)return;
-  const pkt={...data,id:myId,_ts:Date.now()};
-  fetch(`${RELAY_BASE}/${topicOf(roomCode)}`,{
-    method:'POST',
-    body:JSON.stringify(pkt),
-    keepalive:true
-  }).catch(()=>{});
+function mpSend(data,targetId){
+  if(!myId)return;
+  const pkt={...data,from:myId};
+  if(targetId){
+    const c=conns[targetId];
+    if(c&&c.open)c.send(pkt);
+    return;
+  }
+  for(const id in conns){
+    const c=conns[id];
+    if(c&&c.open)c.send(pkt);
+  }
 }
 
-function startRelayLoop(code){
-  stopRelayLoop();
-  const ac=new AbortController();
-  relayAbort=ac;
-  const sinceParam=lastRelayMsgId?`?since=${encodeURIComponent(lastRelayMsgId)}`:'?since=30s';
-  const poll=()=>{
-    if(!mm||roomCode!==code||ac.signal.aborted)return;
-    fetch(`${RELAY_BASE}/${topicOf(code)}/json${sinceParam}`,{signal:ac.signal})
-      .then(r=>r.ok?r.text():'')
-      .then(txt=>{
-        if(!mm||roomCode!==code||ac.signal.aborted)return;
-        if(txt){
-          const lines=txt.trim().split('\n');
-          for(const line of lines){
-            if(!line)continue;
-            try{
-              const env=JSON.parse(line);
-              if(env && env.id)lastRelayMsgId=env.id;
-              if(env && env.event==='message' && env.message){
-                const d=JSON.parse(env.message);
-                handleMsg(d.id||'',d);
-              }
-            }catch(_){}
-          }
-        }
-        relayPollTimer=setTimeout(poll,120);
-      })
-      .catch(()=>{
-        if(!mm||roomCode!==code||ac.signal.aborted)return;
-        relayPollTimer=setTimeout(poll,700);
-      });
-  };
-  poll();
+function attachConn(c){
+  if(!c||!c.peer)return;
+  conns[c.peer]=c;
+  c.on('open',()=>{
+    conns[c.peer]=c;
+    if(!isHost && c.peer===peerIdOf(roomCode)){
+      c.send({t:'join_req',from:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode});
+    }else if(isHost){
+      broadcastLobby();
+    }
+  });
+  c.on('data',d=>handleMsg(c.peer,d));
+  c.on('close',()=>{
+    delete conns[c.peer];
+    if(rp[c.peer]){sc.remove(rp[c.peer].g);if(rp[c.peer].tagEl)rp[c.peer].tagEl.remove();delete rp[c.peer]}
+    if(lobbyRoster[c.peer]){delete lobbyRoster[c.peer];if(inLobby)syncLobbyUI()}
+  });
+  c.on('error',()=>{});
 }
 
-function stopRelayLoop(){
-  if(relayAbort){try{relayAbort.abort()}catch(_){}relayAbort=null}
-  if(relayPollTimer){clearTimeout(relayPollTimer);relayPollTimer=null}
+function initPeer(id,onOpen){
+  if(!window.Peer){$('msg').textContent='PeerJS를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';return null}
+  const p=new Peer(id,{debug:0});
+  p.on('open',pid=>{
+    myId=pid;
+    if(onOpen)onOpen(pid);
+  });
+  p.on('connection',c=>attachConn(c));
+  p.on('error',err=>{
+    const tp=err&&err.type?err.type:'';
+    if(tp==='unavailable-id')$('msg').textContent='이미 사용 중인 방 코드입니다. 다시 눌러 보세요.';
+    else if(tp==='peer-unavailable')$('msg').textContent='해당 방 코드를 찾을 수 없어요. 코드를 확인해 주세요.';
+    else $('msg').textContent='P2P 연결 오류: '+(tp||err.message||'연결 실패');
+  });
+  return p;
 }
 
 function syncLobbyUI(){
@@ -1008,7 +1008,7 @@ $('joinRedBtn').onclick=()=>{
     if(lobbyRoster[myId])lobbyRoster[myId].team='red';
     syncLobbyUI();broadcastLobby();
   }else{
-    mpSend({t:'team_req',team:'red',nick:getNick(),col:getChosenHex()});
+    mpSend({t:'team_req',team:'red',nick:getNick(),col:getChosenHex()},peerIdOf(roomCode));
   }
 };
 $('joinBlueBtn').onclick=()=>{
@@ -1021,7 +1021,7 @@ $('joinBlueBtn').onclick=()=>{
     if(lobbyRoster[myId])lobbyRoster[myId].team='blue';
     syncLobbyUI();broadcastLobby();
   }else{
-    mpSend({t:'team_req',team:'blue',nick:getNick(),col:getChosenHex()});
+    mpSend({t:'team_req',team:'blue',nick:getNick(),col:getChosenHex()},peerIdOf(roomCode));
   }
 };
 $('leaveLobbyBtn').onclick=()=>{aud();mpStop();$('msg').textContent='대기실에서 나왔습니다.'};
@@ -1135,14 +1135,14 @@ $('meExitBtn').onclick=()=>{
 
 function handleMsg(fromId,d){
   if(!d||!d.t)return;
-  const sender=d.id||fromId;
+  const sender=d.from||fromId;
   if(!sender||sender===myId)return;
 
   if(d.t==='join_req'){
     if(!isHost)return;
     const total=Object.keys(lobbyRoster).length;
     if(total>=12){
-      mpSend({t:'join_reject',target:sender,reason:'방 정원(12명)이 가득 찼습니다.'});
+      mpSend({t:'join_reject',target:sender,reason:'방 정원(12명)이 가득 찼습니다.'},sender);
       return;
     }
     const rCnt=Object.values(lobbyRoster).filter(x=>x.team==='red').length;
@@ -1158,7 +1158,7 @@ function handleMsg(fromId,d){
     syncLobbyUI();
     broadcastLobby();
     if(matchState.phase==='playing'){
-      mpSend({t:'match_start',mode:matchCfg.mode,sub:matchCfg.sub,roster:lobbyRoster});
+      mpSend({t:'match_start',mode:matchCfg.mode,sub:matchCfg.sub,roster:lobbyRoster},sender);
     }
   }
   else if(d.t==='join_reject'){
@@ -1224,7 +1224,6 @@ function handleMsg(fromId,d){
       sc.add(c.g);
       pop(baseNick+' 입장!');
     }
-    r.lastSeen=performance.now();
     r.tx=d.x;r.ty=d.y;r.tz=d.z;r.tyaw=d.yaw;r.team=rTeam;
     if(!r.init){r.init=1;r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw}
     if(typeof d.nick==='string'&&d.nick.trim()){
@@ -1336,13 +1335,12 @@ function checkMatchWinConditions(){
 $('mkroom').onclick=()=>{
   aud();
   mpStop();
-  myId=genClientId();
   const code=makeCode();
   roomCode=code;isHost=true;mm=1;
-  enterLobby(code,true);
-  startRelayLoop(code);
-  broadcastLobby();
-  $('msg').textContent='방 ['+code+'] 생성 완료! (HTTPS 릴레이 연결됨)';
+  peer=initPeer(peerIdOf(code),pid=>{
+    enterLobby(code,true);
+    $('msg').textContent='방 ['+code+'] 생성 완료! 상대가 코드를 입력하고 참가할 때까지 기다리세요.';
+  });
 };
 
 $('jnroom').onclick=()=>{
@@ -1350,25 +1348,24 @@ $('jnroom').onclick=()=>{
   const code=$('rcode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==4){$('msg').textContent='4자리 방 코드를 정확히 입력하세요.';return}
   mpStop();
-  myId=genClientId();
   roomCode=code;isHost=false;mm=1;
-  if(matchCfg.mode==='1v1'){
-    myTeam='blue';
-    startRelayLoop(code);
-    mpSend({t:'join_req',id:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode});
-    launchMultiMatch(false);
-  }else{
-    enterLobby(code,false);
-    startRelayLoop(code);
-    mpSend({t:'join_req',id:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode});
-    $('msg').textContent='방 ['+code+'] 대기실 연결 중...';
-  }
+  if(matchCfg.mode==='1v1')myTeam='blue';
+  peer=initPeer(undefined,()=>{
+    const c=peer.connect(peerIdOf(code),{reliable:true});
+    attachConn(c);
+    if(matchCfg.mode==='1v1'){
+      launchMultiMatch(false);
+    }else{
+      enterLobby(code,false);
+      $('msg').textContent='방 ['+code+'] 연결 중...';
+    }
+  });
 };
 
 function sendState(force){
-  if(!mm||!roomCode||!myId)return;
+  if(!mm||!myId)return;
   const n=performance.now();
-  if(!force&&n-lsend<120)return;
+  if(!force&&n-lsend<80)return;
   lsend=n;
   mpSend({t:'state',x:+pl.x.toFixed(2),y:+pl.y.toFixed(2),z:+pl.z.toFixed(2),yaw:+pl.yaw.toFixed(2),al:pl.dead?0:1,k:kills,d:dth,c:ch,clk:bu.cloak>0?1:0,nick:getNick(),col:getTeamHex(myTeam,getChosenHex()),team:myTeam});
 }
@@ -1397,7 +1394,7 @@ function hitMe(n,from,hd){
     const isRoundMode=(matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round');
     pl.dt=isRoundMode?999:3;
     tone(300,60,.5,.3,'sawtooth');
-    mpSend({t:'kill',to:from,hd:hd?1:0});
+    mpSend({t:'kill',to:from,hd:hd?1:0},from);
     sendState(true);
     if(isHost)checkMatchWinConditions();
   }
@@ -1458,14 +1455,8 @@ function mpFx(dt){
   const projV=new THREE.Vector3();
   const headPos=new THREE.Vector3();
   const shoulderSpan=0.56;
-  const nowMs=performance.now();
   for(const id in rp){
     const r=rp[id];
-    if(r.lastSeen && nowMs-r.lastSeen>15000){
-      sc.remove(r.g);if(r.tagEl)r.tagEl.remove();delete rp[id];
-      if(lobbyRoster[id]){delete lobbyRoster[id];if(inLobby)syncLobbyUI()}
-      continue;
-    }
     r.g.visible=r.al?(!r.clk):r.t<=4;
     if(r.al){
       const dx=r.tx-r.x,dz=r.tz-r.z;r.x+=dx*a;r.y+=(r.ty-r.y)*a;r.z+=dz*a;
@@ -1518,7 +1509,9 @@ function mpFx(dt){
 }
 
 function mpStop(){
-  stopRelayLoop();
+  for(const id in conns){try{conns[id].close()}catch(_){}}
+  conns={};
+  if(peer){try{peer.destroy()}catch(_){}peer=null}
   mm=0;isHost=false;roomCode='';inLobby=false;myId='';
   matchState.phase='idle';
   for(const k in lobbyRoster)delete lobbyRoster[k];
@@ -1691,10 +1684,10 @@ function blink(){const dx=-Math.sin(pl.yaw),dz=-Math.cos(pl.yaw);let d=0;for(let
 function boom(){RC.setFromCamera(V.set(0,0),cam);const h=RC.intersectObjects([world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)],true)[0],pt=h?h.point.clone():new THREE.Vector3(0,0,-25).applyMatrix4(cam.matrixWorld);
  burst(pt,0xff7a2a,5);nz(.6,500,.9);tone(70,25,.5,.6);shk=12;
  en.forEach(e=>{if(e.dead)return;const d=Math.hypot(e.x-pt.x,e.z-pt.z);if(d<5.5){e.hp-=120*(1-d/5.5);e.fl=.2;e.see=1;e.lt=1;hm=.3;const q=new THREE.Vector3(e.x,1.2,e.z);blood(q,RC.ray.direction,10);if(e.hp<=0){e.dead=1;e.t=0;kill(e,0,q)}}});
- Object.values(rp).forEach(r=>{const d=Math.hypot(r.x-pt.x,r.z-pt.z);if(r.al&&!isFriendly(r)&&d<5.5){r.fl=.2;hm=.3;mpSend({t:'hit',to:r.peer,dmg:Math.round(120*(1-d/5.5)),hd:0})}})}
+ Object.values(rp).forEach(r=>{const d=Math.hypot(r.x-pt.x,r.z-pt.z);if(r.al&&!isFriendly(r)&&d<5.5){r.fl=.2;hm=.3;mpSend({t:'hit',to:r.peer,dmg:Math.round(120*(1-d/5.5)),hd:0},r.peer)}})}
 function shock(){burst(new THREE.Vector3(pl.x,pl.y+1,pl.z),0x38d6ff,9);tone(200,800,.35,.35,'sine');shk=8;
  en.forEach(e=>{if(e.dead||Math.hypot(e.x-pl.x,e.z-pl.z)>9)return;e.stun=2.5;e.hp-=35;e.fl=.2;if(e.hp<=0){e.dead=1;e.t=0;kill(e,0,new THREE.Vector3(e.x,1.2,e.z))}});
- Object.values(rp).forEach(r=>{if(r.al&&!isFriendly(r)&&Math.hypot(r.x-pl.x,r.z-pl.z)<=9){r.fl=.2;hm=.3;mpSend({t:'hit',to:r.peer,dmg:35,hd:0})}})}
+ Object.values(rp).forEach(r=>{if(r.al&&!isFriendly(r)&&Math.hypot(r.x-pl.x,r.z-pl.z)<=9){r.fl=.2;hm=.3;mpSend({t:'hit',to:r.peer,dmg:35,hd:0},r.peer)}})}
 
 const LAYOUT_KEY='tsweep3d_btn_layout_v1';
 const EDITABLE_IDS=['bf','bf2','ba','bj','br','bw','s0','s1','s2'];
