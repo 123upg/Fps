@@ -321,7 +321,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
     </div>
     <div class="menu-profile-pill">
       <span id="profDot" class="prof-dot" style="background:#ff3b30"></span>
-      <span id="profPreview">플레이어</span>
+      <span id="profPreview" style="color:#ff3b30">플레이어</span>
     </div>
   </div>
 
@@ -421,8 +421,8 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 
     <div id="pane-profile" class="tab-pane">
       <div class="pane-title"><span>닉네임 & 캐릭터 색상</span></div>
-      <p class="pane-desc">멀티플레이 시 머리 위에 닉네임이 표시되고, 6대6 팀전에서는 선택한 팀(레드/블루) 색상으로 자동 구분됩니다.</p>
-      <input id="nickInp" maxlength="12" placeholder="플레이어">
+      <p class="pane-desc">선택한 색상이 닉네임과 캐릭터에 반영됩니다. 6대6 팀전에서는 팀(레드/블루) 색상으로 구분됩니다.</p>
+      <input id="nickInp" maxlength="12" placeholder="플레이어" style="color:#ff3b30">
       <div id="colGrid" style="max-width:none"></div>
     </div>
   </div>
@@ -473,11 +473,12 @@ const ARENA_W=84,ARENA_D=84,WALL_H=8.5;
 const R=28,S=ARENA_W/R;
 
 const ELEVATED_DECKS=[
-  {id:'center_bridge',xMin:24,xMax:60,zMin:38.8,zMax:45.2,h:2.6,thick:.32,railH:.8},
-  {id:'north_gallery',xMin:18,xMax:66,zMin:11.5,zMax:17.5,h:2.6,thick:.32,railH:.8},
-  {id:'south_gallery',xMin:18,xMax:66,zMin:66.5,zMax:72.5,h:2.6,thick:.32,railH:.8}
+  {id:'center_bridge',xMin:24,xMax:60,zMin:38.8,zMax:45.2,h:2.6,thick:.32},
+  {id:'north_gallery',xMin:18,xMax:66,zMin:11.5,zMax:17.5,h:2.6,thick:.32},
+  {id:'south_gallery',xMin:18,xMax:66,zMin:66.5,zMax:72.5,h:2.6,thick:.32}
 ];
 
+/* 경사로 구간 (순행/역주행 모두 안정적으로 오르내림) */
 const ELEVATED_RAMPS=[
   {x0:14.0,x1:24.0,zMin:38.8,zMax:45.2,h0:0,h1:2.6,axis:'x'},
   {x0:60.0,x1:70.0,zMin:38.8,zMax:45.2,h0:2.6,h1:0,axis:'x'},
@@ -487,13 +488,7 @@ const ELEVATED_RAMPS=[
   {x0:66.0,x1:75.0,zMin:66.5,zMax:72.5,h0:2.6,h1:0,axis:'x'}
 ];
 
-/* 현실 ISO 20ft 컨테이너 규격 (약 6.2m 길이 x 2.44m 폭 x 2.6m 높이) 3기 배치 */
-const SHIPPING_CONTAINERS=[
-  {id:'cnt_blue',xMin:22.4,xMax:28.6,zMin:47.8,zMax:50.24,h:2.6,color:0x1e4f7a,trim:0x143654,rotY:0},
-  {id:'cnt_green',xMin:50.9,xMax:57.1,zMin:20.8,zMax:23.24,h:2.6,color:0x24593b,trim:0x163b26,rotY:0},
-  {id:'cnt_rust',xMin:51.9,xMax:58.1,zMin:57.3,zMax:59.74,h:2.6,color:0x8f3822,trim:0x5e2314,rotY:0}
-];
-
+/* 외벽/기둥/상자 + 지상 엄폐용 직사각형 컨테이너 3개 */
 const SOLID_BOXES=[
   {xMin:0,xMax:84,zMin:0,zMax:2.4,h:WALL_H,kind:'wall'},
   {xMin:0,xMax:84,zMin:81.6,zMax:84,h:WALL_H,kind:'wall'},
@@ -510,7 +505,10 @@ const SOLID_BOXES=[
   {xMin:31,xMax:34.2,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
   {xMin:49.8,xMax:53,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
 
-  ...SHIPPING_CONTAINERS.map(c=>({xMin:c.xMin,xMax:c.xMax,zMin:c.zMin,zMax:c.zMax,h:c.h,kind:'container'})),
+  /* 지상 숨기/엄폐용 직사각형 컨테이너 3개 */
+  {xMin:24.5,xMax:32.5,zMin:20.5,zMax:23.3,h:2.55,kind:'container',col:0x3f593a},
+  {xMin:52.0,xMax:60.0,zMin:60.5,zMax:63.3,h:2.55,kind:'container',col:0x7d3a28},
+  {xMin:37.5,xMax:40.3,zMin:49.0,zMax:56.5,h:2.55,kind:'container',col:0x334b66},
 
   {xMin:39.5,xMax:44.5,zMin:23.5,zMax:26.2,h:1.25,kind:'crate'},
   {xMin:39.5,xMax:44.5,zMin:57.8,zMax:60.5,h:1.25,kind:'crate'},
@@ -524,30 +522,32 @@ const CM=Array.from({length:R},(_,j)=>Array.from({length:R},(_,i)=>{
   const cx=(i+.5)*S,cz=(j+.5)*S;
   for(const b of SOLID_BOXES){
     if(cx>=b.xMin&&cx<=b.xMax&&cz>=b.zMin&&cz<=b.zMax){
-      return b.kind==='crate'?'c':'#';
+      return (b.kind==='crate'||b.kind==='container')?'c':'#';
     }
   }
   return '.';
 }));
 
-function rampHeightAt(r,x){
-  if(x<r.x0-0.15||x>r.x1+0.15)return null;
-  const t=Math.max(0,Math.min(1,(x-r.x0)/(r.x1-r.x0)));
-  return r.h0+(r.h1-r.h0)*t;
+function rampHeightAt(x,z){
+  for(const r of ELEVATED_RAMPS){
+    if(z>=r.zMin&&z<=r.zMax&&x>=r.x0&&x<=r.x1){
+      const t=Math.max(0,Math.min(1,(x-r.x0)/(r.x1-r.x0)));
+      return r.h0+(r.h1-r.h0)*t;
+    }
+  }
+  return null;
 }
 
 function elevatedFloorAt(x,z,curY=0){
   let best=null;
   for(const d of ELEVATED_DECKS){
     if(x>=d.xMin&&x<=d.xMax&&z>=d.zMin&&z<=d.zMax){
-      if(curY>=d.h-1.15)best=best===null?d.h:Math.max(best,d.h);
+      if(curY>=d.h-.95)best=best===null?d.h:Math.max(best,d.h);
     }
   }
-  for(const r of ELEVATED_RAMPS){
-    if(z>=r.zMin-0.15&&z<=r.zMax+0.15&&x>=r.x0-0.15&&x<=r.x1+0.15){
-      const rh=rampHeightAt(r,x);
-      if(rh!==null&&curY>=rh-1.15)best=best===null?rh:Math.max(best,rh);
-    }
+  const rh=rampHeightAt(x,z);
+  if(rh!==null){
+    if(curY>=rh-.95||curY<=rh+.35)best=best===null?rh:Math.max(best,rh);
   }
   return best;
 }
@@ -562,7 +562,23 @@ function hh(x,z){
   return h;
 }
 
-/* 육교 난간 점프 허용 + 경사로 후진/접근 관통 버그 보완 */
+/* 육교 난간(높이 0.8m)은 점프해서 뛰어넘을 수 있도록 처리 */
+function isRailJumpBlocked(x,z,y){
+  for(const d of ELEVATED_DECKS){
+    if(x>=d.xMin&&x<=d.xMax&&z>=d.zMin&&z<=d.zMax){
+      const nearSide=Math.abs(z-d.zMin)<.24||Math.abs(z-d.zMax)<.24;
+      if(nearSide&&y>=d.h-.35){
+        const nearRamp=ELEVATED_RAMPS.some(rm=>x>=rm.x0-1.2&&x<=rm.x1+1.2&&z>=rm.zMin&&z<=rm.zMax);
+        if(!nearRamp){
+          const railTop=d.h+.8;
+          if(y<railTop-.12)return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 const isPassable=(x,z,y,r=.38)=>{
   if(x<2.8||x>ARENA_W-2.8||z<2.8||z>ARENA_D-2.8)return false;
   const pts=[[-r,-r],[r,-r],[-r,r],[r,r],[0,0]];
@@ -574,26 +590,11 @@ const isPassable=(x,z,y,r=.38)=>{
         return false;
       }
     }
+    if(isRailJumpBlocked(px,pz,y))return false;
     for(const d of ELEVATED_DECKS){
       if(px>=d.xMin&&px<=d.xMax&&pz>=d.zMin&&pz<=d.zMax){
         const deckBottom=d.h-d.thick;
-        // 데크 위 난간 구간: 발 높이가 난간 상단(d.h + railH - 0.25)보다 높으면 뛰어넘을 수 있음
-        const railTop=d.h+(d.railH||.8);
-        if(y>=d.h-.35&&(Math.abs(pz-d.zMin)<.24||Math.abs(pz-d.zMax)<.24)){
-          const nearRamp=ELEVATED_RAMPS.some(rm=>px>=rm.x0-1.1&&px<=rm.x1+1.1&&pz>=rm.zMin-.2&&pz<=rm.zMax+.2);
-          if(!nearRamp&&y+0.32<railTop)return false;
-        }
-        // 아래층/계단에서 데크 하부 판자 관통 방지
-        if(y<deckBottom-.15&&y+1.65>deckBottom)return false;
-      }
-    }
-    for(const rm of ELEVATED_RAMPS){
-      if(px>=rm.x0-.25&&px<=rm.x1+.25&&pz>=rm.zMin-.25&&pz<=rm.zMax+.25){
-        const rh=rampHeightAt(rm,px);
-        if(rh!==null){
-          // 경사로 바닥면 아래에서 위로 뚫고 올라오거나 경사로 몸통에 끼는 현상 방지
-          if(y<rh-.55&&y+1.55>rh-.15)return false;
-        }
+        if(y<deckBottom-.2&&y+1.65>deckBottom)return false;
       }
     }
   }
@@ -687,6 +688,16 @@ const crT=TX(256,(x,w)=>{
   x.strokeStyle='#3c424d';x.lineWidth=5;x.strokeRect(14,14,w-28,w-28);
 });
 
+const containerRibT=TX(256,(x,w)=>{
+  x.fillStyle='#b8c0cc';x.fillRect(0,0,w,w);
+  nzp(x,w,3500,35,140);
+  for(let gx=0;gx<w;gx+=16){
+    x.fillStyle='rgba(255,255,255,.22)';x.fillRect(gx,0,6,w);
+    x.fillStyle='rgba(0,0,0,.28)';x.fillRect(gx+6,0,6,w);
+  }
+  x.strokeStyle='rgba(20,24,30,.55)';x.lineWidth=4;x.strokeRect(2,2,w-4,w-4);
+},3,1);
+
 const woodGrainT=TX(256,(x,w)=>{
   x.fillStyle='#572b12';x.fillRect(0,0,w,w);
   for(let i=0;i<110;i++){
@@ -708,23 +719,6 @@ const brushedMetalT=TX(256,(x,w)=>{
     x.fillRect(0,y,w,1.5);
   }
 },1,1);
-
-const corrugT=TX(256,(x,w)=>{
-  x.fillStyle='#d8dde6';x.fillRect(0,0,w,w);
-  const ribs=16,step=w/ribs;
-  for(let i=0;i<ribs;i++){
-    const x0=i*step;
-    const grad=x.createLinearGradient(x0,0,x0+step,0);
-    grad.addColorStop(0,'rgba(0,0,0,.22)');
-    grad.addColorStop(.5,'rgba(255,255,255,.22)');
-    grad.addColorStop(1,'rgba(0,0,0,.25)');
-    x.fillStyle=grad;
-    x.fillRect(x0,0,step,w);
-  }
-  nzp(x,w,2500,30,180);
-  x.strokeStyle='rgba(20,24,30,.22)';x.lineWidth=2;
-  x.strokeRect(1,1,w-2,w-2);
-},2,1);
 
 sc.background=new THREE.Color(0x10141c);
 sc.fog=new THREE.FogExp2(0x131822,.012);
@@ -790,9 +784,31 @@ const railMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x8e99a8,r
 const steelTrimMat=new THREE.MeshStandardMaterial({map:brushedMetalT,color:0x232830,roughness:.72,metalness:.28,envMapIntensity:.42});
 
 SOLID_BOXES.forEach(b=>{
-  if(b.kind==='container')return; // 현실형 3D 컨테이너 메시로 별도 렌더링
   const w=b.xMax-b.xMin,d=b.zMax-b.zMin;
   const cx=(b.xMin+b.xMax)/2,cz=(b.zMin+b.zMax)/2;
+  if(b.kind==='container'){
+    const cMat=new THREE.MeshStandardMaterial({
+      map:containerRibT,bumpMap:containerRibT,bumpScale:.25,
+      color:b.col||0x3f593a,roughness:.72,metalness:.22,envMapIntensity:.4
+    });
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,b.h,d),cMat);
+    m.position.set(cx,b.h/2,cz);
+    m.castShadow=m.receiveShadow=true;
+    world.add(m);
+    const baseRim=new THREE.Mesh(new THREE.BoxGeometry(w+.12,.14,d+.12),steelTrimMat);
+    baseRim.position.set(cx,.07,cz);
+    world.add(baseRim);
+    const topRim=new THREE.Mesh(new THREE.BoxGeometry(w+.14,.16,d+.14),steelTrimMat);
+    topRim.position.set(cx,b.h-.04,cz);
+    world.add(topRim);
+    const endCapA=new THREE.Mesh(new THREE.BoxGeometry(w>=d?.14:w+.08,b.h-.1,w>=d?d+.08:.14),steelTrimMat);
+    endCapA.position.set(w>=d?b.xMin+.06:cx,b.h/2,w>=d?cz:b.zMin+.06);
+    world.add(endCapA);
+    const endCapB=new THREE.Mesh(new THREE.BoxGeometry(w>=d?.14:w+.08,b.h-.1,w>=d?d+.08:.14),steelTrimMat);
+    endCapB.position.set(w>=d?b.xMax-.06:cx,b.h/2,w>=d?cz:b.zMax-.06);
+    world.add(endCapB);
+    return;
+  }
   const mat=b.kind==='crate'?crateMat:(b.kind==='pillar'?pillarMat:wallMat);
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,b.h,d),mat);
   m.position.set(cx,b.h/2,cz);
@@ -831,79 +847,6 @@ SOLID_BOXES.forEach(b=>{
   }
 });
 
-/* 현실 20ft ISO 컨테이너 3D 메시 생성 (골판지 벽면, 코너 캐스팅, 상·하부 레일, 도어 잠금바) */
-SHIPPING_CONTAINERS.forEach(c=>{
-  const len=c.xMax-c.xMin,wid=c.zMax-c.zMin,h=c.h;
-  const cx=(c.xMin+c.xMax)/2,cz=(c.zMin+c.zMax)/2;
-  const grp=new THREE.Group();
-  grp.position.set(cx,0,cz);
-
-  const bodyMat=new THREE.MeshStandardMaterial({
-    map:corrugT,bumpMap:corrugT,bumpScale:.06,
-    color:c.color,roughness:.68,metalness:.35,envMapIntensity:.45
-  });
-  const trimMat=new THREE.MeshStandardMaterial({
-    map:brushedMetalT,color:c.trim,roughness:.62,metalness:.45,envMapIntensity:.45
-  });
-  const cornerMat=new THREE.MeshStandardMaterial({
-    map:brushedMetalT,color:0x1b2028,roughness:.58,metalness:.55,envMapIntensity:.48
-  });
-  const lockBarMat=new THREE.MeshStandardMaterial({
-    color:0x8c96a6,roughness:.45,metalness:.7,envMapIntensity:.5
-  });
-
-  // 메인 컨테이너 본체
-  const shell=new THREE.Mesh(new THREE.BoxGeometry(len-.08,h-.16,wid-.08),bodyMat);
-  shell.position.set(0,h/2,0);
-  shell.castShadow=shell.receiveShadow=true;
-  grp.add(shell);
-
-  // 골판지 세로 리브 디테일 (장변 측)
-  const ribCount=Math.floor(len/.26);
-  for(let i=1;i<ribCount;i++){
-    const rx=-len/2+(len*i)/ribCount;
-    [-1,1].forEach(side=>{
-      const rib=new THREE.Mesh(new THREE.BoxGeometry(.055,h-.26,.045),bodyMat);
-      rib.position.set(rx,h/2,side*(wid/2-.02));
-      rib.castShadow=true;
-      grp.add(rib);
-    });
-  }
-
-  // 하부 & 상부 엣지 레일 프레임
-  const botFrame=new THREE.Mesh(new THREE.BoxGeometry(len+.02,.12,wid+.02),trimMat);
-  botFrame.position.set(0,.06,0);botFrame.castShadow=botFrame.receiveShadow=true;grp.add(botFrame);
-
-  const topFrame=new THREE.Mesh(new THREE.BoxGeometry(len+.04,.14,wid+.04),trimMat);
-  topFrame.position.set(0,h-.07,0);topFrame.castShadow=topFrame.receiveShadow=true;grp.add(topFrame);
-
-  // 8개 모서리 코너 캐스팅(ISO Corner Fitting)
-  [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([sx,sz])=>{
-    [0.11,h-0.11].forEach(cy=>{
-      const corner=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,.22),cornerMat);
-      corner.position.set(sx*(len/2-.07),cy,sz*(wid/2-.07));
-      corner.castShadow=true;
-      grp.add(corner);
-    });
-    const post=new THREE.Mesh(new THREE.BoxGeometry(.11,h-.2,.11),trimMat);
-    post.position.set(sx*(len/2-.06),h/2,sz*(wid/2-.06));
-    grp.add(post);
-  });
-
-  // 양쪽 단변(문짝 측) 수직 도어 림 & 잠금바(Locking Rod)
-  [-1,1].forEach(endSide=>{
-    const ex=endSide*(len/2-.02);
-    const doorSep=new THREE.Mesh(new THREE.BoxGeometry(.05,h-.24,.04),cornerMat);
-    doorSep.position.set(ex,h/2,0);grp.add(doorSep);
-    [-.58,-.18,.18,.58].forEach(lz=>{
-      const rod=new THREE.Mesh(new THREE.BoxGeometry(.045,h-.32,.032),lockBarMat);
-      rod.position.set(ex,h/2,lz);grp.add(rod);
-    });
-  });
-
-  world.add(grp);
-});
-
 ELEVATED_DECKS.forEach(deck=>{
   const w=deck.xMax-deck.xMin,d=deck.zMax-deck.zMin;
   const cx=(deck.xMin+deck.xMax)/2,cz=(deck.zMin+deck.zMax)/2;
@@ -917,7 +860,7 @@ ELEVATED_DECKS.forEach(deck=>{
   edgeBeam.position.set(cx,deck.h-deck.thick-.11,cz);
   world.add(edgeBeam);
 
-  const railH=deck.railH||.8;
+  const railH=.8;
   [-1,1].forEach(side=>{
     const rz=cz+side*(d/2-.08);
     const bar=new THREE.Mesh(new THREE.BoxGeometry(w,.095,.12),railMat);
@@ -998,7 +941,6 @@ const GC={};
 const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=20)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=20)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
-/* 캐릭터 단색 생성 + 골반 크기 축소 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
@@ -1109,6 +1051,7 @@ const WP=[
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
+/* 거리별 데미지 감소 계수 (저격총 wi===2 제외, 완만한 감쇠) */
 function getDistanceFalloff(wIdx,dist){
   if(wIdx===2)return 1;
   if(wIdx===0){
@@ -1203,7 +1146,7 @@ wModels.forEach(g=>gun.add(g));
  addTo(g,new THREE.BoxGeometry(.082,.09,.105),glv,0,-.122,.1);
 }
 
-/* 2. 샷건(Shotgun - 14dmg/pellet) */
+/* 2. 샷건(Shotgun) */
 {const g=wModels[1];
  const sgRec=makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.058],[-.15,.062],[-.23,.02]],.072,.008);
  addTo(g,sgRec,gm3,0,.002,0,0,-Math.PI/2,0);
@@ -1389,7 +1332,7 @@ function upd(dt){
  if(!blk(pl.x+vx,pl.z,pl.y))pl.x+=vx;if(!blk(pl.x,pl.z+vz,pl.y))pl.z+=vz;
 
  const targetFloor=gnd(pl.x,pl.z,pl.y+.45);
- if((J||K[' '])&&pl.og&&!pl.dead){pl.vy=8.8;pl.og=0;SX.jump()}
+ if((J||K[' '])&&pl.og&&!pl.dead){pl.vy=9.3;pl.og=0;SX.jump()}
  pl.vy-=24*dt;pl.y+=pl.vy*dt;
  if(pl.y<=targetFloor){
    if(!pl.og&&pl.vy<-5)SX.land();
@@ -1514,7 +1457,10 @@ let hubPeer=null;
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function getNick(){return (($('nickInp')?$('nickInp').value:'').trim().slice(0,12))||'플레이어'}
 function getChosenHex(){return (PALETTE[pColIdx]&&PALETTE[pColIdx].hex)||0xff3b30}
+function getChosenCss(){return (PALETTE[pColIdx]&&PALETTE[pColIdx].css)||'#ff3b30'}
+function hexToCss(hex){return '#'+(Number(hex||0xff3b30)>>>0).toString(16).padStart(6,'0')}
 function getTeamHex(team,fb){return matchCfg.mode==='6v6'?(team==='blue'?0x339af0:0xff3b30):(fb||getChosenHex())}
+function getTeamCss(team,fbHex){return hexToCss(getTeamHex(team,fbHex))}
 function isFriendly(r){return !!(mm&&r&&matchCfg.mode==='6v6'&&(r.team||'red')===myTeam)}
 function applyCharColor(charObj,hex){
   const col=new THREE.Color(hex);
@@ -1667,7 +1613,7 @@ function syncLobbyUI(){
   $('lbSubSwitch').style.display=isHost?'flex':'none';$('startMatchBtn').style.display=isHost?'inline-block':'none';
   const reds=[],blues=[];Object.values(lobbyRoster).forEach(p=>{if(p.team==='blue')blues.push(p);else reds.push(p)});
   $('redCnt').textContent=reds.length;$('blueCnt').textContent=blues.length;
-  const renderItem=p=>`<div class="lb-item"><span>${escapeHtml(p.nick)}${p.id===myId?' (나)':''}${p.isHost?' ★':''}</span></div>`;
+  const renderItem=p=>`<div class="lb-item"><span style="color:${getTeamCss(p.team,p.col)}">${escapeHtml(p.nick)}${p.id===myId?' (나)':''}${p.isHost?' ★':''}</span></div>`;
   $('redList').innerHTML=reds.map(renderItem).join('');$('blueList').innerHTML=blues.map(renderItem).join('');
 }
 function broadcastLobby(){if(isHost&&matchCfg.mode==='6v6')mpSend({t:'lobby_sync',mode:'6v6',sub:matchCfg.sub,roster:lobbyRoster})}
@@ -1745,17 +1691,23 @@ function handleMsg(fromId,d){
   else if(d.t==='state'){
     let r=rp[sender];
     const rTeam=matchCfg.mode==='1v1'?(myTeam==='red'?'blue':'red'):((lobbyRoster[sender]&&lobbyRoster[sender].team)||d.team||'blue');
-    const colHex=getTeamHex(rTeam,(+d.col)>0?(+d.col):0x339af0);
+    const rawCol=(+d.col)>0?(+d.col):0x339af0;
+    const colHex=getTeamHex(rTeam,rawCol);
+    const nameCss=hexToCss(rawCol);
     if(!r){
       const c=mkChar([colHex]);applyCharColor(c,colHex);
       const tagEl=document.createElement('div');tagEl.className='name-tag';
       const baseNick=(typeof d.nick==='string'&&d.nick.trim())?d.nick.trim().slice(0,12):'플레이어';
       tagEl.textContent=matchCfg.mode==='6v6'?`[${rTeam==='red'?'RED':'BLUE'}] ${baseNick}`:baseNick;
+      tagEl.style.color=nameCss;
       tagEl.style.borderColor=rTeam==='red'?'#ff6b6b':'#4dabf7';
       $('nameTags').appendChild(tagEl);
-      r=rp[sender]={...c,peer:sender,rem:1,team:rTeam,x:0,y:0,z:0,yaw:0,tx:0,ty:0,tz:0,tyaw:0,ph:0,fl:0,al:1,k:0,d:0,t:0,hue:hueOf(sender),init:0,clk:0,colHex,nick:baseNick,tagEl};
+      r=rp[sender]={...c,peer:sender,rem:1,team:rTeam,x:0,y:0,z:0,yaw:0,tx:0,ty:0,tz:0,tyaw:0,ph:0,fl:0,al:1,k:0,d:0,t:0,hue:hueOf(sender),init:0,clk:0,colHex,nameCss,nick:baseNick,tagEl};
       c.g.traverse(m=>{if(m.isMesh)m.userData.e=r});sc.add(c.g);pop(baseNick+' 입장!');
       if(isHost)broadcastRoomToHub();
+    }else if(r.colHex!==colHex||r.nameCss!==nameCss){
+      r.colHex=colHex;r.nameCss=nameCss;applyCharColor(r,colHex);
+      if(r.tagEl)r.tagEl.style.color=nameCss;
     }
     r.tx=d.x;r.ty=d.y;r.tz=d.z;r.tyaw=d.yaw;r.team=rTeam;
     if(!r.init){r.init=1;r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw}
@@ -1802,7 +1754,7 @@ $('jnroom').onclick=()=>window.joinRoomByCode($('rcode').value);
 
 function sendState(force){
   if(!mm||!myId)return;const n=performance.now();if(!force&&n-lsend<80)return;lsend=n;
-  mpSend({t:'state',x:+pl.x.toFixed(2),y:+pl.y.toFixed(2),z:+pl.z.toFixed(2),yaw:+pl.yaw.toFixed(2),al:pl.dead?0:1,k:kills,d:dth,c:ch,clk:bu.cloak>0?1:0,nick:getNick(),col:getTeamHex(myTeam,getChosenHex()),team:myTeam});
+  mpSend({t:'state',x:+pl.x.toFixed(2),y:+pl.y.toFixed(2),z:+pl.z.toFixed(2),yaw:+pl.yaw.toFixed(2),al:pl.dead?0:1,k:kills,d:dth,c:ch,clk:bu.cloak>0?1:0,nick:getNick(),col:getChosenHex(),team:myTeam});
 }
 function mpSpawn(){
   const spot=SPAWN_SPOTS[Math.random()*SPAWN_SPOTS.length|0]||[14.8,42,0];
@@ -1829,8 +1781,20 @@ function mpFx(dt){
     r.g.position.set(r.x,r.y,r.z);r.fl-=dt;
     if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.45}
     else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.05}
+    if(r.tagEl){
+      if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
+      else{
+        const p=new THREE.Vector3(r.x,r.y+2.05,r.z).project(cam);
+        if(p.z>1||p.z<-1){r.tagEl.style.display='none'}
+        else{
+          r.tagEl.style.display='block';
+          r.tagEl.style.left=((p.x*.5+.5)*innerWidth).toFixed(1)+'px';
+          r.tagEl.style.top=((-p.y*.5+.5)*innerHeight).toFixed(1)+'px';
+        }
+      }
+    }
   }
-  sbt-=dt;if(sbt<=0){sbt=.4;const L=[[-1,'나',kills,dth,myTeam]];Object.keys(rp).sort().forEach(id=>L.push([rp[id].hue,rp[id].nick||'플레이어',rp[id].k,rp[id].d,rp[id].team||'blue']));$('sb').innerHTML=L.map(([h,n,k,d])=>'<div>'+escapeHtml(n)+' '+k+'/'+d+'</div>').join('')}
+  sbt-=dt;if(sbt<=0){sbt=.4;const L=[[-1,getNick(),kills,dth,myTeam,getChosenCss()]];Object.keys(rp).sort().forEach(id=>L.push([rp[id].hue,rp[id].nick||'플레이어',rp[id].k,rp[id].d,rp[id].team||'blue',rp[id].nameCss||'#339af0']));$('sb').innerHTML=L.map(([h,n,k,d,,nc])=>'<div><span style="color:'+nc+'">'+escapeHtml(n)+'</span> '+k+'/'+d+'</div>').join('')}
 }
 function mpStop(){
   if(isHost&&roomCode)removeRoomFromHub(roomCode);
@@ -1845,7 +1809,40 @@ function mpStop(){
 const rdc=$('rdr'),rg=rdc.getContext('2d');rdc.width=rdc.height=120;
 function pop(t){if(!t)return;const p=$('pop');p.textContent=t;popT=1.5}
 function kill(e,hd,pt){kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));if(hd)slow=.3;drop(e)}
-function mkMedMesh(x,z,y=.45){const g=new THREE.Group();const box=new THREE.Mesh(new THREE.BoxGeometry(.44,.32,.44),new THREE.MeshStandardMaterial({color:0xd8dde4,roughness:.75,metalness:.08,envMapIntensity:.35}));const c1=new THREE.Mesh(new THREE.BoxGeometry(.26,.34,.09),new THREE.MeshBasicMaterial({color:0x2ecc71}));const c2=new THREE.Mesh(new THREE.BoxGeometry(.09,.34,.26),new THREE.MeshBasicMaterial({color:0x2ecc71}));g.add(box,c1,c2);g.position.set(x,y+.45,z);sc.add(g);return g}
+
+/* 직관적이고 눈에 띄는 체력 회복 키트(초록 십자가 + 바닥 링 + 위쪽 초록빛 기둥) */
+function mkMedMesh(x,z,y=.45){
+  const g=new THREE.Group();
+  const baseRing=new THREE.Mesh(
+    new THREE.RingGeometry(.55,.82,28),
+    new THREE.MeshBasicMaterial({color:0x2ecc71,transparent:true,opacity:.65,side:2})
+  );
+  baseRing.rotation.x=-Math.PI/2;
+  baseRing.position.y=-.32;
+  g.add(baseRing);
+
+  const box=new THREE.Mesh(
+    new THREE.BoxGeometry(.64,.46,.64),
+    new THREE.MeshStandardMaterial({color:0xf1f5f9,emissive:0x10b981,emissiveIntensity:.22,roughness:.45,metalness:.1})
+  );
+  const c1=new THREE.Mesh(new THREE.BoxGeometry(.38,.5,.13),new THREE.MeshBasicMaterial({color:0x22c55e}));
+  const c2=new THREE.Mesh(new THREE.BoxGeometry(.13,.5,.38),new THREE.MeshBasicMaterial({color:0x22c55e}));
+  const topCross=new THREE.Mesh(new THREE.BoxGeometry(.34,.08,.12),new THREE.MeshBasicMaterial({color:0x4ade80}));
+  topCross.position.y=.26;
+  const topCross2=new THREE.Mesh(new THREE.BoxGeometry(.12,.08,.34),new THREE.MeshBasicMaterial({color:0x4ade80}));
+  topCross2.position.y=.26;
+
+  const beam=new THREE.Mesh(
+    new THREE.CylinderGeometry(.14,.32,2.4,16,1,true),
+    new THREE.MeshBasicMaterial({color:0x22c55e,transparent:true,opacity:.24,side:2,depthWrite:false})
+  );
+  beam.position.y=1.15;
+
+  g.add(box,c1,c2,topCross,topCross2,beam);
+  g.position.set(x,y+.45,z);
+  sc.add(g);
+  return g;
+}
 function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
 function drop(e){if(mm||(!e.hv&&Math.random()>.55))return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
 function pickups(dt,now){
@@ -1892,8 +1889,13 @@ const bo=$('bo'),bop=()=>{$('bt').style.opacity=$('sk').style.opacity=bo.value};
 
 const exm=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.8}));exm.visible=false;sc.add(exm);
 function burst(p,c,r){exm.position.copy(p);exm.material.color.setHex(c);exr=r;ext=.4;exm.visible=true}
-function syncProfilePreview(){if($('profPreview'))$('profPreview').textContent=getNick();if($('profDot')&&PALETTE[pColIdx])$('profDot').style.background=PALETTE[pColIdx].css}
-if($('nickInp'))$('nickInp').addEventListener('input',syncProfilePreview);
+function syncProfilePreview(){
+  const css=getChosenCss();
+  if($('profPreview')){$('profPreview').textContent=getNick();$('profPreview').style.color=css}
+  if($('profDot'))$('profDot').style.background=css;
+  if($('nickInp'))$('nickInp').style.color=css;
+}
+if($('nickInp'))$('nickInp').addEventListener('input',()=>{syncProfilePreview();if(mm)sendState(true)});
 
 document.querySelectorAll('.nav-item[data-tab]').forEach(btn=>{
   btn.onclick=()=>{
@@ -1942,6 +1944,7 @@ applySavedLayout();
 $('rotBtn').onclick=async()=>{aud();await enterLandscapeMode()};
 addEventListener('beforeunload',()=>{if(isHost&&roomCode)removeRoomFromHub(roomCode)});
 
+syncProfilePreview();
 reset();renderRoomList();syncBackBtn();
 let lt=performance.now();
 (function loop(t){
