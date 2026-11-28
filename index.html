@@ -427,7 +427,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 
     <div id="pane-profile" class="tab-pane">
       <div class="pane-title"><span>닉네임 & 캐릭터 색상</span></div>
-      <p class="pane-desc">선택한 색상이 닉네임과 캐릭터에 반영됩니다. 6대6 팀전에서는 팀(레드/블루) 색상으로 구분됩니다.</p>
+      <p class="pane-desc">선택한 색상이 닉네임, 1인칭 손, 캐릭터에 반영됩니다. 6대6 팀전에서는 팀(레드/블루) 색상으로 구분됩니다.</p>
       <input id="nickInp" maxlength="12" placeholder="플레이어" style="color:#ff3b30">
       <div id="colGrid" style="max-width:none"></div>
     </div>
@@ -730,7 +730,6 @@ ren.shadowMap.type=THREE.PCFSoftShadowMap;
 ren.physicallyCorrectLights=true;
 $('app').insertBefore(cv,$('app').firstChild);
 
-/* 카스·스솔 무드: 차분한 다크 스틸 환경 반사맵 */
 function buildStudioEnvMap(renderer){
   if(!renderer||!THREE.PMREMGenerator)return null;
   const pmrem=new THREE.PMREMGenerator(renderer);
@@ -776,7 +775,6 @@ const rz=()=>{
 };
 addEventListener('resize',rz);rz();
 
-/* 묵직한 명암 대비 조명 (화이트 뜸 방지) */
 const hemiLight=new THREE.HemisphereLight(0x4a586e,0x0c0f14,.42);
 sc.add(hemiLight);
 
@@ -1078,6 +1076,29 @@ const accRed=MT(0xd92b2b,.38,.35,0xd92b2b,.55);
 const brassM=MT(0xc48e29,.26,.88);
 const lensM=MT(0x38bdf8,.12,.3,0x0ea5e9,.85);
 
+/* 1인칭 손 머티리얼: 본인 설정 색상 반영 */
+const handColorMat=new THREE.MeshStandardMaterial({
+  color:0xff3b30,
+  roughness:.58,
+  metalness:.18,
+  flatShading:true,
+  emissive:new THREE.Color(0xff3b30),
+  emissiveIntensity:.08
+});
+const handTrimMat=new THREE.MeshStandardMaterial({
+  color:0x171b24,
+  roughness:.68,
+  metalness:.35,
+  flatShading:true
+});
+
+function syncFirstPersonHandColor(){
+  const hex=getChosenHex();
+  handColorMat.color.setHex(hex);
+  handColorMat.emissive.setHex(hex);
+  handColorMat.emissiveIntensity=.08;
+}
+
 const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
   const o=new THREE.Mesh(geo,m);
   o.position.set(x,y,z);
@@ -1086,6 +1107,30 @@ const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
   p.add(o);
   return o;
 };
+
+/* 시야를 가리지 않는 컴팩트한 손 조립 헬퍼 */
+function buildCompactHand(parent,x,y,z,rx,ry,rz,scale=1){
+  const hg=new THREE.Group();
+  hg.position.set(x,y,z);
+  hg.rotation.order='YXZ';
+  hg.rotation.set(rx||0,ry||0,rz||0);
+  hg.scale.setScalar(scale);
+
+  // 손바닥 / 손등 (설정 컬러)
+  addTo(hg,new THREE.BoxGeometry(.056,.038,.066),handColorMat,0,0,0);
+  // 너클 스트립
+  addTo(hg,new THREE.BoxGeometry(.058,.014,.022),handTrimMat,0,.015,-.022);
+  // 손가락 (3개 블록으로 자연스러운 그립 실루엣)
+  addTo(hg,new THREE.BoxGeometry(.052,.024,.028),handColorMat,0,-.006,-.042,.22);
+  // 엄지손가락
+  addTo(hg,new THREE.BoxGeometry(.022,.022,.042),handColorMat,.034,-.002,-.014,0,0,-.35);
+  // 손목 커프스 & 팔목 연장 (화면 하단 방향으로 뻗음)
+  addTo(hg,new THREE.BoxGeometry(.054,.034,.042),handTrimMat,0,-.003,.046);
+  addTo(hg,new THREE.CylinderGeometry(.024,.028,.16,12),handColorMat,0,-.016,.135,Math.PI/2.15);
+
+  parent.add(hg);
+  return hg;
+}
 
 function makeExtrudeShape(pts,depth,bevel=.008){
   const sh=new THREE.Shape();
@@ -1160,8 +1205,9 @@ wModels.forEach(g=>gun.add(g));
   addTo(holo,new THREE.PlaneGeometry(.044,.034),lensM,0,.008,-.036,0,Math.PI,0);
   addTo(holo,new THREE.BoxGeometry(.007,.007,.005),accRed,0,.008,-.032);
 
-  addTo(g,new THREE.BoxGeometry(.084,.082,.13),glv,0,-.076,-.26);
-  addTo(g,new THREE.BoxGeometry(.084,.092,.11),glv,0,-.122,.1);
+  // 오른손(그립) & 왼손(핸드가드 하부 받침) - 시야 간섭 최소화
+  buildCompactHand(g,.015,-.115,-.11,-.38,-.25,.12,.82);
+  buildCompactHand(g,-.015,-.052,-.33,.28,.35,-.28,.82);
 }
 
 {
@@ -1188,8 +1234,9 @@ wModels.forEach(g=>gun.add(g));
     addTo(g,new THREE.CylinderGeometry(.013,.013,.022,12),brassM,-.045,.006,zOff+.045,Math.PI/2);
   });
 
-  addTo(g,new THREE.BoxGeometry(.092,.088,.13),glv,0,-.076,-.37);
-  addTo(g,new THREE.BoxGeometry(.092,.096,.112),glv,0,-.12,.12);
+  // 샷건 오른손(그립) & 왼손(펌프 핸드가드)
+  buildCompactHand(g,.016,-.115,-.13,-.38,-.25,.12,.82);
+  buildCompactHand(g,-.016,-.065,-.39,.25,.32,-.26,.82);
 }
 
 {
@@ -1230,12 +1277,14 @@ wModels.forEach(g=>gun.add(g));
     addTo(g,new THREE.BoxGeometry(.014,.01,.028),gm2,bx,-.154,-.85);
   });
 
-  addTo(g,new THREE.BoxGeometry(.08,.082,.11),glv,0,-.072,-.25);
-  addTo(g,new THREE.BoxGeometry(.08,.092,.11),glv,0,-.11,.08);
+  // 저격총 오른손(그립) & 왼손(포어엔드 지지)
+  buildCompactHand(g,.015,-.108,-.12,-.36,-.25,.12,.82);
+  buildCompactHand(g,-.015,-.048,-.36,.26,.34,-.26,.82);
 }
 
 function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
 syncWeaponModel();
+syncFirstPersonHandColor();
 const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.016,-.96);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
 const trc=[];for(let i=0;i<14;i++){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xffffff}));l.visible=false;l.frustumCulled=false;sc.add(l);trc.push({l,t:0})}
 let ti=0;function tracer(a,b,col){const o=trc[ti++%14],p=o.l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;o.l.material.color.setHex(col);o.l.visible=true;o.t=.075}
@@ -1311,7 +1360,7 @@ function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,
 
 function reset(skipSpawn){
   pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;burstFxT=0;pl.hp=100;
-  wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
+  wi=0;syncWeaponModel();syncFirstPersonHandColor();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
   pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;
   fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();syncShadowFrustumToPlayer();
 }
@@ -1435,7 +1484,7 @@ function fx(dt){
  }
  const activeAds=(ads && st==1 && !pl.dead && w && w.canAds);
  const isSniperScope=(activeAds && wi===2);
- gun.visible=!isSniperScope;
+ gun.visible=(st==1 && !pl.dead && !isSniperScope);
  $('scopeOverlay').classList.toggle('on',isSniperScope);
  $('xh').style.opacity=isSniperScope?'0':'0.85';
  const swayAmp=activeAds?.0025:(spr?.012:.0075);
@@ -2202,6 +2251,7 @@ const exm=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),new THREE.MeshBasicMa
 function burst(p,c,r){exm.position.copy(p);exm.material.color.setHex(c);exr=r;ext=.4;exm.visible=true}
 function syncProfilePreview(){
   const css=getChosenCss();
+  syncFirstPersonHandColor();
   if($('profPreview')){$('profPreview').textContent=getNick();$('profPreview').style.color=css}
   if($('profDot'))$('profDot').style.background=css;
   if($('nickInp'))$('nickInp').style.color=css;
