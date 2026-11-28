@@ -606,7 +606,6 @@ let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-pe
 const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.75));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.06;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
 const rz=()=>{ren.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()};addEventListener('resize',rz);rz();
 
-/* 환경광 반사를 차분하게 눌러 눈부신 스펙큘러 반사 억제 */
 {
   const envScene=new THREE.Scene();
   envScene.background=new THREE.Color(0x090c12);
@@ -682,14 +681,6 @@ const brushedMetalT=TX(256,(x,w)=>{
   }
 },1,1);
 
-const fabricWeaveT=TX(128,(x,w)=>{
-  x.fillStyle='#2f353f';x.fillRect(0,0,w,w);
-  for(let y=0;y<w;y+=4)for(let gx=0;gx<w;gx+=4){
-    x.fillStyle=((gx+y)/4)%2===0?'rgba(255,255,255,.04)':'rgba(0,0,0,.12)';
-    x.fillRect(gx,y,3,3);
-  }
-},2,2);
-
 sc.background=new THREE.Color(0x10141c);
 sc.fog=new THREE.FogExp2(0x131822,.012);
 
@@ -745,7 +736,6 @@ flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveSha
   midRing.rotation.x=-Math.PI/2;midRing.position.set(ARENA_W/2,.02,ARENA_D/2);world.add(midRing);
 }
 
-/* 육교·회랑 및 벽체 재질: 반사광을 줄이고 차분한 슬레이트/콘크리트/무광 메탈로 교체 */
 const wallMat=new THREE.MeshStandardMaterial({map:wallConcT,bumpMap:wallConcT,bumpScale:.45,color:0xb8c0cc,roughness:.88,metalness:.06,envMapIntensity:.35});
 const pillarMat=new THREE.MeshStandardMaterial({map:wallConcT,bumpMap:wallConcT,bumpScale:.35,color:0x7e8794,roughness:.84,metalness:.1,envMapIntensity:.38});
 const crateMat=new THREE.MeshStandardMaterial({map:crT,bumpMap:crT,bumpScale:.3,color:0xd6dbe2,roughness:.76,metalness:.12,envMapIntensity:.38});
@@ -889,40 +879,24 @@ const GC={};
 const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=20)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=20)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
-function camo(base){
-  const c=document.createElement('canvas');c.width=c.height=128;
-  const x=c.getContext('2d'),b=new THREE.Color(base);
-  const bright=b.clone().lerp(new THREE.Color(0xffffff),.18);
-  const deep=b.clone().multiplyScalar(.74);
-  x.fillStyle='#'+b.getHexString();x.fillRect(0,0,128,128);
-  for(let i=0;i<36;i++){
-    x.fillStyle='#'+(i%2===0?bright:deep).getHexString();
-    x.beginPath();
-    x.ellipse(Math.random()*128,Math.random()*128,10+Math.random()*14,5+Math.random()*8,Math.random()*Math.PI,0,Math.PI*2);
-    x.fill();
-  }
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;
-}
-
-/* 사람 체형 기반 전술 캐릭터 생성 */
+/* 캐릭터 단색 생성: 얼룩 패턴 없이 깔끔한 단색으로 구성 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
-  const accentHex=c[0];
+  const solidHex=c[0];
 
-  const M=(col,r,m,map,emissiveHex=0,emInt=0,bump=null,bScale=0,envInt=.35)=>new THREE.MeshStandardMaterial({
-    color:map?0xffffff:col,map,bumpMap:bump,bumpScale:bScale,
-    roughness:r,metalness:m,envMapIntensity:envInt,
+  const M=(col,r,m,emissiveHex=0,emInt=0,envInt=.32)=>new THREE.MeshStandardMaterial({
+    color:col,roughness:r,metalness:m,envMapIntensity:envInt,
     emissive:new THREE.Color(emissiveHex),emissiveIntensity:emInt
   });
 
-  const u=M(0,.84,.04,camo(accentHex),accentHex,.08,fabricWeaveT,.015,.3);
-  const v=M(accentHex,.66,.12,fabricWeaveT,accentHex,.12,fabricWeaveT,.012,.32);
-  const s=M(0xe6b896,.76,.01,null,0,0,null,0,.25);
-  const d=M(0x1b2029,.78,.14,fabricWeaveT,0,0,fabricWeaveT,.015,.32);
-  const mt=M(0x3a4250,.62,.35,brushedMetalT,0,0,brushedMetalT,.01,.4);
-  const visor=M(0x16202c,.45,.25,null,accentHex,.22,null,0,.35);
-  const beacon=M(accentHex,.55,.12,null,accentHex,.32,null,0,.35);
+  const u=M(solidHex,.84,.04,solidHex,.05,.28);
+  const v=M(solidHex,.78,.08,solidHex,.06,.3);
+  const s=M(0xe6b896,.78,.01,0,0,.22);
+  const d=M(0x1c2129,.82,.1,0,0,.28);
+  const mt=M(0x3a4250,.68,.25,0,0,.35);
+  const visor=M(0x18222e,.5,.2,solidHex,.12,.3);
+  const beacon=M(solidHex,.6,.1,solidHex,.18,.3);
   const ms=[u,v,s,d,mt,visor,beacon];
 
   const leg=(x,side)=>{
@@ -955,7 +929,7 @@ function mkChar(c){
   const vest=pt(BG(.46,.32,.26),v,0,1.41,.01,body);
   vest.scale.set(1.02,1,.96);
   [-.135,0,.135].forEach(px=>pt(BG(.082,.115,.048),d,px,1.34,.145,body));
-  const pack=pt(BG(.34,.36,.13),d,0,1.39,-.175,body);
+  const pack=pt(BG(.34,.36,.13),u,0,1.39,-.175,body);
   pack.scale.set(1,.96,1);
   pt(BG(.24,.22,.05),u,0,1.36,-.24,body);
 
@@ -970,9 +944,9 @@ function mkChar(c){
   jaw.scale.set(.96,.85,.92);
   pt(BG(.022,.042,.038),s,0,.135,.122,head,1,.18);
   pt(BG(.145,.018,.03),s,0,.162,.108,head,1);
-  const cap=pt(SG(.123,20),d,0,.168,-.008,head,1);
+  const cap=pt(SG(.123,20),u,0,.168,-.008,head,1);
   cap.scale.set(.97,.86,1.06);
-  const brim=pt(BG(.15,.016,.07),d,0,.178,.095,head,1,.14);
+  const brim=pt(BG(.15,.016,.07),u,0,.178,.095,head,1,.14);
   const goggle=pt(BG(.195,.046,.042),visor,0,.142,.108,head,1);
   goggle.scale.set(1,.82,.7);
   pt(BG(.235,.032,.175),d,0,.156,-.005,head,1);
@@ -1017,7 +991,6 @@ const WP=[
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
-/* 총기 모델링: 눈부신 반사를 줄인 무광/세미매트 재질 적용 */
 const gun=new THREE.Group();
 const MT=(c,r,m,map,bump,bumpScale=.012,envInt=.42)=>new THREE.MeshStandardMaterial({
   color:map?0xffffff:c,map,bumpMap:bump||null,bumpScale:bump?bumpScale:0,
@@ -1046,7 +1019,6 @@ function makeExtrudeShape(pts,depth,bevel=.009){
   return geo;
 }
 
-/* LatheGeometry는 Y축을 중심으로 회전하므로 회전 후 Z축(-Z가 총구 방향)으로 눕혀 정렬 */
 function makeLatheZ(profilePts,segs=22){
   const v2s=profilePts.map(([r,y])=>new THREE.Vector2(Math.max(.001,r),y));
   const geo=new THREE.LatheGeometry(v2s,segs);
@@ -1121,46 +1093,37 @@ wModels.forEach(g=>gun.add(g));
  addTo(g,new THREE.BoxGeometry(.09,.094,.11),glv,0,-.12,.12);
 }
 
-/* 3. 저격총(Sniper Rifle) - 스코프 모델링 완전 재정비(축 정렬·접안부·대물경·마운트 링) */
+/* 3. 저격총(Sniper Rifle) */
 {const g=wModels[2];
  const snRec=makeExtrudeShape([[-.35,-.045],[.33,-.045],[.31,.055],[-.23,.06],[-.35,.022]],.058,.007);
  addTo(g,snRec,gm3,0,.004,-.06,0,-Math.PI/2,0);
- /* 볼트 손잡이 */
  addTo(g,new THREE.CylinderGeometry(.009,.009,.048,12),gm3,.038,.014,.06,0,0,Math.PI/2);
  addTo(g,new THREE.SphereGeometry(.015,14,12),gm2,.062,.014,.06);
- /* 중량 총열 + 머즐 브레이크 */
  const snBarGeo=makeLatheZ([[.018,0],[.018,.34],[.015,.36],[.015,.68],[.024,.69],[.024,.78],[.015,.79]],22);
  addTo(g,snBarGeo,snM,0,.016,-.38);
  addTo(g,new THREE.CylinderGeometry(.025,.024,.1,18),gm3,0,.016,-1.12,Math.PI/2);
  addTo(g,new THREE.BoxGeometry(.054,.012,.064),gm2,0,.016,-1.12);
 
- /* 스코프 어셈블리: 리시버 상단 레일 위에 정밀 조립 */
  const scopeGrp=new THREE.Group();
  scopeGrp.position.set(0,.104,-.06);
  g.add(scopeGrp);
- /* 피카티니 레일 베이스 */
  addTo(scopeGrp,new THREE.BoxGeometry(.044,.014,.34),gm2,0,-.034,0);
- /* 전·후방 스코프 마운트 링 */
  [-.095,.095].forEach(mz=>{
    addTo(scopeGrp,new THREE.BoxGeometry(.048,.024,.032),gm1,0,-.02,mz);
    const ring=new THREE.Mesh(new THREE.TorusGeometry(.037,.0065,12,24),gm1);
    ring.position.set(0,0,mz);
    scopeGrp.add(ring);
  });
- /* 접안 경통(뒤쪽), 메인 튜브(중앙), 대물 경통(앞쪽) - 모두 Z축 정렬 */
  addTo(scopeGrp,new THREE.CylinderGeometry(.032,.032,.11,22),scpM,0,0,.13,Math.PI/2);
  addTo(scopeGrp,new THREE.CylinderGeometry(.038,.038,.014,22),gm3,0,0,.185,Math.PI/2);
  addTo(scopeGrp,new THREE.CylinderGeometry(.026,.026,.16,22),scpM,0,0,.0,Math.PI/2);
  addTo(scopeGrp,new THREE.CylinderGeometry(.041,.041,.13,22),scpM,0,0,-.14,Math.PI/2);
  addTo(scopeGrp,new THREE.CylinderGeometry(.043,.043,.016,22),gm3,0,0,-.205,Math.PI/2);
- /* 대물/접안 렌즈 디스크 */
  addTo(scopeGrp,new THREE.CircleGeometry(.037,22),lensM,0,0,-.213,0,Math.PI,0);
  addTo(scopeGrp,new THREE.CircleGeometry(.029,22),lensM,0,0,.192);
- /* 상단 고도/좌우 영점 조절 터렛 */
  addTo(scopeGrp,new THREE.CylinderGeometry(.013,.014,.026,16),gm3,0,.048,-.02);
  addTo(scopeGrp,new THREE.CylinderGeometry(.013,.014,.026,16),gm2,.048,0,-.02,0,0,Math.PI/2);
 
- /* 개머리판 & 바이포드 */
  const snStockGeo=makeExtrudeShape([[0,.046],[.32,.038],[.34,-.082],[.15,-.048],[0,-.042]],.056,.008);
  addTo(g,snStockGeo,scpM,0,-.012,.22,0,-Math.PI/2,0);
  addTo(g,new THREE.BoxGeometry(.066,.032,.23),wd,0,.034,.38,.04);
@@ -1207,6 +1170,7 @@ const SPAWN_SPOTS=[
   [42,10,0],[42,74,0],[10,42,0],[74,42,0],[20,24,0],[64,60,0]
 ];
 
+/* AI 캐릭터 기본색: 진한 하늘색 단색 */
 function spawn(n){
   en.forEach(e=>sc.remove(e.g));en=[];
   const pool=SPAWN_SPOTS.filter(([sx,sz])=>Math.hypot(sx-pl.x,sz-pl.z)>16);
@@ -1215,8 +1179,9 @@ function spawn(n){
     const idx=Math.random()*pool.length|0;
     const[sx,sz,sy]=pool.splice(idx,1)[0];
     const hv=!mm&&k%4==3;
-    const c=mkChar(hv?[0xd6336c,0xff6b6b,0xffe3e3,0x14171c]:[0xff3b30,0xff7a2f,0xfff5f5,0x1a1e26]);
-    const e={...c,hv,x:sx,y:sy,z:sz,hp:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
+    const aiHex=hv?0x1576c4:0x1d8fe1;
+    const c=mkChar([aiHex]);
+    const e={...c,hv,aiHex,x:sx,y:sy,z:sz,hp:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
     if(hv){c.g.scale.setScalar(1.18);e.hp=260}
     c.g.traverse(m=>{if(m.isMesh)m.userData.e=e});
     c.g.position.set(e.x,e.y,e.z);sc.add(c.g);en.push(e);
@@ -1321,9 +1286,11 @@ function upd(dt){
   e.y=gnd(e.x,e.z,(e.y||0)+.35,.32);
   e.g.position.set(e.x,e.y,e.z);
   if(mv){e.ph+=dt*8.5;e.L.rotation.x=Math.sin(e.ph)*.58;e.R.rotation.x=-Math.sin(e.ph)*.58}else{e.L.rotation.x=e.R.rotation.x=0}
-  e.fl-=dt;e.ms.forEach(m=>m.emissive.setHex(e.fl>0?0xff0000:0));
+  e.fl-=dt;
+  if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.45}
+  else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.05}
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
-   tracer(o,t,0xff7a5c);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,6.5);SX.hurt()}}}
+   tracer(o,t,0x74c0fc);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,6.5);SX.hurt()}}}
  });
  if(mm)mpTick(dt,now);else if(pl.hp<=0)end(0);else if(en.every(e=>e.dead))end(1)}
 
@@ -1413,7 +1380,7 @@ function getTeamHex(team,fb){return matchCfg.mode==='6v6'?(team==='blue'?0x339af
 function isFriendly(r){return !!(mm&&r&&matchCfg.mode==='6v6'&&(r.team||'red')===myTeam)}
 function applyCharColor(charObj,hex){
   const col=new THREE.Color(hex);
-  if(charObj&&charObj.ms&&charObj.ms[0]){charObj.ms[0].map=camo(col.getHex());charObj.ms[0].color.setHex(0xffffff);charObj.ms[0].emissive.copy(col);charObj.ms[0].needsUpdate=true}
+  if(charObj&&charObj.ms&&charObj.ms[0]){charObj.ms[0].color.copy(col);charObj.ms[0].emissive.copy(col)}
   if(charObj&&charObj.ms&&charObj.ms[1]){charObj.ms[1].color.copy(col);charObj.ms[1].emissive.copy(col)}
   if(charObj&&charObj.ms&&charObj.ms[5])charObj.ms[5].emissive.copy(col);
   if(charObj&&charObj.ms&&charObj.ms[6]){charObj.ms[6].color.copy(col);charObj.ms[6].emissive.copy(col)}
@@ -1642,7 +1609,7 @@ function handleMsg(fromId,d){
     const rTeam=matchCfg.mode==='1v1'?(myTeam==='red'?'blue':'red'):((lobbyRoster[sender]&&lobbyRoster[sender].team)||d.team||'blue');
     const colHex=getTeamHex(rTeam,(+d.col)>0?(+d.col):0x339af0);
     if(!r){
-      const c=mkChar([colHex,colHex,0xffffff,0x141820]);applyCharColor(c,colHex);
+      const c=mkChar([colHex]);applyCharColor(c,colHex);
       const tagEl=document.createElement('div');tagEl.className='name-tag';
       const baseNick=(typeof d.nick==='string'&&d.nick.trim())?d.nick.trim().slice(0,12):'플레이어';
       tagEl.textContent=matchCfg.mode==='6v6'?`[${rTeam==='red'?'RED':'BLUE'}] ${baseNick}`:baseNick;
@@ -1721,7 +1688,9 @@ function mpFx(dt){
     const r=rp[id];r.g.visible=r.al?(!r.clk):r.t<=4;
     if(r.al){const dx=r.tx-r.x,dz=r.tz-r.z;r.x+=dx*a;r.y+=(r.ty-r.y)*a;r.z+=dz*a;let dy=r.tyaw-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*a;r.g.rotation.y=r.yaw+Math.PI}
     else{r.t+=dt;r.g.rotation.x=-Math.min(1.5,r.t*4)}
-    r.g.position.set(r.x,r.y,r.z);r.fl-=dt;r.ms.forEach(m=>m.emissive.setHex(r.fl>0?0xff0000:r.colHex||0));
+    r.g.position.set(r.x,r.y,r.z);r.fl-=dt;
+    if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.45}
+    else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.05}
   }
   sbt-=dt;if(sbt<=0){sbt=.4;const L=[[-1,'나',kills,dth,myTeam]];Object.keys(rp).sort().forEach(id=>L.push([rp[id].hue,rp[id].nick||'플레이어',rp[id].k,rp[id].d,rp[id].team||'blue']));$('sb').innerHTML=L.map(([h,n,k,d])=>'<div>'+escapeHtml(n)+' '+k+'/'+d+'</div>').join('')}
 }
@@ -1759,10 +1728,10 @@ function radar(){
   const k=1.45;rg.translate(60,60);rg.rotate(pl.yaw);
   rg.fillStyle='rgba(148,163,184,.5)';
   SOLID_BOXES.forEach(b=>{if(b.kind!=='crate')rg.fillRect((b.xMin-pl.x)*k,(b.zMin-pl.z)*k,(b.xMax-b.xMin)*k,(b.zMax-b.zMin)*k)});
-  rg.fillStyle='rgba(255,122,47,.55)';
+  rg.fillStyle='rgba(29,143,225,.55)';
   ELEVATED_DECKS.forEach(d=>rg.fillRect((d.xMin-pl.x)*k,(d.zMin-pl.z)*k,(d.xMax-d.xMin)*k,(d.zMax-d.zMin)*k));
   const dot=(x,z,c)=>{rg.fillStyle=c;rg.beginPath();rg.arc((x-pl.x)*k,(z-pl.z)*k,3.2,0,6.3);rg.fill()};
-  en.forEach(e=>{if(!e.dead)dot(e.x,e.z,e.hv?'#f06595':'#ff3b30')});
+  en.forEach(e=>{if(!e.dead)dot(e.x,e.z,e.hv?'#1576c4':'#1d8fe1')});
   Object.values(rp).forEach(r=>{if(r.al&&!r.clk)dot(r.x,r.z,isFriendly(r)?'#339af0':'#ff3b30')});
   rg.restore();rg.fillStyle='#fff';rg.beginPath();rg.moveTo(60,52);rg.lineTo(65,66);rg.lineTo(55,66);rg.fill();
 }
