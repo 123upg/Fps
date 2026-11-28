@@ -756,8 +756,9 @@ sc.fog=new THREE.FogExp2(0x131822,.011);
 /* 노이즈 텍스처 없는 깔끔한 로우폴리 단색 + 모서리 트림 + 가짜 AO(벽 밑동 어두운 띠) + 발광 조명바/스트립 + 정적 머지 */
 const mergeBuckets=new Map();
 function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
-  const g=geo.clone();
+  let g=geo.clone();
   if(g.index)g=g.toNonIndexed();
+  if(!g.attributes.normal)g.computeVertexNormals();
   const m=new THREE.Matrix4();
   const q=new THREE.Quaternion();
   if(rot)q.setFromEuler(new THREE.Euler(rot[0]||0,rot[1]||0,rot[2]||0,'XYZ'));
@@ -765,8 +766,9 @@ function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   const p=new THREE.Vector3(pos[0]||0,pos[1]||0,pos[2]||0);
   m.compose(p,q,s);
   g.applyMatrix4(m);
-  if(!mergeBuckets.has(mat))mergeBuckets.set(mat,{mat,geos:[],castShadow,receiveShadow});
-  mergeBuckets.get(mat).geos.push(g);
+  const key=mat.uuid+'|'+(castShadow?1:0)+'|'+(receiveShadow?1:0);
+  if(!mergeBuckets.has(key))mergeBuckets.set(key,{mat,geos:[],castShadow,receiveShadow});
+  mergeBuckets.get(key).geos.push(g);
 }
 
 const floorMat=new THREE.MeshStandardMaterial({color:0x363c46,roughness:.88,metalness:.06,flatShading:true});
@@ -820,7 +822,6 @@ SOLID_BOXES.forEach(b=>{
   }
   const mat=b.kind==='crate'?crateMat:(b.kind==='pillar'?pillarMat:wallMat);
   addMergedPart(mat,new THREE.BoxGeometry(w,b.h,d),[cx,b.h/2,cz]);
-  /* 가짜 AO: 벽/기둥/상자 밑동 어두운 띠 */
   addMergedPart(aoBandMat,new THREE.BoxGeometry(w+.08,.36,d+.08),[cx,.18,cz],null,false,true);
   if(b.kind==='wall'||b.kind==='pillar'){
     addMergedPart(steelTrimMat,new THREE.BoxGeometry(w+.14,.14,d+.14),[cx,2.6,cz],null,false,false);
@@ -841,7 +842,6 @@ ELEVATED_DECKS.forEach(deck=>{
   [-1,1].forEach(side=>{
     const rz=cz+side*(d/2-.08);
     addMergedPart(railMat,new THREE.BoxGeometry(w,.09,.11),[cx,deck.h+railH,rz]);
-    /* 육교 난간 밑 emissive 라이트 스트립 */
     const strip=new THREE.Mesh(new THREE.BoxGeometry(w-.4,.055,.06),emissiveRailStripMat);
     strip.position.set(cx,deck.h+.14,rz-side*.05);
     world.add(strip);
@@ -874,17 +874,20 @@ ELEVATED_RAMPS.forEach(r=>{
   addMergedPart(rampMat,geo,[Math.min(r.x0,r.x1),0,r.zMin]);
 });
 
-/* BufferGeometryUtils로 재질별 정적 지형 머지(드로우콜 대폭 감소) */
 if(window.THREE.BufferGeometryUtils&&window.THREE.BufferGeometryUtils.mergeBufferGeometries){
   for(const [,bucket]of mergeBuckets.entries()){
     if(!bucket.geos.length)continue;
-    const merged=window.THREE.BufferGeometryUtils.mergeBufferGeometries(bucket.geos,false);
-    bucket.geos.forEach(g=>g.dispose());
-    if(merged){
-      const m=new THREE.Mesh(merged,bucket.mat);
-      m.castShadow=bucket.castShadow;
-      m.receiveShadow=bucket.receiveShadow;
-      world.add(m);
+    try{
+      const merged=window.THREE.BufferGeometryUtils.mergeBufferGeometries(bucket.geos,false);
+      bucket.geos.forEach(g=>g.dispose());
+      if(merged){
+        const m=new THREE.Mesh(merged,bucket.mat);
+        m.castShadow=bucket.castShadow;
+        m.receiveShadow=bucket.receiveShadow;
+        world.add(m);
+      }
+    }catch(_){
+      bucket.geos.forEach(g=>{const m=new THREE.Mesh(g,bucket.mat);m.castShadow=bucket.castShadow;m.receiveShadow=bucket.receiveShadow;world.add(m)});
     }
   }
 }else{
@@ -898,7 +901,6 @@ const GC={};
 const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=14)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=14)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
-/* 과장된 스타일라이즈드 캐릭터 실루엣(큰 머리/바이저, 넓은 어깨 패드, 과장된 무기 실루엣) */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
@@ -934,7 +936,6 @@ function mkChar(c){
   pt(BG(.52,.34,.32),v,0,1.38,.02,body);
   pt(BG(.38,.36,.2),d,0,1.36,-.21,body);
 
-  /* 과장된 스타일라이즈드 머리 & 헤드셋 */
   const head=new THREE.Group();head.position.set(0,1.64,0);body.add(head);
   pt(CG(.085,.095,.12,12),s,0,.02,0,head);
   const cranium=pt(SG(.185,14),u,0,.2,.01,head,1);
@@ -943,7 +944,6 @@ function mkChar(c){
   pt(BG(.29,.075,.08),visor,0,.19,.15,head,1);
   pt(BG(.36,.07,.22),beacon,0,.22,-.01,head,1);
 
-  /* 과장된 어깨 폴드론 */
   const arm=(x,rx,ry,side)=>{
     const p=new THREE.Group();p.position.set(x,1.5,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
     const pauldron=pt(BG(.24,.22,.28),v,side*.05,0,0,p);
@@ -956,7 +956,6 @@ function mkChar(c){
   };
   arm(-.36,-.98,.48,-1);arm(.36,-.78,-.45,1);
 
-  /* 과장된 대형 무기 실루엣 */
   pt(BG(.13,.15,.72),mt,0,1.36,.48,body);
   pt(CG(.065,.065,.55,12),d,0,1.36,.86,body).rotation.x=Math.PI/2;
   pt(BG(.11,.22,.14),beacon,0,1.22,.38,body);
@@ -972,7 +971,7 @@ const WP=[
   {n:'샷건',mag:6,res:30,cd:.8,dmg:14,hd:24,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
   {n:'저격총',mag:5,res:20,cd:1.1,dmg:52,hd:120,pel:1,spr:0,rl:2.2,rc:.045,canAds:true}
 ];
-let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
+let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,burstFxT=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
 function getDistanceFalloff(wIdx,dist){
@@ -1025,7 +1024,6 @@ function makeLatheZ(profilePts,segs=16){
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
-/* 1. 돌격소총(AR) */
 {const g=wModels[0];
  const recGeo=makeExtrudeShape([[-.24,-.046],[.23,-.046],[.22,.054],[-.14,.06],[-.24,.022]],.064,.007);
  addTo(g,recGeo,gm1,0,.002,0,0,-Math.PI/2,0);
@@ -1046,7 +1044,6 @@ wModels.forEach(g=>gun.add(g));
  addTo(g,new THREE.BoxGeometry(.082,.09,.105),glv,0,-.122,.1);
 }
 
-/* 2. 샷건(Shotgun) */
 {const g=wModels[1];
  addTo(g,makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.058],[-.15,.062],[-.23,.02]],.072,.008),gm3,0,.002,0,0,-Math.PI/2,0);
  addTo(g,makeLatheZ([[.022,0],[.022,.48],[.026,.49],[.026,.52],[.02,.53]],16),snM,0,.022,-.22);
@@ -1063,7 +1060,6 @@ wModels.forEach(g=>gun.add(g));
  addTo(g,new THREE.BoxGeometry(.09,.094,.11),glv,0,-.12,.12);
 }
 
-/* 3. 저격총(Sniper Rifle) */
 {const g=wModels[2];
  addTo(g,makeExtrudeShape([[-.35,-.045],[.33,-.045],[.31,.055],[-.23,.06],[-.35,.022]],.058,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
  addTo(g,new THREE.CylinderGeometry(.009,.009,.048,10),gm3,.038,.014,.06,0,0,Math.PI/2);
@@ -1149,8 +1145,28 @@ function spawn(n){
   }
 }
 
+function mkMedMesh(x,z,y=.45){
+  const g=new THREE.Group();
+  const baseRing=new THREE.Mesh(
+    new THREE.RingGeometry(.55,.82,24),
+    new THREE.MeshBasicMaterial({color:0x2ecc71,transparent:true,opacity:.65,side:2})
+  );
+  baseRing.rotation.x=-Math.PI/2;baseRing.position.y=-.32;g.add(baseRing);
+
+  const box=new THREE.Mesh(new THREE.BoxGeometry(.64,.46,.64),new THREE.MeshStandardMaterial({color:0xf1f5f9,emissive:0x10b981,emissiveIntensity:.35,roughness:.45,metalness:.1}));
+  const c1=new THREE.Mesh(new THREE.BoxGeometry(.38,.5,.13),new THREE.MeshBasicMaterial({color:0x22c55e}));
+  const c2=new THREE.Mesh(new THREE.BoxGeometry(.13,.5,.38),new THREE.MeshBasicMaterial({color:0x22c55e}));
+  const topCross=new THREE.Mesh(new THREE.BoxGeometry(.34,.08,.12),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross.position.y=.26;
+  const topCross2=new THREE.Mesh(new THREE.BoxGeometry(.12,.08,.34),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross2.position.y=.26;
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.14,.32,2.4,14,1,true),new THREE.MeshBasicMaterial({color:0x22c55e,transparent:true,opacity:.24,side:2,depthWrite:false}));beam.position.y=1.15;
+
+  g.add(box,c1,c2,topCross,topCross2,beam);
+  g.position.set(x,y+.45,z);sc.add(g);return g;
+}
+function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
+
 function reset(skipSpawn){
-  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;bloom=0;pl.hp=100;
+  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;burstFxT=0;pl.hp=100;
   wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
   pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;
   fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();
@@ -1164,8 +1180,8 @@ function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
  pl.yaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
  if(lookTargetPit!==null)lookTargetPit=cl(lookTargetPit+w.rc*recoilScale,-1.4,1.4);
  if(lookTargetYaw!==null)lookTargetYaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
- const effSpread=(w.spr+bloom)*(ads?(wi===2?.08:.36):1);
- bloom=Math.min(.032,bloom+w.rc*1.4);
+ const effSpread=(w.spr+burstFxT)*(ads?(wi===2?.08:.36):1);
+ burstFxT=Math.min(.032,burstFxT+w.rc*1.4);
  const o=new THREE.Vector3(.2,-.18,-.9),tg=[world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)];cam.localToWorld(o);
  for(let k=0;k<w.pel;k++){V.set((Math.random()-.5)*effSpread,(Math.random()-.5)*effSpread);RC.setFromCamera(V,cam);
   const h=RC.intersectObjects(tg,true)[0];let end;
@@ -1213,7 +1229,7 @@ function upd(dt){
  const now=performance.now()/1e3;spr=K.Shift?1:0;let f=(K.w?1:0)-(K.s?1:0),sd=(K.d?1:0)-(K.a?1:0);
  for(const k in T){const o=T[k];if(o.r=='m'){const dx=o.x-o.x0,dy=o.y-o.y0;const[ax,ay]=stickAxis(dx,dy);f=-ay;sd=ax;if(Math.hypot(dx,dy)>joyMaxRadius*1.45)spr=1}}
  if(pl.dead){f=sd=0}const l=Math.hypot(f,sd);if(l>1){f/=l;sd/=l}
- bloom=Math.max(0,bloom-(l>.1?.012:.038)*dt);
+ burstFxT=Math.max(0,burstFxT-(l>.1?.012:.038)*dt);
  const sp=(spr&&l>.1?10.2:7.2)*(1+(bu.spd>0?.4:0)+(ch==2?.1:0))*dt,sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw),vx=(-sy*f+cy*sd)*sp-(bu.dash>0?sy*26*dt:0),vz=(-cy*f-sy*sd)*sp-(bu.dash>0?cy*26*dt:0);
  if(!blk(pl.x+vx,pl.z,pl.y))pl.x+=vx;if(!blk(pl.x,pl.z+vz,pl.y))pl.z+=vz;
 
@@ -1711,7 +1727,6 @@ function check6v6RoundEndByAlive(){
   startNewRound(nr,nrSc,nbSc,msg);
 }
 
-/* 멀티 데미지 상한 검증(무기 최대 데미지 * 헤드샷/버프 여유 마진 상한) */
 function clampIncomingDamage(rawDmg,wIdx,isHd){
   const w=WP[wIdx]||WP[0];
   const maxBase=isHd?w.hd:w.dmg;
@@ -1955,7 +1970,6 @@ function mpFx(dt){
     if(r.tagEl){
       if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
       else{
-        /* 이름표 레이캐스트 0.1초 간격 캐싱으로 프레임 부하 절감 */
         r.visTimer=(r.visTimer||0)-dt;
         if(r.visTimer<=0){
           r.visTimer=.1;
@@ -1987,25 +2001,6 @@ const rdc=$('rdr'),rg=rdc.getContext('2d');rdc.width=rdc.height=120;
 function pop(t){if(!t)return;const p=$('pop');p.textContent=t;popT=1.5}
 function kill(e,hd,pt){kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));if(hd)slow=.3;drop(e)}
 
-function mkMedMesh(x,z,y=.45){
-  const g=new THREE.Group();
-  const baseRing=new THREE.Mesh(
-    new THREE.RingGeometry(.55,.82,24),
-    new THREE.MeshBasicMaterial({color:0x2ecc71,transparent:true,opacity:.65,side:2})
-  );
-  baseRing.rotation.x=-Math.PI/2;baseRing.position.y=-.32;g.add(baseRing);
-
-  const box=new THREE.Mesh(new THREE.BoxGeometry(.64,.46,.64),new THREE.MeshStandardMaterial({color:0xf1f5f9,emissive:0x10b981,emissiveIntensity:.35,roughness:.45,metalness:.1}));
-  const c1=new THREE.Mesh(new THREE.BoxGeometry(.38,.5,.13),new THREE.MeshBasicMaterial({color:0x22c55e}));
-  const c2=new THREE.Mesh(new THREE.BoxGeometry(.13,.5,.38),new THREE.MeshBasicMaterial({color:0x22c55e}));
-  const topCross=new THREE.Mesh(new THREE.BoxGeometry(.34,.08,.12),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross.position.y=.26;
-  const topCross2=new THREE.Mesh(new THREE.BoxGeometry(.12,.08,.34),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross2.position.y=.26;
-  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.14,.32,2.4,14,1,true),new THREE.MeshBasicMaterial({color:0x22c55e,transparent:true,opacity:.24,side:2,depthWrite:false}));beam.position.y=1.15;
-
-  g.add(box,c1,c2,topCross,topCross2,beam);
-  g.position.set(x,y+.45,z);sc.add(g);return g;
-}
-function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
 function drop(e){if(mm||(!e.hv&&Math.random()>.55))return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
 function pickups(dt,now){
  mapPacks.forEach(p=>{if(p.cd>0){p.cd-=dt;if(p.cd<=0)p.m.visible=true;return}p.m.rotation.y+=dt*2;if(Math.hypot(p.x-pl.x,p.z-pl.z)<1.35&&Math.abs((p.y||0)-pl.y)<1.4&&!pl.dead&&pl.hp<100){pl.hp=Math.min(100,pl.hp+40);p.cd=15;p.m.visible=false;pop('+40 체력 회복')}});
@@ -2040,7 +2035,6 @@ function look(dx,dy){
   pl.pit=cl(pl.pit-dy*.0058*k,-1.4,1.4);
 }
 
-/* 자동사격: !fi 제한 제거 — 조준 시 벽 뒤 엄폐가 없고 적이 조준선 안에 들어오면 발사 */
 function aimAssist(dt){
   if(pl.dead||st!=1||!$('au').checked)return;
   RC.setFromCamera(V.set(0,0),cam);
@@ -2084,12 +2078,12 @@ function selC(i){ch=i;[...$('chs').children].forEach((b,j)=>b.classList.toggle('
 CH.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.className='card';b.innerHTML='<b>'+c.n+'</b> · '+c.r+'<br>Q '+c.k[0][0]+' · E '+c.k[1][0]+' · F '+c.k[2][0];b.onclick=()=>selC(i);$('chs').appendChild(b)});selC(0);
 
 function skill(i){if(st!=1||pl.dead||cd[i]>0)return;
- if(ch==0){if(i==0)bu.dash=.25;else if(i==1){bu.spd=7;bu.rof=7}else boom()}
+ if(ch==0){if(i==0)bu.dash=.25;else if(i==1){bu.spd=7;bu.rof=7}else fireFlameBurst()}
  else if(ch==1){if(i==0)pl.hp=Math.min(100,pl.hp+50);else if(i==1)bu.shield=5;else shock()}
  else{if(i==0)blink();else if(i==1)bu.cloak=5;else bu.dmg=6}
  cd[i]=CH[ch].k[i][1];tone(300+i*150,900,.2,.25,'sawtooth');pop(CH[ch].k[i][0])}
 function blink(){const dx=-Math.sin(pl.yaw),dz=-Math.cos(pl.yaw);let d=0;for(let s=.5;s<=10;s+=.5){if(blk(pl.x+dx*s,pl.z+dz*s,pl.y))break;d=s}pl.x+=dx*d;pl.z+=dz*d}
-function boom(){RC.setFromCamera(V.set(0,0),cam);const h=RC.intersectObjects([world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)],true)[0],pt=h?h.point.clone():new THREE.Vector3(0,0,-25).applyMatrix4(cam.matrixWorld);burst(pt,0xff7a2f,5);en.forEach(e=>{if(!e.dead&&Math.hypot(e.x-pt.x,e.z-pt.z)<5.5){e.hp-=120;e.fl=.2;if(e.hp<=0){e.dead=1;e.t=0;kill(e,0,pt)}}})}
+function fireFlameBurst(){RC.setFromCamera(V.set(0,0),cam);const h=RC.intersectObjects([world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)],true)[0],pt=h?h.point.clone():new THREE.Vector3(0,0,-25).applyMatrix4(cam.matrixWorld);burst(pt,0xff7a2f,5);en.forEach(e=>{if(!e.dead&&Math.hypot(e.x-pt.x,e.z-pt.z)<5.5){e.hp-=120;e.fl=.2;if(e.hp<=0){e.dead=1;e.t=0;kill(e,0,pt)}}})}
 function shock(){burst(new THREE.Vector3(pl.x,pl.y+1,pl.z),0x38d9a9,9);en.forEach(e=>{if(!e.dead&&Math.hypot(e.x-pl.x,e.z-pl.z)<=9){e.stun=2.5;e.hp-=35;e.fl=.2;if(e.hp<=0){e.dead=1;e.t=0;kill(e,0,new THREE.Vector3(e.x,e.y+1.2,e.z))}}})}
 
 const LAYOUT_KEY='tsweep3d_btn_layout_v1';
