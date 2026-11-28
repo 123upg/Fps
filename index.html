@@ -1237,6 +1237,7 @@ function buildTacticalArm(parent,opts){
     handPos=[0,0,0],
     handRot=[0,0,0],
     elbowOffset=[side*.26,-.24,.46],
+    gripWrap=.62,
     scale=1
   }=opts;
 
@@ -1250,28 +1251,39 @@ function buildTacticalArm(parent,opts){
   handGrp.rotation.set(handRot[0]||0,handRot[1]||0,handRot[2]||0);
   armRoot.add(handGrp);
 
-  addTo(handGrp,new THREE.BoxGeometry(.072,.046,.086),handColorMat,0,0,0);
-  addTo(handGrp,new THREE.BoxGeometry(.075,.018,.028),handTrimMat,0,.018,-.022);
-  const fingerCurl=side===1?.52:-.68;
+  const palm=addTo(handGrp,new THREE.BoxGeometry(.074,.044,.088),handColorMat,0,0,0);
+  palm.scale.set(1.04,1,1.02);
+  addTo(handGrp,new THREE.BoxGeometry(.076,.016,.032),handTrimMat,0,.019,-.022);
+
+  const fingers=[];
+  const fingerCurl=side===1?.78:-.86;
   for(let f=0;f<4;f++){
-    const fz=-.032+f*.018;
+    const fz=-.033+f*.021;
     const fg=new THREE.Group();
-    fg.position.set(-side*.032,-.008,fz);
-    fg.rotation.z=fingerCurl;
+    fg.position.set(-side*.034,-.006,fz);
+    fg.rotation.z=fingerCurl*gripWrap;
     handGrp.add(fg);
-    addTo(fg,new THREE.BoxGeometry(.038,.016,.014),handColorMat,-side*.016,0,0);
-    addTo(fg,new THREE.BoxGeometry(.032,.014,.013),handTrimMat,-side*.032,-.012,0,0,0,fingerCurl*.6);
+
+    const prox=addTo(fg,new THREE.BoxGeometry(.042,.015,.015),handColorMat,-side*.018,0,0);
+    const midJoint=new THREE.Group();
+    midJoint.position.set(-side*.036,0,0);
+    midJoint.rotation.z=fingerCurl*(.55+gripWrap*.35);
+    fg.add(midJoint);
+    addTo(midJoint,new THREE.BoxGeometry(.034,.014,.014),handTrimMat,-side*.015,0,0);
+    fingers.push({root:fg,mid:midJoint,prox});
   }
+
   const thumbGrp=new THREE.Group();
-  thumbGrp.position.set(side*.034,.004,-.018);
-  thumbGrp.rotation.set(-.25,side*.35,-side*.45);
+  thumbGrp.position.set(side*.034,.005,-.016);
+  thumbGrp.rotation.order='YXZ';
+  thumbGrp.rotation.set(-.32,side*.38,-side*(.55+gripWrap*.25));
   handGrp.add(thumbGrp);
-  addTo(thumbGrp,new THREE.BoxGeometry(.024,.022,.054),handColorMat,0,0,-.016);
+  addTo(thumbGrp,new THREE.BoxGeometry(.025,.02,.056),handColorMat,0,0,-.018);
 
-  addTo(handGrp,new THREE.BoxGeometry(.074,.048,.034),handTrimMat,0,-.002,.054);
-  addTo(handGrp,new THREE.BoxGeometry(.077,.014,.014),steelBright,0,.02,.054);
+  const wristCuff=addTo(handGrp,new THREE.BoxGeometry(.078,.05,.036),handTrimMat,0,-.002,.056);
+  addTo(handGrp,new THREE.BoxGeometry(.081,.014,.014),steelBright,0,.021,.056);
 
-  const wristLocal=new THREE.Vector3(0,-.004,.068);
+  const wristLocal=new THREE.Vector3(0,-.004,.07);
   handGrp.updateMatrix();
   const wristWorldInArm=wristLocal.clone().applyMatrix4(handGrp.matrix);
   const elbowTarget=new THREE.Vector3(elbowOffset[0],elbowOffset[1],elbowOffset[2]);
@@ -1283,14 +1295,25 @@ function buildTacticalArm(parent,opts){
   forearmPivot.lookAt(elbowTarget);
   armRoot.add(forearmPivot);
 
-  const sleeveGeo=new THREE.CylinderGeometry(.044,.064,armLen,14);
+  const sleeveGeo=new THREE.CylinderGeometry(.045,.068,armLen,14);
   sleeveGeo.rotateX(Math.PI/2);
   addTo(forearmPivot,sleeveGeo,sleeveColorMat,0,0,armLen*.5);
 
-  const padGeo=new THREE.BoxGeometry(.056,.024,armLen*.72);
-  addTo(forearmPivot,padGeo,handTrimMat,0,.038,armLen*.48);
+  const elbowJoint=new THREE.Group();
+  elbowJoint.position.set(0,0,armLen);
+  forearmPivot.add(elbowJoint);
+  addTo(elbowJoint,new THREE.SphereGeometry(.056,12,10),handTrimMat,0,0,0);
 
-  return{armRoot,handGrp,forearmPivot};
+  const upperArmDir=new THREE.Vector3(side*.14,.16,.38).normalize();
+  const upperArmLen=.34;
+  const upperArm=addTo(elbowJoint,new THREE.CylinderGeometry(.062,.072,upperArmLen,14),sleeveColorMat,0,0,0);
+  upperArm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),upperArmDir);
+  upperArm.position.copy(upperArmDir).multiplyScalar(upperArmLen*.5);
+
+  const padGeo=new THREE.BoxGeometry(.058,.024,armLen*.74);
+  addTo(forearmPivot,padGeo,handTrimMat,0,.039,armLen*.48);
+
+  return{armRoot,handGrp,forearmPivot,elbowJoint,wristCuff,fingers,thumbGrp};
 }
 
 function makeExtrudeShape(pts,depth,bevel=.008){
@@ -1372,25 +1395,27 @@ wModels.forEach(g=>gun.add(g));
   buildTacticalArm(g,{side:-1,handPos:[-.036,-.088,-.18],handRot:[.16,.44,-.52],elbowOffset:[-.34,-.32,.34],scale:.88});
 }
 
+let knifeBladePivot=null;
 {
   const g=wModels[4];
   const bladePivot=new THREE.Group();
-  bladePivot.position.set(0.01,-0.02,-0.16);
+  bladePivot.position.set(0.028,-0.045,-0.17);
   bladePivot.rotation.order='YXZ';
-  bladePivot.rotation.set(0.18,-0.12,-0.25);
+  bladePivot.rotation.set(0.14,-0.18,-0.22);
   g.add(bladePivot);
+  knifeBladePivot=bladePivot;
 
-  addTo(bladePivot,new THREE.CylinderGeometry(.018,.02,.125,14),gm2,0,0,.02,Math.PI/2);
-  addTo(bladePivot,new THREE.CylinderGeometry(.021,.021,.018,14),steelBright,0,0,.082,Math.PI/2);
-  addTo(bladePivot,new THREE.BoxGeometry(.068,.014,.024),gm3,0,.004,-.045);
-  addTo(bladePivot,new THREE.BoxGeometry(.072,.007,.008),accRed,0,.008,-.045);
+  addTo(bladePivot,new THREE.CylinderGeometry(.02,.022,.135,16),gm2,0,0,.018,Math.PI/2);
+  addTo(bladePivot,new THREE.CylinderGeometry(.023,.023,.02,16),steelBright,0,0,.086,Math.PI/2);
+  addTo(bladePivot,new THREE.BoxGeometry(.074,.016,.026),gm3,0,.005,-.048);
+  addTo(bladePivot,new THREE.BoxGeometry(.078,.008,.01),accRed,0,.009,-.048);
 
-  const knifeBladeShape=makeExtrudeShape([[0,-.016],[.34,-.012],[.41,.002],[.32,.018],[0,.017]],.007,.002);
-  addTo(bladePivot,knifeBladeShape,bladeEdgeMat,0,.004,-.245,0,-Math.PI/2,0);
-  addTo(bladePivot,new THREE.BoxGeometry(.005,.005,.35),steelBright,0,.018,-.225);
+  const knifeBladeShape=makeExtrudeShape([[0,-.017],[.36,-.012],[.43,.002],[.34,.019],[0,.018]],.008,.0025);
+  addTo(bladePivot,knifeBladeShape,bladeEdgeMat,0,.005,-.258,0,-Math.PI/2,0);
+  addTo(bladePivot,new THREE.BoxGeometry(.0055,.0055,.37),steelBright,0,.019,-.238);
 
-  buildTacticalArm(g,{side:1,handPos:[.01,-.035,-.15],handRot:[-.25,-.15,.22],elbowOffset:[.28,-.28,.4],scale:.96});
-  buildTacticalArm(g,{side:-1,handPos:[-.12,-.12,-.24],handRot:[.16,.36,-.44],elbowOffset:[-.44,-.3,.3],scale:.9});
+  buildTacticalArm(g,{side:1,handPos:[0.032,-0.048,-0.165],handRot:[-0.22,-0.22,0.18],elbowOffset:[0.31,-0.32,0.44],gripWrap:.82,scale:1});
+  buildTacticalArm(g,{side:-1,handPos:[-0.14,-0.11,-0.26],handRot:[0.18,0.34,-0.46],elbowOffset:[-0.45,-0.3,0.32],gripWrap:.45,scale:.92});
 }
 
 function syncWeaponModel(){
@@ -1714,15 +1739,23 @@ function fx(dt){
  const bobX=Math.cos(bobPhase*.5)*swayAmp,bobY=Math.abs(Math.sin(bobPhase))*swayAmp;
 
  let swYaw=0,swPitch=0,swRoll=0,swX=0,swY=0,swZ=0;
- if(wi===4&&knifeSwingT>0){
-  const spProg=1-(knifeSwingT/.24);
-  const arc=Math.sin(spProg*Math.PI);
-  swYaw=-.85*arc;
-  swPitch=.38*arc;
-  swRoll=-1.15*arc;
-  swX=-.22*arc;
-  swY=.04*arc;
-  swZ=-.14*arc;
+ if(wi===4){
+  if(knifeSwingT>0){
+   const spProg=1-(knifeSwingT/.24);
+   const arc=Math.sin(spProg*Math.PI);
+   const sweep=Math.sin(spProg*Math.PI*.85);
+   swYaw=-1.18*sweep;
+   swPitch=.52*arc;
+   swRoll=-1.45*sweep;
+   swX=-.28*sweep;
+   swY=.06*arc;
+   swZ=-.22*arc;
+   if(knifeBladePivot){
+     knifeBladePivot.rotation.set(0.14+0.35*arc,-0.18-0.55*sweep,-0.22-0.65*sweep);
+   }
+  }else if(knifeBladePivot){
+   knifeBladePivot.rotation.set(0.14,-0.18,-0.22);
+  }
  }
 
  const targetX=activeAds?(wi===2?.02:0):.2;
