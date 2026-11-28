@@ -582,7 +582,7 @@ function createSpatialPanner(a,pos){
   p.connect(a.destination);
   return p;
 }
-function tone(f,f2,d,v,ty='square',dl=0,pos=null){
+function tone(f,f2,d,v,ty='triangle',dl=0,pos=null){
   const a=aud();if(!a)return;
   const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+dl;
   o.type=ty;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t+d);
@@ -599,8 +599,8 @@ function nz(d,fc,v,dl=0,pos=null){
 }
 const SX={
   shot:(v=1,w=0,pos=null)=>{
-    if(w===2){nz(.07,5200,.22*v,0,pos);tone(820,240,.07,.16*v,'triangle',0,pos)}
-    else{nz(w==1?.25:.14,w==2?4200:2600,.5*v,0,pos);tone(w==1?100:w==2?120:180,40,w==1?.25:.14,.35*v,w==1?'sawtooth':'square',0,pos)}
+    nz(w==1?.24:.15,w==2?2600:1850,.45*v,0,pos);
+    tone(w==1?96:w==2?110:145,36,w==1?.22:.15,.32*v,'triangle',0,pos);
   },
   knifeSwing:(pos=null)=>{
     const a=aud();if(!a)return;
@@ -608,28 +608,27 @@ const SX={
       const dur=.16,len=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,len,a.sampleRate),ch0=buf.getChannelData(0);
       for(let i=0;i<len;i++){const env=Math.sin((i/len)*Math.PI);ch0[i]=(Math.random()*2-1)*env}
       const src=a.createBufferSource();src.buffer=buf;
-      const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=2.4;
+      const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=2.0;
       const now=a.currentTime;
-      bp.frequency.setValueAtTime(520,now);
-      bp.frequency.exponentialRampToValueAtTime(1950,now+dur*.65);
-      bp.frequency.exponentialRampToValueAtTime(740,now+dur);
-      const g=a.createGain();g.gain.setValueAtTime(.32,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);
+      bp.frequency.setValueAtTime(480,now);
+      bp.frequency.exponentialRampToValueAtTime(1700,now+dur*.65);
+      bp.frequency.exponentialRampToValueAtTime(680,now+dur);
+      const g=a.createGain();g.gain.setValueAtTime(.28,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);
       src.connect(bp);bp.connect(g);g.connect(createSpatialPanner(a,pos));
       src.start(now);src.stop(now+dur);
-      tone(1180,540,.09,.12,'triangle',.02,pos);
-    }catch(_){nz(.14,1400,.25,0,pos)}
+    }catch(_){nz(.14,1300,.24,0,pos)}
   },
   whiz:(pan=0)=>{
     const a=aud();if(!a)return;
     try{
-      const dur=.16,len=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,len,a.sampleRate),ch0=buf.getChannelData(0);
+      const dur=.15,len=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,len,a.sampleRate),ch0=buf.getChannelData(0);
       for(let i=0;i<len;i++){const env=Math.sin((i/len)*Math.PI);ch0[i]=(Math.random()*2-1)*env}
       const src=a.createBufferSource();src.buffer=buf;
-      const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=3.2;
+      const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=2.4;
       const now=a.currentTime;
-      bp.frequency.setValueAtTime(2400,now);
-      bp.frequency.exponentialRampToValueAtTime(620,now+dur);
-      const g=a.createGain();g.gain.setValueAtTime(.34,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);
+      bp.frequency.setValueAtTime(1750,now);
+      bp.frequency.exponentialRampToValueAtTime(560,now+dur);
+      const g=a.createGain();g.gain.setValueAtTime(.28,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);
       src.connect(bp);bp.connect(g);
       if(a.createStereoPanner){
         const sp=a.createStereoPanner();sp.pan.value=Math.max(-1,Math.min(1,pan));
@@ -638,13 +637,13 @@ const SX={
       src.start(now);src.stop(now+dur);
     }catch(_){}
   },
-  reload:()=>{tone(700,400,.04,.15);tone(500,300,.05,.15,'square',.8);tone(900,500,.04,.2,'square',1.2)},
-  hit:(crit=false)=>{tone(crit?1850:1300,crit?2100:1300,.055,.24,'triangle');if(crit)tone(920,1480,.06,.16,'sine',.02)},
-  kill:()=>tone(420,85,.32,.28,'sawtooth'),
-  hurt:()=>{nz(.15,600,.5);tone(140,60,.2,.3,'sine')},
-  jump:(pos=null)=>tone(220,440,.12,.15,'sine',0,pos),
-  land:(pos=null)=>nz(.08,400,.3,0,pos),
-  step:(pos=null)=>nz(.05,520,.14,0,pos),
+  reload:()=>{tone(540,320,.05,.12,'triangle');tone(410,250,.06,.12,'triangle',.8);tone(620,380,.05,.14,'triangle',1.2)},
+  hit:(crit=false)=>{tone(crit?1320:920,crit?1500:780,.05,.18,'triangle');if(crit)tone(680,1040,.05,.12,'sine',.015)},
+  kill:()=>tone(360,82,.28,.24,'sawtooth'),
+  hurt:()=>{nz(.15,520,.45);tone(130,52,.18,.26,'sine')},
+  jump:(pos=null)=>tone(200,380,.11,.13,'sine',0,pos),
+  land:(pos=null)=>nz(.08,360,.26,0,pos),
+  step:(pos=null)=>nz(.05,440,.12,0,pos),
   win:()=>[523,659,784].forEach((f,i)=>tone(f,f,.25,.2,'triangle',i*.15)),
   lose:()=>[330,262,196].forEach((f,i)=>tone(f,f*.9,.35,.2,'sawtooth',i*.25))
 };
@@ -901,38 +900,38 @@ function addWorldMesh(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   return m;
 }
 
-const floorMat=new THREE.MeshStandardMaterial({color:0x222934,roughness:.84,metalness:.14,flatShading:true});
+const floorMat=new THREE.MeshStandardMaterial({color:0x232a36,roughness:.88,metalness:.08});
 const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),floorMat);
 flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveShadow=true;world.add(flr);
 
-const wallMat=new THREE.MeshStandardMaterial({color:0x394250,roughness:.82,metalness:.16,flatShading:true});
-const pillarMat=new THREE.MeshStandardMaterial({color:0x2d3542,roughness:.78,metalness:.22,flatShading:true});
-const crateMat=new THREE.MeshStandardMaterial({color:0x6d3d18,roughness:.74,metalness:.14,flatShading:true});
-const deckMat=new THREE.MeshStandardMaterial({color:0x252c38,roughness:.8,metalness:.2,flatShading:true});
-const rampMat=new THREE.MeshStandardMaterial({color:0x1e242e,roughness:.82,metalness:.18,flatShading:true});
-const railMat=new THREE.MeshStandardMaterial({color:0x5f6c7d,roughness:.46,metalness:.58,flatShading:true});
-const steelTrimMat=new THREE.MeshStandardMaterial({color:0x151922,roughness:.52,metalness:.6,flatShading:true});
-const aoBandMat=new THREE.MeshStandardMaterial({color:0x0a0d12,roughness:.96,metalness:.05,flatShading:true});
-const laneMat=new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.26});
+const wallMat=new THREE.MeshStandardMaterial({color:0x363f4d,roughness:.88,metalness:.08});
+const pillarMat=new THREE.MeshStandardMaterial({color:0x2c3440,roughness:.86,metalness:.1});
+const crateMat=new THREE.MeshStandardMaterial({color:0x683c19,roughness:.82,metalness:.08});
+const deckMat=new THREE.MeshStandardMaterial({color:0x272e3a,roughness:.84,metalness:.14});
+const rampMat=new THREE.MeshStandardMaterial({color:0x212732,roughness:.86,metalness:.12});
+const railMat=new THREE.MeshStandardMaterial({color:0x556070,roughness:.58,metalness:.42});
+const steelTrimMat=new THREE.MeshStandardMaterial({color:0x171c26,roughness:.68,metalness:.32});
+const aoBandMat=new THREE.MeshStandardMaterial({color:0x0b0e14,roughness:.96,metalness:.04});
+const laneMat=new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.22});
 const emissiveCeilingBarMat=new THREE.MeshBasicMaterial({color:0x93c5fd});
 const emissiveRailStripMat=new THREE.MeshBasicMaterial({color:0x38bdf8});
 
-addWorldMesh(laneMat,new THREE.PlaneGeometry(.38,ARENA_D-8),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
-addWorldMesh(laneMat,new THREE.PlaneGeometry(ARENA_W-8,.38),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
+addWorldMesh(laneMat,new THREE.PlaneGeometry(.34,ARENA_D-8),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
+addWorldMesh(laneMat,new THREE.PlaneGeometry(ARENA_W-8,.34),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
 
-const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,36),new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.28,side:2}));
+const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.8,36),new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.24,side:2}));
 midRing.rotation.x=-Math.PI/2;midRing.position.set(ARENA_W/2,.02,ARENA_D/2);world.add(midRing);
 
 for(let z=14;z<=70;z+=14){
-  addWorldMesh(steelTrimMat,new THREE.BoxGeometry(ARENA_W-4,.58,1.05),[ARENA_W/2,WALL_H+.18,z],null,false,false);
-  addWorldMesh(emissiveCeilingBarMat,new THREE.BoxGeometry(15.5,.11,.24),[ARENA_W/2,WALL_H-.18,z],null,false,false);
+  addWorldMesh(steelTrimMat,new THREE.BoxGeometry(ARENA_W-4,.42,.85),[ARENA_W/2,WALL_H+.14,z],null,false,false);
+  addWorldMesh(emissiveCeilingBarMat,new THREE.BoxGeometry(15.5,.1,.22),[ARENA_W/2,WALL_H-.18,z],null,false,false);
 }
 
 const containerMatCache={};
 function getContainerMat(hex){
   const k=hex||0x2b3d28;
   if(!containerMatCache[k]){
-    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.66,metalness:.36,flatShading:true});
+    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.76,metalness:.22});
   }
   return containerMatCache[k];
 }
@@ -942,23 +941,13 @@ SOLID_BOXES.forEach(b=>{
   const cx=(b.xMin+b.xMax)/2,cz=(b.zMin+b.zMax)/2;
   if(b.kind==='container'){
     addWorldMesh(getContainerMat(b.col),new THREE.BoxGeometry(w,b.h,d),[cx,b.h/2,cz]);
-    addWorldMesh(aoBandMat,new THREE.BoxGeometry(w+.06,.26,d+.06),[cx,.13,cz],null,false,true);
-    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.1,.12,d+.1),[cx,b.h-.03,cz],null,false,false);
-    const ribCount=Math.max(3,Math.floor((b.xMax-b.xMin)/1.3));
-    for(let i=1;i<ribCount;i++){
-      const rx=b.xMin+((b.xMax-b.xMin)*i)/ribCount;
-      addWorldMesh(steelTrimMat,new THREE.BoxGeometry(.08,b.h-.14,d+.05),[rx,b.h/2,cz]);
-    }
+    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.06,.1,d+.06),[cx,b.h-.03,cz],null,false,false);
     return;
   }
   const mat=b.kind==='crate'?crateMat:(b.kind==='pillar'?pillarMat:wallMat);
   addWorldMesh(mat,new THREE.BoxGeometry(w,b.h,d),[cx,b.h/2,cz]);
-  addWorldMesh(aoBandMat,new THREE.BoxGeometry(w+.08,.38,d+.08),[cx,.19,cz],null,false,true);
   if(b.kind==='wall'||b.kind==='pillar'){
-    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.14,.14,d+.14),[cx,2.6,cz],null,false,false);
-    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.16,.2,d+.16),[cx,b.h+.05,cz],null,false,false);
-  }else if(b.kind==='crate'){
-    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w-.22,.05,d-.22),[cx,b.h+.02,cz],null,false,false);
+    addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.08,.14,d+.08),[cx,b.h+.04,cz],null,false,false);
   }
 });
 
@@ -966,27 +955,26 @@ ELEVATED_DECKS.forEach(deck=>{
   const w=deck.xMax-deck.xMin,d=deck.zMax-deck.zMin;
   const cx=(deck.xMin+deck.xMax)/2,cz=(deck.zMin+deck.zMax)/2;
   addWorldMesh(deckMat,new THREE.BoxGeometry(w,deck.thick,d),[cx,deck.h-deck.thick/2,cz]);
-  addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.08,.22,d+.08),[cx,deck.h-deck.thick-.1,cz],null,false,false);
+  addWorldMesh(steelTrimMat,new THREE.BoxGeometry(w+.06,.18,d+.06),[cx,deck.h-deck.thick-.08,cz],null,false,false);
 
   const railH=.8;
   [-1,1].forEach(side=>{
     const rz=cz+side*(d/2-.08);
     addWorldMesh(railMat,new THREE.BoxGeometry(w,.09,.11),[cx,deck.h+railH,rz]);
     addWorldMesh(emissiveRailStripMat,new THREE.BoxGeometry(w-.4,.055,.06),[cx,deck.h+.14,rz-side*.05],null,false,false);
-    const steps=Math.max(4,Math.floor(w/3.4));
+    const steps=Math.max(3,Math.floor(w/5.5));
     for(let i=0;i<=steps;i++){
       const px=deck.xMin+(w*i)/steps;
       addWorldMesh(pillarMat,new THREE.BoxGeometry(.1,railH,.1),[px,deck.h+railH/2,rz]);
     }
   });
 
-  const colCount=Math.max(2,Math.floor(w/9.5));
+  const colCount=Math.max(2,Math.floor(w/11));
   for(let i=0;i<=colCount;i++){
     const px=deck.xMin+.8+((w-1.6)*i)/colCount;
     [deck.zMin+.45,deck.zMax-.45].forEach(pz=>{
       const colH=deck.h-deck.thick;
-      addWorldMesh(pillarMat,new THREE.BoxGeometry(.66,colH,.66),[px,colH/2,pz]);
-      addWorldMesh(aoBandMat,new THREE.BoxGeometry(.76,.32,.76),[px,.16,pz],null,false,true);
+      addWorldMesh(pillarMat,new THREE.BoxGeometry(.64,colH,.64),[px,colH/2,pz]);
     });
   }
 });
@@ -1465,7 +1453,7 @@ let ti=0;function tracer(a,b,col,fromEnemy=false){
   o.l.material.color.setHex(col);o.l.visible=true;o.t=.09;
   if(fromEnemy)checkBulletWhiz(a,b);
 }
-const spk=new THREE.Mesh(new THREE.SphereGeometry(.14,6,4),new THREE.MeshBasicMaterial({color:0xffb84d}));spk.visible=false;sc.add(spk);
+const spk=new THREE.Mesh(new THREE.SphereGeometry(.12,6,4),new THREE.MeshBasicMaterial({color:0xffaa44}));spk.visible=false;sc.add(spk);
 const PN=120,pg=new THREE.BoxGeometry(.07,.07,.07),pms=[0xb30000,0x7a0000].map(c=>new THREE.MeshBasicMaterial({color:c})),pp=[];
 for(let i=0;i<PN;i++){const m=new THREE.Mesh(pg,pms[i%2]);m.visible=false;sc.add(m);pp.push({m,v:new THREE.Vector3(),t:0})}
 let pi_=0;function blood(pt,dir,n){for(let i=0;i<n;i++){const o=pp[pi_++%PN];o.m.position.copy(pt);o.v.set((Math.random()-.5)*4.4-dir.x*1.6,Math.random()*4.2+.6,(Math.random()-.5)*4.4-dir.z*1.6);o.t=.6+Math.random()*.8;o.m.scale.setScalar(.65+Math.random()*1.4);o.m.visible=true}}
@@ -2732,16 +2720,359 @@ applySavedLayout();
 $('rotBtn').onclick=async()=>{aud();await enterLandscapeMode()};
 addEventListener('beforeunload',()=>{if(isHost&&roomCode)removeRoomFromHub(roomCode)});
 
-syncProfilePreview();
-reset();renderRoomList();syncBackBtn();
+/* ===== 택티컬 스윕 3D 업그레이드 패치 v2 (사운드 · 벽면 질감 · 탄흔 · 탄피) ===== */
+(function(){
+'use strict';
+const ri=(a,b)=>a+Math.random()*(b-a);
+const TS={ctx:null,bus:null,rev:null,nb:null};
+
+function tsInit(){
+  const a=aud();if(!a)return false;
+  if(TS.ctx===a)return true;
+  TS.ctx=a;
+  const nb=a.createBuffer(1,a.sampleRate,a.sampleRate),d=nb.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  TS.nb=nb;
+  const comp=a.createDynamicsCompressor();
+  comp.threshold.value=-15;comp.knee.value=14;comp.ratio.value=6;comp.attack.value=.003;comp.release.value=.22;
+  const mg=a.createGain();mg.gain.value=.92;comp.connect(mg);mg.connect(a.destination);TS.bus=comp;
+  const len=a.sampleRate*1.2|0,ir=a.createBuffer(2,len,a.sampleRate);
+  for(let c=0;c<2;c++){const ch=ir.getChannelData(c);for(let i=0;i<len;i++){const x=i/len;ch[i]=(Math.random()*2-1)*Math.pow(1-x,3.1)}}
+  const conv=a.createConvolver();conv.buffer=ir;
+  const rg=a.createGain();rg.gain.value=.34;conv.connect(rg);rg.connect(comp);TS.rev=conv;
+  return true;
+}
+function tsNoise(d,t,dur,type,f0,f1,vol,q,att){
+  const a=TS.ctx,s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+  att=att||.001;
+  s.buffer=TS.nb;s.loop=true;f.type=type;f.Q.value=q||.7;
+  f.frequency.setValueAtTime(f0,t);
+  if(f1!==f0)f.frequency.exponentialRampToValueAtTime(Math.max(30,f1),t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0008,t+dur);
+  s.connect(f);f.connect(g);g.connect(d);s.start(t,Math.random()*.5);s.stop(t+dur+.02);
+}
+function tsTone(d,t,type,f0,f1,dur,vol){
+  const a=TS.ctx,o=a.createOscillator(),g=a.createGain();
+  o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.002);g.gain.exponentialRampToValueAtTime(.0008,t+dur);
+  o.connect(g);g.connect(d);o.start(t);o.stop(t+dur+.02);
+}
+const SATC={};
+function satCurve(k){
+  if(SATC[k])return SATC[k];
+  const n=1024,c=new Float32Array(n),m=1.6+k*1.3,den=Math.tanh(m);
+  for(let i=0;i<n;i++){const x=i/(n-1)*2-1;c[i]=Math.tanh(x*m)/den}
+  return SATC[k]=c;
+}
+function tsDest(pos,wet,vol,sat){
+  const a=TS.ctx,inp=a.createGain();
+  let node=inp;
+  if(sat){const ws=a.createWaveShaper();ws.curve=satCurve(sat);ws.oversample='2x';inp.connect(ws);node=ws}
+  const g=a.createGain();g.gain.value=vol;node.connect(g);
+  const lp=a.createBiquadFilter();lp.type='lowpass';
+  let dist=0;
+  if(pos)dist=Math.hypot(pos.x-pl.x,(pos.y||0)-(pl.y+1.4),pos.z-pl.z);
+  lp.frequency.value=Math.max(550,6200/(1+dist/16));
+  g.connect(lp);
+  if(pos&&dist>.8){
+    const p=a.createPanner();p.panningModel='HRTF';p.distanceModel='inverse';p.refDistance=3;p.maxDistance=80;p.rolloffFactor=1.15;
+    if(p.positionX){p.positionX.value=pos.x;p.positionY.value=pos.y||0;p.positionZ.value=pos.z}else p.setPosition(pos.x,pos.y||0,pos.z);
+    lp.connect(p);p.connect(TS.bus);
+  }else lp.connect(TS.bus);
+  const ws2=a.createGain();ws2.gain.value=wet*(dist>40?.6:1);lp.connect(ws2);ws2.connect(TS.rev);
+  return inp;
+}
+
+/* ---------- 묵직한 총소리 (딱따구리 '딱딱' 끊김 완화) ---------- */
+const TSG=[
+  {a:[2400,220,.26,.92],b:[520,.18,.65],t:[118,34,.25,.85],w:.36,sat:.85},  // 돌격소총
+  {a:[1850,140,.42,1.0],b:[380,.26,.78],t:[86,26,.40,.95],w:.52,sat:1.1},   // 샷건
+  {a:[2800,110,.58,1.0],b:[440,.34,.75],t:[76,22,.54,.95],w:.62,sat:1.0},   // 저격총
+  {a:[2200,280,.19,.85],b:[640,.13,.55],t:[145,44,.17,.68],w:.28,sat:.75}   // 권총
+];
+function shotSnd(v,w,pos){
+  if(!tsInit())return;
+  if(v===undefined)v=1;if(!w)w=0;if(pos===undefined)pos=null;
+  const a=TS.ctx,t=a.currentTime+.002,P=TSG[w]||TSG[0],r=.92+Math.random()*.16;
+  const d=tsDest(pos,P.w,Math.min(1.15,v),P.sat);
+  tsNoise(d,t,P.a[2],'lowpass',P.a[0]*r,P.a[1]*r,P.a[3],.65,.002);
+  tsNoise(d,t,P.b[1],'bandpass',P.b[0]*r,P.b[0]*r*.55,P.b[2],.75,.003);
+  tsTone(d,t,'triangle',P.t[0]*r,P.t[1],P.t[2],P.t[3]*.72);
+  tsTone(d,t,'sine',P.t[0]*.65*r,P.t[1]*.8,P.t[2]*1.05,P.t[3]*.68);
+}
+
+/* ---------- 칼소리 ---------- */
+function knifeSwingSnd(pos){
+  if(!tsInit())return;
+  if(pos===undefined)pos=null;
+  const a=TS.ctx,t=a.currentTime+.002,d=tsDest(pos,.08,.85);
+  const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=TS.nb;f.type='bandpass';f.Q.value=1.4;
+  f.frequency.setValueAtTime(420,t);f.frequency.exponentialRampToValueAtTime(1850,t+.09);f.frequency.exponentialRampToValueAtTime(620,t+.2);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.82,t+.07);g.gain.exponentialRampToValueAtTime(.001,t+.22);
+  s.connect(f);f.connect(g);g.connect(d);s.start(t,Math.random()*.5);s.stop(t+.25);
+}
+function knifeHitSnd(p){
+  if(!tsInit())return;
+  const a=TS.ctx,t=a.currentTime+.001;
+  if(!p)p={x:pl.x-Math.sin(pl.yaw)*1.5,y:pl.y+1.2,z:pl.z-Math.cos(pl.yaw)*1.5};
+  const d=tsDest(p,.08,.85);
+  tsTone(d,t,'sine',145,50,.15,.85);
+  tsNoise(d,t+.01,.14,'lowpass',900,240,.5,.8);
+}
+function knifeWallSnd(p){
+  if(!tsInit())return;
+  const a=TS.ctx,t=a.currentTime+.001,d=tsDest(p,.08,.45);
+  tsNoise(d,t,.05,'lowpass',1500,520,.45,.8,.001);
+  tsTone(d,t,'triangle',160,78,.06,.28);
+}
+function fleshSnd(p){
+  if(!tsInit())return;
+  const a=TS.ctx,t=a.currentTime+.001,d=tsDest(p,.06,.5);
+  tsTone(d,t,'sine',175,72,.08,.45);
+  tsNoise(d,t,.05,'lowpass',950,350,.35,.8);
+}
+
+/* ---------- 벽/표면 피격음: '띠리링' 고음 공명 제거하고 둔탁한 타격음만 출력 ---------- */
+function impactSnd(kind,p){
+  if(!tsInit())return;
+  const a=TS.ctx,t=a.currentTime+.001,d=tsDest(p,.06,.44);
+  if(kind==='metal'){
+    tsNoise(d,t,.065,'lowpass',1450,420,.48,.75,.001);
+    tsTone(d,t,'triangle',165,64,.065,.32);
+  }else if(kind==='wood'){
+    tsNoise(d,t,.075,'lowpass',1150,380,.52,.8,.001);
+    tsTone(d,t,'sine',145,75,.065,.3);
+  }else{
+    tsNoise(d,t,.065,'lowpass',1250,400,.52,.8,.001);
+    tsTone(d,t,'sine',135,58,.06,.28);
+  }
+}
+function tink(p,kind,v){
+  if(!tsInit())return;
+  const a=TS.ctx,t=a.currentTime+.001,d=tsDest(p,.04,.12*v);
+  tsNoise(d,t,.035,'lowpass',900,320,.28,.8,.001);
+}
+SX.shot=shotSnd;
+SX.knifeSwing=knifeSwingSnd;
+SX.knifeHit=knifeHitSnd;
+
+/* ---------- 깔끔하고 정돈된 맵 질감 ---------- */
+function mkCanvas(sz,fn){const c=document.createElement('canvas');c.width=c.height=sz;fn(c.getContext('2d'),sz);return c}
+function speckle(g,sz,amt){const im=g.getImageData(0,0,sz,sz),d=im.data;for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*amt;d[i]+=n;d[i+1]+=n;d[i+2]+=n}g.putImageData(im,0,0)}
+
+const cFloor=mkCanvas(256,(g,s)=>{
+  g.fillStyle='#242b37';g.fillRect(0,0,s,s);
+  speckle(g,s,7);
+  g.strokeStyle='rgba(255,255,255,.04)';g.lineWidth=1;
+  g.strokeRect(.5,.5,s-1,s-1);
+});
+function cleanSurfaceCanvas(baseHex,grainAmt=6){
+  const hex='#'+(baseHex>>>0).toString(16).padStart(6,'0');
+  return mkCanvas(256,(g,s)=>{
+    g.fillStyle=hex;g.fillRect(0,0,s,s);
+    speckle(g,s,grainAmt);
+  });
+}
+const cWall=cleanSurfaceCanvas(0x363f4d,6);
+const cPillar=cleanSurfaceCanvas(0x2c3440,6);
+const cCrate=cleanSurfaceCanvas(0x683c19,9);
+const cDeck=cleanSurfaceCanvas(0x272e3a,7);
+const cCont=cleanSurfaceCanvas(0xd4d4d4,8);
+
+const aniso=Math.min(4,ren.capabilities.getMaxAnisotropy());
+function mkTex(c){const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=aniso;return t}
+const TILE=new Map();
+function applyTex(mat,canvas,tile,bump,tint){
+  mat.map=mkTex(canvas);mat.bumpMap=mkTex(canvas);mat.bumpScale=bump;
+  if(tint!==null)mat.color.setHex(tint);
+  mat.needsUpdate=true;TILE.set(mat,tile);
+}
+applyTex(floorMat,cFloor,8,.06,0xffffff);
+applyTex(wallMat,cWall,8,.04,0xffffff);
+applyTex(pillarMat,cPillar,8,.04,0xffffff);
+applyTex(crateMat,cCrate,2,.08,0xffffff);
+applyTex(deckMat,cDeck,4,.06,0xffffff);
+Object.values(containerMatCache).forEach(m=>{applyTex(m,cCont,4,.06,null);m.color.multiplyScalar(1.25)});
+applyTex(rampMat,cDeck,4,.06,0xd0d0d0);
+TILE.delete(rampMat);rampMat.map.repeat.set(.5,.5);rampMat.bumpMap.repeat.set(.5,.5);
+
+function fixUV(g,tile){
+  if(g.userData.tsUV)return;g.userData.tsUV=1;
+  const p=g.parameters,uv=g.attributes.uv;
+  if(g.type==='BoxGeometry'){
+    const w=p.width,h=p.height,d=p.depth,fs=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+    for(let f=0;f<6;f++)for(let i=0;i<4;i++){const k=f*4+i;uv.setXY(k,uv.getX(k)*fs[f][0]/tile,uv.getY(k)*fs[f][1]/tile)}
+  }else if(g.type==='PlaneGeometry'){
+    for(let k=0;k<uv.count;k++)uv.setXY(k,uv.getX(k)*p.width/tile,uv.getY(k)*p.height/tile);
+  }else return;
+  uv.needsUpdate=true;
+}
+world.traverse(m=>{if(!m.isMesh)return;const tl=TILE.get(m.material);if(tl)fixUV(m.geometry,tl)});
+
+/* ---------- 탄흔 ---------- */
+const metalSet=new Set(Object.values(containerMatCache).concat([railMat,steelTrimMat,deckMat,rampMat]));
+function surf(m){if(m===crateMat)return'wood';return metalSet.has(m)?'metal':'concrete'}
+const HT={};
+function holeTex(kind){
+  if(HT[kind])return HT[kind];
+  const c=mkCanvas(128,(g,s)=>{
+    const cx=s/2,cy=s/2;g.clearRect(0,0,s,s);
+    if(kind==='scratch'){
+      g.lineCap='round';
+      g.strokeStyle='rgba(220,226,236,.75)';g.lineWidth=2.4;
+      g.beginPath();g.moveTo(18,s-22);g.quadraticCurveTo(s*.5,s*.48,s-18,22);g.stroke();
+      return;
+    }
+    const gr=g.createRadialGradient(cx,cy,2,cx,cy,s*.42);
+    gr.addColorStop(0,'rgba(12,12,14,.92)');
+    gr.addColorStop(.55,'rgba(36,36,40,.42)');
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(cx,cy,s*.42,0,6.3);g.fill();
+  });
+  return HT[kind]=new THREE.CanvasTexture(c);
+}
+const DMAT={};
+function decalMat(kind){
+  return DMAT[kind]||(DMAT[kind]=new THREE.MeshLambertMaterial({map:holeTex(kind),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+}
+const decalGroup=new THREE.Group();sc.add(decalGroup);
+const DN=70,decals=[],dgeo=new THREE.PlaneGeometry(1,1);let di=0;
+function decal(p,n,kind){
+  let m=decals[di%DN];
+  if(!m){m=new THREE.Mesh(dgeo,decalMat(kind));m.renderOrder=2;decals[di%DN]=m;decalGroup.add(m)}
+  di++;m.material=decalMat(kind);
+  const s=kind==='scratch'?ri(.32,.44):ri(.14,.22);
+  m.scale.set(s,s,1);
+  m.position.copy(p).addScaledVector(n,.012);
+  m.lookAt(p.x+n.x,p.y+n.y,p.z+n.z);
+  m.rotateZ(Math.random()*6.283);
+  m.visible=true;
+}
+
+/* ---------- 먼지 · 불꽃 ---------- */
+const dust=[],DU=26,dugeo=new THREE.SphereGeometry(.065,6,4);let du=0;
+function puff(p,n,kind,cnt){
+  for(let i=0;i<cnt;i++){
+    let o=dust[du%DU];
+    if(!o){o={m:new THREE.Mesh(dugeo,new THREE.MeshBasicMaterial({transparent:true,depthWrite:false})),v:new THREE.Vector3(),t:0,life:.4,spark:false};dust[du%DU]=o;sc.add(o.m)}
+    du++;o.m.position.copy(p).addScaledVector(n,.02);
+    const sp=kind==='metal'?ri(2.4,5.2):ri(.8,2.2);
+    o.v.set(n.x*sp+ri(-1.5,1.5),Math.max(.25,n.y*sp+ri(0,1.6)),n.z*sp+ri(-1.5,1.5));
+    o.spark=(kind==='metal');
+    o.m.material.color.setHex(kind==='wood'?0x8c5426:kind==='metal'?0xffb84d:0x8c96a4);
+    o.m.material.opacity=kind==='metal'?.9:.42;
+    o.life=kind==='metal'?ri(.12,.22):ri(.24,.42);o.t=o.life;o.m.scale.setScalar(kind==='metal'?.55:ri(.8,1.5));o.m.visible=true;
+  }
+}
+
+/* ---------- 탄피 ---------- */
+const shellMat=new THREE.MeshStandardMaterial({color:0xd8a848,roughness:.28,metalness:.88});
+const shellGeo=new THREE.CylinderGeometry(.009,.009,.036,7);shellGeo.rotateZ(Math.PI/2);
+const shells=[],SHN=18;let shi=0;
+function ejectShell(){
+  if(wi===4)return;
+  let o=shells[shi%SHN];
+  if(!o){o={m:new THREE.Mesh(shellGeo,shellMat),v:new THREE.Vector3(),rv:new THREE.Vector3(),t:0,bounced:0};shells[shi%SHN]=o;sc.add(o.m)}
+  shi++;
+  const pos=new THREE.Vector3(wi===1?.16:.15,-.06,wi===2?-.22:-.24);cam.localToWorld(pos);
+  o.m.position.copy(pos);
+  const side=new THREE.Vector3(1,ri(.35,.75),ri(-.2,.25)).normalize().transformDirection(cam.matrixWorld);
+  const spd=wi===1?ri(2.2,3.4):ri(3.2,4.8);
+  o.v.copy(side).multiplyScalar(spd);
+  o.rv.set(ri(14,28),ri(14,28),ri(14,28));
+  o.t=.75;o.bounced=0;o.m.visible=true;
+}
+
+/* ---------- 사격 판정 연결 ---------- */
+let lastWallSnd=0;
+const origShoot=shoot;
+shoot=function(){
+  const w=WP[wi];if(!w||fcd>0||rl>0)return;
+  const hadAmmo=!w.isGun||am>0;
+  const prevShots=trc.map(o=>o.t);
+  const wasSpk=spk.visible;
+  origShoot();
+  if(!hadAmmo)return;
+  if(w.isGun)ejectShell();
+  const o=new THREE.Vector3(.2,-.18,-.9);cam.localToWorld(o);
+  const tg=[world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!isFriendly(r)).map(r=>r.g)];
+  const totalSpread=(w.spr+burstFxT+moveSpread)*(ads?(wi===2?.08:.38):1);
+  for(let k=0;k<w.pel;k++){
+    V.set((Math.random()-.5)*totalSpread,(Math.random()-.5)*totalSpread);
+    RC.setFromCamera(V,cam);
+    RC.far=w.isKnife?3.2:95;
+    const h=RC.intersectObjects(tg,true)[0];
+    if(h){
+      const e=h.object.userData.e,hd=h.object.userData.hd;
+      const n=h.face?h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize():new THREE.Vector3(0,1,0);
+      if(e){
+        if(w.isKnife)knifeHitSnd(h.point);else fleshSnd(h.point);
+      }else{
+        const kind=surf(h.object.material);
+        decal(h.point,n,w.isKnife?'scratch':kind);
+        puff(h.point,n,kind,w.isKnife?3:(w.pel>1?2:4));
+        const now=performance.now();
+        if(now-lastWallSnd>55){lastWallSnd=now;if(w.isKnife)knifeWallSnd(h.point);else impactSnd(kind,h.point)}
+      }
+      if(w.isGun&&k<4){
+        for(let j=0;j<trc.length;j++){
+          if(trc[j].t>0&&trc[j].t!==prevShots[j]){
+            const p=trc[j].l.geometry.attributes.position;
+            p.setXYZ(0,o.x,o.y,o.z);p.setXYZ(1,h.point.x,h.point.y,h.point.z);p.needsUpdate=true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if(w.isGun&&!wasSpk)spk.visible=false;
+};
+
+/* ---------- 탄피 · 먼지 물리 갱신 ---------- */
+const origFx=fx;
+fx=function(dt){
+  origFx(dt);
+  for(let i=0;i<shells.length;i++){
+    const o=shells[i];if(o.t<=0)continue;
+    o.t-=dt;if(o.t<=0){o.m.visible=false;continue}
+    o.v.y-=15*dt;o.m.position.addScaledVector(o.v,dt);
+    o.m.rotation.x+=o.rv.x*dt;o.m.rotation.y+=o.rv.y*dt;o.m.rotation.z+=o.rv.z*dt;
+    const fl=gnd(o.m.position.x,o.m.position.z,o.m.position.y+.2,.08);
+    if(o.m.position.y<=fl+.015){
+      o.m.position.y=fl+.015;
+      if(o.bounced<2&&Math.abs(o.v.y)>.6){
+        o.v.y=-o.v.y*.38;o.v.x*=.55;o.v.z*=.55;o.rv.multiplyScalar(.55);
+        if(o.bounced===0)tink(o.m.position,'metal',.25);
+        o.bounced++;
+      }else{o.v.set(0,0,0);o.rv.set(0,0,0)}
+    }
+  }
+  for(let i=0;i<dust.length;i++){
+    const o=dust[i];if(o.t<=0)continue;
+    o.t-=dt;if(o.t<=0){o.m.visible=false;continue}
+    o.m.position.addScaledVector(o.v,dt);
+    if(o.spark){o.v.y-=14*dt;o.m.material.opacity=Math.max(0,o.t/o.life)}
+    else{o.v.multiplyScalar(.92);o.m.scale.addScalar(dt*1.8);o.m.material.opacity=.4*(o.t/o.life)}
+  }
+};
+const origReset=reset;
+reset=function(skipSpawn){
+  origReset(skipSpawn);
+  di=0;for(let i=0;i<decals.length;i++)decals[i].visible=false;
+  for(let i=0;i<shells.length;i++){shells[i].t=0;shells[i].m.visible=false}
+  for(let i=0;i<dust.length;i++){dust[i].t=0;dust[i].m.visible=false}
+};
+})();
+/* ===== 업그레이드 패치 v2 끝 ===== */
+
 let lt=performance.now();
-(function loop(t){
-  let dt=Math.min(.05,(t-lt)/1e3||0);lt=t;if(slow>0){slow-=dt;dt*=.35}
-  try{
-    if(st==1)upd(dt);else{pl.yaw+=dt*.12;cam.position.set(42,4.2,42);cam.rotation.set(-.18,pl.yaw,0);syncAudioListener(42,2.6,42,pl.yaw)}
-    fx(dt);fx2(dt);if(mm)mpFx(dt);hud();radar();
-  }catch(_){}
-  ren.render(sc,cam);
+function loop(n){
   requestAnimationFrame(loop);
-})(lt);
+  let dt=Math.min(.05,(n-lt)/1e3);lt=n;
+  if(slow>0){slow-=dt;dt*=.35}
+  if(st==1){upd(dt);mpFx(dt)}else{const spkEl=$('spk');if(spkEl)spkEl.visible=false}
+  fx(dt);fx2(dt);hud();radar();ren.render(sc,cam);
+}
+requestAnimationFrame(loop);
 </script></body></html>
