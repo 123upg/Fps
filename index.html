@@ -700,7 +700,6 @@ const gnd=(x,z,y,r=.38)=>{
   return m;
 };
 
-/* 벽·기둥·컨테이너 + 육교 덱(높이 차이에 따른 상·하층 엄폐)까지 검사 */
 function los(x0,z0,x1,z1,y0=1.2,y1=1.2){
   const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/.55);
   for(let i=1;i<n;i++){
@@ -725,12 +724,13 @@ const cam=new THREE.PerspectiveCamera(72,1,.1,140);cam.rotation.order='YXZ';sc.a
 let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch(e){$('msg').textContent='이 환경에서는 3D(WebGL)를 쓸 수 없어요.';throw e}
 const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.75));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.05;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
 
+/* 블렌더 스타일 블룸 & 후처리 패스 복구 */
 let composer=null,bloomPass=null;
 if(window.THREE.EffectComposer&&window.THREE.UnrealBloomPass){
   composer=new THREE.EffectComposer(ren);
   const renderPass=new THREE.RenderPass(sc,cam);
   composer.addPass(renderPass);
-  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.32:.48,.42,.82);
+  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.35:.52,.44,.8);
   composer.addPass(bloomPass);
 }
 
@@ -742,18 +742,18 @@ const rz=()=>{
 };
 addEventListener('resize',rz);rz();
 
-sc.add(new THREE.HemisphereLight(0x8fa1b8,0x1a1f29,.7));
-const dl=new THREE.DirectionalLight(0xe8cba8,1.25);dl.position.set(92,64,24);dl.target.position.set(42,0,42);sc.add(dl,dl.target);dl.castShadow=true;
+sc.add(new THREE.HemisphereLight(0x8fa1b8,0x1a1f29,.72));
+const dl=new THREE.DirectionalLight(0xe8cba8,1.3);dl.position.set(92,64,24);dl.target.position.set(42,0,42);sc.add(dl,dl.target);dl.castShadow=true;
 const shRes=LO?1024:2048;dl.shadow.mapSize.set(shRes,shRes);Object.assign(dl.shadow.camera,{left:-52,right:52,top:52,bottom:-52,near:10,far:190});dl.shadow.camera.updateProjectionMatrix();dl.shadow.bias=-.00035;
 
-const rimLight=new THREE.DirectionalLight(0x5c7696,.42);rimLight.position.set(-65,40,72);sc.add(rimLight);
+const rimLight=new THREE.DirectionalLight(0x5c7696,.45);rimLight.position.set(-65,40,72);sc.add(rimLight);
 const fL=new THREE.PointLight(0xffb454,0,16);fL.position.set(0,0,-.95);cam.add(fL);
 const world=new THREE.Group();sc.add(world);
 
 sc.background=new THREE.Color(0x10141c);
 sc.fog=new THREE.FogExp2(0x131822,.011);
 
-/* 노이즈 텍스처 없는 깔끔한 로우폴리 단색 + 모서리 트림 + 가짜 AO(벽 밑동 어두운 띠) + 발광 조명바/스트립 + 정적 머지 */
+/* 정적 지오메트리 머지 + 발광 메쉬 + 그림자 캐스트/리시브 */
 const mergeBuckets=new Map();
 function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   let g=geo.clone();
@@ -784,8 +784,8 @@ const railMat=new THREE.MeshStandardMaterial({color:0x8e99a8,roughness:.66,metal
 const steelTrimMat=new THREE.MeshStandardMaterial({color:0x222730,roughness:.72,metalness:.28,flatShading:true});
 const aoBandMat=new THREE.MeshStandardMaterial({color:0x141820,roughness:.95,metalness:.02,flatShading:true});
 const laneMat=new THREE.MeshBasicMaterial({color:0xd97438,transparent:true,opacity:.26});
-const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xfff1d6,emissive:0xffb86c,emissiveIntensity:1.65,roughness:.3,metalness:.1});
-const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0x9be7ff,emissive:0x38bdf8,emissiveIntensity:1.55,roughness:.3,metalness:.1});
+const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xfff1d6,emissive:0xffb86c,emissiveIntensity:1.75,roughness:.3,metalness:.1});
+const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0x9be7ff,emissive:0x38bdf8,emissiveIntensity:1.65,roughness:.3,metalness:.1});
 
 {
   addMergedPart(laneMat,new THREE.PlaneGeometry(.38,ARENA_D-8),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
@@ -989,6 +989,7 @@ function getDistanceFalloff(wIdx,dist){
   return 1;
 }
 
+/* 디테일 총기 모델링 복구 (돌출 형상 + 회전 배럴 + 스코프 + 탄피/파츠) */
 const gun=new THREE.Group();
 const MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m,flatShading:true});
 const gm1=MT(0x2b313c,.62,.4);
