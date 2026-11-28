@@ -398,7 +398,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
     <div id="pane-settings" class="tab-pane">
       <div class="pane-title"><span>게임 & 조작 설정</span></div>
       <label class="set-row">
-        <span>자동사격 (조준 시 발사)</span>
+        <span>자동사격 (적 조준 시 발사)</span>
         <input type="checkbox" id="au">
       </label>
       <label class="set-row">
@@ -1275,7 +1275,7 @@ function spawn(n){
 }
 
 function reset(skipSpawn){
-  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=pl.yaw;lookTargetPit=pl.pit;bloom=0;pl.hp=100;
+  pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;bloom=0;pl.hp=100;
   wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
   pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;
   fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();
@@ -1325,7 +1325,7 @@ function stickAxis(dx,dy){
   const scaled=Math.min(1,(dist-joyDeadzone)/(joyMaxRadius-joyDeadzone));
   return[(dx/dist)*scaled,(dy/dist)*scaled];
 }
-/* 터치 조준만 부드럽게 보간 (마우스 입력은 즉시 반영) */
+/* 터치 조준만 부드럽게 보간 (마우스 및 발사 버튼 드래그 조준은 즉시 반영) */
 function stepLookSmoothing(dt){
   if(lookTargetYaw===null||lookTargetPit===null)return;
   const hasActiveLook=Object.values(T).some(o=>o.r==='l');
@@ -1466,16 +1466,21 @@ cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedT
 const te=e=>{for(const t of e.changedTouches){const o=T[t.identifier];if(o&&o.r=='m')pj(null);delete T[t.identifier]}};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
 const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();on()};if(off)b.onpointerup=b.onpointerleave=b.onpointercancel=e=>{e.stopPropagation();off()}};
 
-/* 발사 버튼(#bf) 터치 드래그 조준 (에임 보정 없음) */
+/* 모바일 발사 버튼(#bf) 터치 드래그 조준 (에임 보정 없음) */
 {
   const bf=$('bf');
+  bf.onpointerdown=null;bf.onpointerup=null;bf.onpointerleave=null;bf.onpointercancel=null;
   let fireTouchId=null,lastFx=0,lastFy=0;
+
   bf.addEventListener('touchstart',e=>{
     if(layoutMode)return;
     e.preventDefault();e.stopPropagation();
     const t=e.changedTouches[0];if(!t)return;
-    fireTouchId=t.identifier;lastFx=t.clientX;lastFy=t.clientY;fi=1;
+    fireTouchId=t.identifier;
+    lastFx=t.clientX;lastFy=t.clientY;
+    fi=1;
   },{passive:false});
+
   bf.addEventListener('touchmove',e=>{
     if(layoutMode||fireTouchId===null)return;
     e.preventDefault();e.stopPropagation();
@@ -1488,14 +1493,20 @@ const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.
       }
     }
   },{passive:false});
-  const endFireDrag=e=>{
+
+  const endFireTouch=e=>{
     if(fireTouchId===null)return;
     for(const t of e.changedTouches){
-      if(t.identifier===fireTouchId){fireTouchId=null;fi=0;break}
+      if(t.identifier===fireTouchId){
+        fireTouchId=null;
+        fi=0;
+        break;
+      }
     }
   };
-  bf.addEventListener('touchend',endFireDrag);
-  bf.addEventListener('touchcancel',endFireDrag);
+
+  bf.addEventListener('touchend',endFireTouch);
+  bf.addEventListener('touchcancel',endFireTouch);
   bf.addEventListener('mousedown',e=>{if(!layoutMode){e.stopPropagation();fi=1}});
   addEventListener('mouseup',()=>{if(fireTouchId===null)fi=0});
 }
@@ -2122,9 +2133,10 @@ function radar(){
 }
 
 function look(dx,dy){
-  if(Math.abs(dx)<.2&&Math.abs(dy)<.2)return;
+  if(Math.abs(dx)<.15&&Math.abs(dy)<.15)return;
   const k=(+$('sn').value||1.1)*(ads?(wi===2?.36:.65):1);
-  lookTargetYaw=(lookTargetYaw??pl.yaw)-dx*.0072*k;lookTargetPit=cl((lookTargetPit??pl.pit)-dy*.0058*k,-1.4,1.4);
+  pl.yaw-=dx*.0072*k;
+  pl.pit=cl(pl.pit-dy*.0058*k,-1.4,1.4);
 }
 
 /* 자동사격: world를 포함해 벽 엄폐를 확인 (에임 보정 없음) */
