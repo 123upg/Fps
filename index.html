@@ -21,6 +21,15 @@ canvas{position:absolute;inset:0;display:block}
 .hud-sub-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 #hud .hud-meta{background:var(--pn);color:var(--muted);padding:4px 8px;border-radius:7px;border:1px solid var(--pn-border);backdrop-filter:blur(8px);font-size:11px}
 
+#backBtn{
+  position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+  z-index:28;padding:6px 13px;border-radius:9px;font-size:12px;font-weight:800;
+  background:var(--pn);color:var(--fg);border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(8px);display:none;pointer-events:auto;
+}
+#backBtn.on{display:inline-flex;align-items:center;gap:4px}
+#backBtn:hover{border-color:var(--ac);color:#fff}
+
 #hpPanel{background:var(--pn);color:var(--fg);padding:7px 11px;border-radius:10px;min-width:136px;border:1px solid var(--pn-border);backdrop-filter:blur(8px)}
 .hp-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
 .hp-label{font-size:10px;letter-spacing:.8px;color:var(--muted)}
@@ -198,7 +207,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 .room-card-join{font-size:11px;font-weight:900;color:var(--ac);flex-shrink:0}
 .room-empty{font-size:11.5px;color:#94a3b8;text-align:center;padding:12px 6px}
 
-#matchHud{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:22;align-items:center;gap:10px;background:var(--pn);border:1px solid var(--pn-border);border-radius:10px;padding:6px 14px;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(8px);pointer-events:none}
+#matchHud{display:none;position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:22;align-items:center;gap:10px;background:var(--pn);border:1px solid var(--pn-border);border-radius:10px;padding:6px 14px;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(8px);pointer-events:none}
 #matchHud.on{display:flex}
 .mh-side{display:flex;align-items:center;gap:6px;font-size:12px}
 .mh-red{color:#ff6b6b}
@@ -250,6 +259,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 .col-sw.on{transform:scale(1.15);border:2.5px solid #fff;box-shadow:0 0 0 2px var(--ac)}
 .name-tag{position:fixed;transform:translate(-50%,-100%);background:var(--pn);color:#fff;padding:2px 8px;border-radius:7px;font-weight:800;font-size:12px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.18);box-shadow:0 3px 8px rgba(0,0,0,.45);z-index:18;transform-origin:50% 100%;line-height:1.2;backdrop-filter:blur(4px)}
 </style></head><body><div id="app">
+<button type="button" id="backBtn">← 뒤로가기</button>
 <div id="hud">
   <div class="hud-top-row">
     <div id="hpPanel">
@@ -317,7 +327,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   <div class="menu-right">
     <div id="pane-play" class="tab-pane active">
       <div class="pane-title"><span>출격 모드 & 클래스</span></div>
-      <p id="msg" class="pane-desc">적을 모두 소탕하세요. 머리를 맞히면 치명타입니다.<br>PC: WASD 이동 · 마우스 조준 · R 재장전 · Q/E/F 스킬</p>
+      <p id="msg" class="pane-desc">육교 위·아래 라인과 엄폐물을 활용해 적을 소탕하세요.<br>PC: WASD 이동 · 마우스 조준 · R 재장전 · Q/E/F 스킬</p>
       <div id="chs"></div>
       <div class="mode-cards">
         <button type="button" id="go" class="mode-btn primary">
@@ -340,7 +350,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
           <button type="button" data-mpsub="round">라운드 섬멸 (5라운드 선승)</button>
         </div>
         <div class="row" id="mpJoinRow">
-          <input id="rtitleInp" maxlength="20" placeholder="방 제목 (예: 같이 한판)">
+          <input id="rtitleInp" maxlength="20" placeholder="방 제목 (예: 육교 샷건전)">
           <button type="button" id="mkroom">방 만들기</button>
         </div>
         <div class="row" style="justify-content:space-between">
@@ -475,6 +485,21 @@ const mp=[
 const fullRows=[...mp,...mp.slice(0,-1).reverse()];
 const CM=fullRows.map(r=>[...r.padEnd(R,'#').slice(0,R)]);
 const RAMP_H=1.15;
+const BRIDGE_Y=2.3;
+const BRIDGE_THICK=.26;
+/* 중앙을 동서로 가로지르는 육교 및 남북 양쪽 진입 경사로 */
+const BRIDGE_Z_MIN=28.8,BRIDGE_Z_MAX=31.2;
+const BRIDGE_X_MIN=16.5,BRIDGE_X_MAX=43.5;
+const RAMP_UP_X_MIN=12.0,RAMP_UP_X_MAX=16.5;
+const RAMP_DN_X_MIN=43.5,RAMP_DN_X_MAX=48.0;
+
+function bridgeFloorAt(x,z){
+  if(z<BRIDGE_Z_MIN||z>BRIDGE_Z_MAX)return null;
+  if(x>=BRIDGE_X_MIN&&x<=BRIDGE_X_MAX)return BRIDGE_Y;
+  if(x>RAMP_UP_X_MIN&&x<BRIDGE_X_MIN)return ((x-RAMP_UP_X_MIN)/(BRIDGE_X_MIN-RAMP_UP_X_MIN))*BRIDGE_Y;
+  if(x>BRIDGE_X_MAX&&x<RAMP_DN_X_MAX)return ((RAMP_DN_X_MAX-x)/(RAMP_DN_X_MAX-BRIDGE_X_MAX))*BRIDGE_Y;
+  return null;
+}
 
 function cellAt(x,z){
   const i=Math.floor(x/S),j=Math.floor(z/S);
@@ -486,25 +511,35 @@ function cellAt(x,z){
 
 function hh(x,z){
   const{ch,lx,lz}=cellAt(x,z);
-  if(ch=='#')return 4.2;
-  if(ch=='c')return 1.15;
-  if(ch=='^')return (1-lz)*RAMP_H;
-  if(ch=='v')return lz*RAMP_H;
-  if(ch=='<')return (1-lx)*RAMP_H;
-  if(ch=='>')return lx*RAMP_H;
-  return 0;
+  let base=0;
+  if(ch=='#')base=4.2;
+  else if(ch=='c')base=1.15;
+  else if(ch=='^')base=(1-lz)*RAMP_H;
+  else if(ch=='v')base=lz*RAMP_H;
+  else if(ch=='<')base=(1-lx)*RAMP_H;
+  else if(ch=='>')base=lx*RAMP_H;
+  const bh=bridgeFloorAt(x,z);
+  return bh!==null?Math.max(base,bh):base;
 }
 
 const isRampCh=ch=>ch=='^'||ch=='v'||ch=='<'||ch=='>';
 const isPassable=(x,z,y,r=.35)=>{
   const pts=[[-r,-r],[r,-r],[-r,r],[r,r],[0,0]];
   for(const[a,b]of pts){
-    const{ch}=cellAt(x+a,z+b);
+    const px=x+a,pz=z+b;
+    const{ch}=cellAt(px,pz);
     if(ch=='#')return false;
     if(ch=='c'&&y+.05<1.15)return false;
     if(isRampCh(ch)){
-      const rh=hh(x+a,z+b);
+      const rh=hh(px,pz);
       if(y+1.2<rh)return false;
+    }
+    const bh=bridgeFloorAt(px,pz);
+    if(bh!==null){
+      /* 육교 아래를 지나갈 때 육교 데크 천장에 머리 끼임 방지 */
+      if(y<bh-1.85&&y+1.75>bh-BRIDGE_THICK)return false;
+      /* 육교 위에 있을 때 난간 밖으로 떨어지지 않게 경계 제한 */
+      if(y>=bh-.35&&(Math.abs(pz-BRIDGE_Z_MIN)<.18||Math.abs(pz-BRIDGE_Z_MAX)<.18))return false;
     }
   }
   return true;
@@ -513,12 +548,30 @@ const blk=(x,z,y,r=.35)=>!isPassable(x,z,y,r);
 const gnd=(x,z,y,r=.35)=>{
   let m=0;
   [[-r,-r],[r,-r],[-r,r],[r,r],[0,0]].forEach(([a,b])=>{
-    const h=hh(x+a,z+b);
-    if(h<4&&h<=y+.45&&h>m)m=h;
+    const px=x+a,pz=z+b;
+    const{ch}=cellAt(px,pz);
+    let h=0;
+    if(ch=='#')h=4.2;
+    else if(ch=='c')h=1.15;
+    else if(ch=='^')h=(1-cellAt(px,pz).lz)*RAMP_H;
+    else if(ch=='v')h=cellAt(px,pz).lz*RAMP_H;
+    else if(ch=='<')h=(1-cellAt(px,pz).lx)*RAMP_H;
+    else if(ch=='>')h=cellAt(px,pz).lx*RAMP_H;
+    const bh=bridgeFloorAt(px,pz);
+    if(bh!==null&&y>=bh-.65)h=Math.max(h,bh);
+    if(h<4&&h<=y+.55&&h>m)m=h;
   });
   return m;
 };
-function los(x0,z0,x1,z1){const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/.5);for(let i=1;i<n;i++)if(hh(x0+(x1-x0)*i/n,z0+(z1-z0)*i/n)>2)return false;return true}
+function los(x0,z0,x1,z1){
+  const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/.5);
+  for(let i=1;i<n;i++){
+    const px=x0+(x1-x0)*i/n,pz=z0+(z1-z0)*i/n;
+    const{ch}=cellAt(px,pz);
+    if(ch=='#')return false;
+  }
+  return true;
+}
 
 const sc=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(72,1,.1,110);cam.rotation.order='YXZ';sc.add(cam);
@@ -594,7 +647,74 @@ const wm=[SM(concT,0xe2e8f0,.86,.1,.9),SM(concT,0xb8c2d1,.86,.1,.9)];
 const cm=SM(crT,0xf8fafc,.5,.4,.85);
 const rampMat=new THREE.MeshStandardMaterial({map:concT,color:0x526075,roughness:.68,metalness:.28});
 const capMat=new THREE.MeshStandardMaterial({color:0x161920,roughness:.48,metalness:.6});
+const bridgeDeckMat=new THREE.MeshStandardMaterial({map:concT,color:0x475569,roughness:.72,metalness:.25});
+const railMat=new THREE.MeshStandardMaterial({color:0x1e293b,roughness:.42,metalness:.75});
 const bgs={},capGeo=new THREE.BoxGeometry(S+.06,.16,S+.06);
+
+/* 육교(브리지) + 진입 경사로 메시 생성 */
+{
+  const bridgeGroup=new THREE.Group();
+  const deckLen=BRIDGE_X_MAX-BRIDGE_X_MIN;
+  const deckWid=BRIDGE_Z_MAX-BRIDGE_Z_MIN;
+  const deckCenterX=(BRIDGE_X_MIN+BRIDGE_X_MAX)/2;
+  const deckCenterZ=(BRIDGE_Z_MIN+BRIDGE_Z_MAX)/2;
+
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(deckLen,BRIDGE_THICK,deckWid),bridgeDeckMat);
+  deck.position.set(deckCenterX,BRIDGE_Y-BRIDGE_THICK/2,deckCenterZ);
+  deck.castShadow=deck.receiveShadow=true;
+  bridgeGroup.add(deck);
+
+  /* 육교 양옆 난간 */
+  const railH=.72;
+  [-1,1].forEach(side=>{
+    const rzPos=deckCenterZ+side*(deckWid/2-.06);
+    const topBar=new THREE.Mesh(new THREE.BoxGeometry(deckLen,.08,.12),railMat);
+    topBar.position.set(deckCenterX,BRIDGE_Y+railH,rzPos);
+    topBar.castShadow=true;
+    bridgeGroup.add(topBar);
+    const posts=Math.max(3,Math.floor(deckLen/2.4));
+    for(let i=0;i<=posts;i++){
+      const px=BRIDGE_X_MIN+(deckLen*i)/posts;
+      const post=new THREE.Mesh(new THREE.BoxGeometry(.09,railH,.09),railMat);
+      post.position.set(px,BRIDGE_Y+railH/2,rzPos);
+      post.castShadow=true;
+      bridgeGroup.add(post);
+    }
+  });
+
+  /* 육교 하부 지지 기둥 */
+  [BRIDGE_X_MIN+1.2,deckCenterX,BRIDGE_X_MAX-1.2].forEach(px=>{
+    [BRIDGE_Z_MIN+.35,BRIDGE_Z_MAX-.35].forEach(pz=>{
+      const colH=BRIDGE_Y-BRIDGE_THICK;
+      const pillar=new THREE.Mesh(new THREE.BoxGeometry(.55,colH,.55),wm[1]);
+      pillar.position.set(px,colH/2,pz);
+      pillar.castShadow=pillar.receiveShadow=true;
+      bridgeGroup.add(pillar);
+    });
+  });
+
+  /* 진입 경사로 2개(서쪽/동쪽) */
+  const makeRamp=(xStart,xEnd,dir)=>{
+    const len=Math.abs(xEnd-xStart);
+    const sh=new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(len,0);
+    sh.lineTo(len,BRIDGE_Y);
+    sh.closePath();
+    const g=new THREE.ExtrudeGeometry(sh,{depth:deckWid,bevelEnabled:false});
+    if(dir<0){
+      g.rotateY(Math.PI);
+      g.translate(len,0,deckWid);
+    }
+    const m=new THREE.Mesh(g,rampMat);
+    m.position.set(Math.min(xStart,xEnd),0,BRIDGE_Z_MIN);
+    m.castShadow=m.receiveShadow=true;
+    return m;
+  };
+  bridgeGroup.add(makeRamp(RAMP_UP_X_MIN,BRIDGE_X_MIN,1));
+  bridgeGroup.add(makeRamp(RAMP_DN_X_MAX,BRIDGE_X_MAX,-1));
+  world.add(bridgeGroup);
+}
 
 function mkRampMesh(dirCh){
   const shape=new THREE.Shape();
@@ -657,7 +777,6 @@ function camo(base){
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;
 }
 
-/* 원래 캐릭터 풀 파츠 모델링 복구 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
@@ -742,7 +861,6 @@ const WP=[
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
-/* 원래 3종 무기 풀 파츠 모델링 복구 */
 const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.42,.68),gm2=MT(0x101114,.48,.58),gm3=MT(0x3b3f46,.32,.78),glv=MT(0x1b1b1d,.78,.06),wd=MT(0x7c3f1d,.72,.08),snM=MT(0x1b1e24,.34,.84),scpM=MT(0x14171c,.24,.88),accRed=MT(0xff3b30,.35,.4);
 const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
@@ -868,10 +986,21 @@ function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
   else{end=new THREE.Vector3(0,0,-60);cam.localToWorld(end)}
   tracer(o,end,0xfff0b0);if(k==0&&mm)mpSend({t:'shot',ep:[+end.x.toFixed(1),+end.y.toFixed(1),+end.z.toFixed(1)]})}}
 function sw(i){if(i==wi||st!=1||rl>0||i<0||i>2)return;WA[wi]=[am,res];wi=i;am=WA[i][0];res=WA[i][1];syncWeaponModel();fcd=.35;tone(500,300,.06,.15)}
+
+function syncBackBtn(){const b=$('backBtn');if(b)b.classList.toggle('on',st===1)}
+function returnToMenu(reasonText){
+  fi=0;J=0;md=0;ads=false;st=0;
+  try{if(document.pointerLockElement)document.exitPointerLock()}catch(_){}
+  if(reasonText)$('msg').textContent=reasonText;
+  $('ov').hidden=false;
+  syncBackBtn();
+}
+$('backBtn').onclick=e=>{e.stopPropagation();aud();returnToMenu('메뉴로 돌아왔습니다.')};
+
 function end(w){st=2;fi=0;J=0;try{document.exitPointerLock()}catch(_){}
  $('msg').textContent=w?'라운드 '+(rnd+1)+' 클리어! 다음 라운드는 적이 더 늘어납니다.':'전사했습니다. 처음부터 다시 도전하세요.';
  $('go').innerHTML=w?'<b>다음 라운드</b><span>라운드 '+(rnd+2)+' 계속하기</span>':'<b>일반플레이</b><span>처음부터 다시 시작</span>';
- if(w)rnd++;else rnd=0;(w?SX.win:SX.lose)();$('ov').hidden=false;st=0}
+ if(w)rnd++;else rnd=0;(w?SX.win:SX.lose)();$('ov').hidden=false;st=0;syncBackBtn()}
 
 const joyDeadzone=4,joyMaxRadius=38;
 function stickAxis(dx,dy){
@@ -916,7 +1045,7 @@ function upd(dt){
   else{const r=Math.max(0,Math.min(R-1,e.z/S|0)),c=Math.max(0,Math.min(R-1,e.x/S|0));let b=null,bv=FD[r]?FD[r][c]:999;[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,q])=>{const y=r+a,x=c+q;if(FD[y]&&FD[y][x]<bv){bv=FD[y][x];b=[y,x]}});
    const tx=b?(b[1]+.5)*S:pl.x,tz=b?(b[0]+.5)*S:pl.z,ax=tx-e.x,az=tz-e.z,dd=Math.hypot(ax,az)||1;mx=ax/dd;mz=az/dd;e.g.rotation.y=Math.atan2(mx,mz)}
   const nx=e.x+mx*sp,nz=e.z+mz*sp;let mv=0;if(!blk(nx,e.z,e.y||0,.3)){e.x=nx;mv=1}if(!blk(e.x,nz,e.y||0,.3)){e.z=nz;mv=1}
-  e.y=gnd(e.x,e.z,(e.y||0)+.45,.3);
+  e.y=gnd(e.x,e.z,(e.y||0)+.55,.3);
   e.g.position.set(e.x,e.y,e.z);
   if(mv){e.ph+=dt*8.5;e.L.rotation.x=Math.sin(e.ph)*.65;e.R.rotation.x=-Math.sin(e.ph)*.65}else{e.L.rotation.x=e.R.rotation.x=0}
   e.fl-=dt;e.ms.forEach(m=>m.emissive.setHex(e.fl>0?0xaa2222:0));
@@ -966,9 +1095,22 @@ function hud(){
 }
 
 const lock=()=>{try{cv.requestPointerLock()}catch(_){}};
+async function enterLandscapeMode(){
+  try{
+    const d=document,e=d.documentElement;
+    if(!d.fullscreenElement&&!d.webkitFullscreenElement){
+      const f=e.requestFullscreen||e.webkitRequestFullscreen;
+      if(f){const r=f.call(e);if(r&&r.catch)await r.catch(()=>{})}
+    }
+  }catch(_){}
+  try{
+    if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');
+  }catch(_){}
+}
+
 $('go').onclick=()=>{
-  aud();mpStop();reset();st=1;$('ov').hidden=true;pop('라운드 '+(rnd+1)+' 시작');
-  if(LO){try{if(!document.fullscreenElement && !document.webkitFullscreenElement)fsT(1)}catch(_){}forceLandscape()}
+  aud();mpStop();reset();st=1;$('ov').hidden=true;syncBackBtn();pop('라운드 '+(rnd+1)+' 시작');
+  if(LO)enterLandscapeMode();
   if(!matchMedia('(pointer:coarse)').matches)lock();
 };
 addEventListener('keydown',e=>{const k=e.key.length>1?e.key:e.key.toLowerCase();K[k]=1;if(k=='r')reload();if(k=='q')skill(0);if(k=='e')skill(1);if(k=='f')skill(2);if(k>='1'&&k<='3')sw(+k-1);if(k==' ')e.preventDefault()});
@@ -1171,10 +1313,11 @@ function launchMultiMatch(fromHost){
   myTeam=matchCfg.mode==='1v1'?(fromHost?'red':'blue'):((lobbyRoster[myId]&&lobbyRoster[myId].team)||'red');
   mm=1;dth=0;kills=0;matchState.phase='playing';matchState.round=1;matchState.redScore=0;matchState.blueScore=0;
   matchState.timer=(matchCfg.mode==='1v1')?60:(matchCfg.sub==='round'?100:300);
-  reset(true);mpSpawn();st=1;$('ov').hidden=true;
+  reset(true);mpSpawn();st=1;$('ov').hidden=true;syncBackBtn();
   $('roomtag').style.display='block';$('roomtag').textContent=(roomTitle?roomTitle+' · ':'')+'코드 '+roomCode;
   if(isHost)broadcastRoomToHub();
   updateMatchHud();
+  if(LO)enterLandscapeMode();
   if(!matchMedia('(pointer:coarse)').matches)lock();
 }
 function startNewRound(nextRoundNum,redSc,blueSc,msgText){
@@ -1184,12 +1327,12 @@ function startNewRound(nextRoundNum,redSc,blueSc,msgText){
   mpSpawn();$('tip').textContent='';pop(msgText||('라운드 '+nextRoundNum+' 시작!'));updateMatchHud();
 }
 function finishMatch(title,sub){
-  matchState.phase='matchEnd';fi=0;J=0;ads=false;try{document.exitPointerLock()}catch(_){}
+  matchState.phase='matchEnd';fi=0;J=0;ads=false;st=0;syncBackBtn();try{document.exitPointerLock()}catch(_){}
   $('meTitle').textContent=title;$('meSub').textContent=sub;$('meLobbyBtn').style.display=(matchCfg.mode==='6v6')?'inline-block':'none';
   $('matchEndModal').classList.add('on');updateMatchHud();
 }
-$('meLobbyBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');st=0;$('ov').hidden=false;enterLobby(roomCode,isHost);if(isHost)broadcastLobby()};
-$('meExitBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');mpStop();st=0;$('ov').hidden=false};
+$('meLobbyBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');st=0;syncBackBtn();$('ov').hidden=false;enterLobby(roomCode,isHost);if(isHost)broadcastLobby()};
+$('meExitBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');mpStop();st=0;syncBackBtn();$('ov').hidden=false};
 
 function handleMsg(fromId,d){
   if(!d||!d.t)return;const sender=d.from||fromId;if(!sender||sender===myId)return;
@@ -1340,6 +1483,9 @@ function radar(){
   rg.clearRect(0,0,120,120);rg.fillStyle='rgba(10,14,20,.62)';rg.beginPath();rg.arc(60,60,60,0,6.3);rg.fill();rg.save();rg.beginPath();rg.arc(60,60,58,0,6.3);rg.clip();
   const k=2.4;rg.translate(60,60);rg.rotate(pl.yaw);rg.fillStyle='rgba(148,163,184,.45)';
   CM.forEach((r,j)=>r.forEach((ch,i)=>{if(ch=='#')rg.fillRect((i*S-pl.x)*k,(j*S-pl.z)*k,S*k,S*k)}));
+  /* 미니맵 육교 라인 표시 */
+  rg.fillStyle='rgba(255,122,47,.5)';
+  rg.fillRect((RAMP_UP_X_MIN-pl.x)*k,(BRIDGE_Z_MIN-pl.z)*k,(RAMP_DN_X_MAX-RAMP_UP_X_MIN)*k,(BRIDGE_Z_MAX-BRIDGE_Z_MIN)*k);
   const dot=(x,z,c)=>{rg.fillStyle=c;rg.beginPath();rg.arc((x-pl.x)*k,(z-pl.z)*k,3,0,6.3);rg.fill()};
   en.forEach(e=>{if(!e.dead)dot(e.x,e.z,e.hv?'#c05cff':'#fa5252')});
   Object.values(rp).forEach(r=>{if(r.al&&!r.clk)dot(r.x,r.z,isFriendly(r)?'#4dabf7':'#fa5252')});
@@ -1411,10 +1557,10 @@ addEventListener('pointermove',e=>{if(!layoutMode||!dragState)return;e.preventDe
 addEventListener('pointerup',e=>{if(!layoutMode||!dragState)return;e.preventDefault();saveLayout();dragState=null},true);
 applySavedLayout();
 
-$('rotBtn').onclick=async()=>{aud();if(!document.fullscreenElement&&!document.webkitFullscreenElement)fsT(1);try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(_){}};
+$('rotBtn').onclick=async()=>{aud();await enterLandscapeMode()};
 addEventListener('beforeunload',()=>{if(isHost&&roomCode)removeRoomFromHub(roomCode)});
 
-reset();renderRoomList();
+reset();renderRoomList();syncBackBtn();
 let lt=performance.now();
 (function loop(t){
   let dt=Math.min(.05,(t-lt)/1e3||0);lt=t;if(slow>0){slow-=dt;dt*=.35}
