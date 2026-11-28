@@ -49,7 +49,7 @@ canvas{position:absolute;inset:0;display:block}
 .am-pip.empty{background:rgba(255,255,255,.12);opacity:.45}
 .am-reloading{font-size:11px;font-weight:800;color:var(--ac);padding:2px 0}
 
-#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
+#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;opacity:.8;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
 #xh.h{background:#ff3b30;transform:scale(1.4)}
 #hitMarker{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;pointer-events:none;z-index:23;opacity:0;transform:scale(.85);transition:opacity .09s ease,transform .09s ease}
 #hitMarker.on{opacity:1;transform:scale(1.12)}
@@ -89,7 +89,8 @@ canvas{position:absolute;inset:0;display:block}
     0 -14px 0 -1px rgba(250,82,82,.75),
     0 14px 0 -1px rgba(250,82,82,.75);
 }
-#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 32px rgba(224,49,49,.72);opacity:0;z-index:19}
+#dv{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 110px 26px rgba(224,49,49,.62);opacity:0;z-index:19}
+#lowHpVignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px 34px rgba(214,32,32,.48);opacity:0;z-index:18;transition:opacity .22s ease}
 #js,#jk{position:fixed;display:none;border-radius:50%;pointer-events:none;border:1.5px solid rgba(255,255,255,.38);z-index:24}
 #js{width:92px;height:92px;margin:-46px 0 0 -46px;background:rgba(255,255,255,.05)}
 #jk{width:38px;height:38px;margin:-19px 0 0 -19px;background:rgba(255,255,255,.28)}
@@ -296,7 +297,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 <div id="xh"></div><div id="hitMarker"></div><div id="dmgDir"></div><canvas id="rdr"></canvas>
 <div id="pop"></div><div id="tip"></div>
 <div id="rlBadge"><span class="rl-dot"></span><span id="rlText">재장전 중…</span></div>
-<div id="sb"></div><div id="dv"></div><div id="js"></div><div id="jk"></div>
+<div id="sb"></div><div id="lowHpVignette"></div><div id="dv"></div><div id="js"></div><div id="jk"></div>
 <div id="bt">
   <div class="sub-row"><button id="bw">무기</button><button id="ba">조준</button><button id="br">재장전</button></div>
   <div class="main-row"><button id="bj">점프</button><button id="bf">발사</button></div>
@@ -879,7 +880,7 @@ const GC={};
 const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=20)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=20)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
-/* 캐릭터 단색 생성: 얼룩 패턴 없이 깔끔한 단색으로 구성 */
+/* 캐릭터 단색 생성 + 골반 크기 축소 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
@@ -901,31 +902,32 @@ function mkChar(c){
 
   const leg=(x,side)=>{
     const p=new THREE.Group();p.position.set(x,.93,0);g.add(p);
-    const thigh=pt(CG(.118,.098,.43,20),u,0,-.19,0,p);
-    thigh.scale.set(1.08,1,.96);
-    pt(BG(.042,.15,.13),u,side*.105,-.23,.01,p,0,0,0,-side*.05);
-    const calf=pt(CG(.096,.072,.44,20),u,0,-.54,.01,p);
+    const thigh=pt(CG(.106,.092,.43,20),u,0,-.19,0,p);
+    thigh.scale.set(1.02,1,.95);
+    pt(BG(.038,.14,.12),u,side*.095,-.23,.01,p,0,0,0,-side*.05);
+    const calf=pt(CG(.092,.07,.44,20),u,0,-.54,.01,p);
     calf.scale.set(1.02,1,1.04);
-    const kneeFold=pt(CG(.102,.102,.06,18),d,0,-.37,.02,p);
-    kneeFold.scale.set(1.04,1,.95);
-    pt(CG(.074,.078,.14,18),d,0,-.77,.01,p);
-    const boot=pt(BG(.142,.105,.27),d,0,-.87,.04,p);
+    const kneeFold=pt(CG(.098,.098,.06,18),d,0,-.37,.02,p);
+    kneeFold.scale.set(1.02,1,.95);
+    pt(CG(.072,.076,.14,18),d,0,-.77,.01,p);
+    const boot=pt(BG(.136,.105,.27),d,0,-.87,.04,p);
     boot.scale.set(1,1,1.05);
-    const toe=pt(SG(.07,16),d,0,-.885,.14,p);
+    const toe=pt(SG(.068,16),d,0,-.885,.14,p);
     toe.scale.set(1.02,.76,1.15);
-    pt(BG(.146,.042,.28),mt,0,-.925,.04,p);
+    pt(BG(.14,.042,.28),mt,0,-.925,.04,p);
     return p;
   };
-  const L=leg(-.145,-1),Rg=leg(.145,1);
+  const L=leg(-.125,-1),Rg=leg(.125,1);
 
-  const pelvis=pt(CG(.185,.165,.22,20),u,0,.97,0,body);
-  pelvis.scale.set(1.12,1,.86);
-  const waist=pt(CG(.172,.186,.22,20),u,0,1.15,0,body);
-  waist.scale.set(1.08,1,.84);
+  /* 골반·허리 슬림화 */
+  const pelvis=pt(CG(.142,.138,.21,20),u,0,.97,0,body);
+  pelvis.scale.set(.96,1,.82);
+  const waist=pt(CG(.148,.168,.21,20),u,0,1.15,0,body);
+  waist.scale.set(.98,1,.82);
   const chest=pt(CG(.228,.182,.34,22),u,0,1.38,0,body);
   chest.scale.set(1.16,1,.88);
-  pt(BG(.43,.075,.28),d,0,1.04,0,body);
-  pt(BG(.075,.082,.04),mt,0,1.04,.145,body);
+  pt(BG(.34,.07,.23),d,0,1.04,0,body);
+  pt(BG(.068,.078,.038),mt,0,1.04,.12,body);
   const vest=pt(BG(.46,.32,.26),v,0,1.41,.01,body);
   vest.scale.set(1.02,1,.96);
   [-.135,0,.135].forEach(px=>pt(BG(.082,.115,.048),d,px,1.34,.145,body));
@@ -982,7 +984,6 @@ function mkChar(c){
 const pl={x:8,y:0,z:8,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=95;
 let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,hCrit=0,dm=0,dmgAngle=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0,bobPhase=0;
 
-/* 샷건 데미지 발당 14 (헤드샷 24) */
 const WP=[
   {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true},
   {n:'샷건',mag:6,res:30,cd:.8,dmg:14,hd:24,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
@@ -1170,7 +1171,6 @@ const SPAWN_SPOTS=[
   [42,10,0],[42,74,0],[10,42,0],[74,42,0],[20,24,0],[64,60,0]
 ];
 
-/* AI 캐릭터 기본색: 진한 하늘색 단색 */
 function spawn(n){
   en.forEach(e=>sc.remove(e.g));en=[];
   const pool=SPAWN_SPOTS.filter(([sx,sz])=>Math.hypot(sx-pl.x,sz-pl.z)>16);
@@ -1197,7 +1197,7 @@ function reset(skipSpawn){
 
 function reload(){const w=WP[wi];if(rl>0||am>=w.mag||res<=0||st!=1)return;rl=w.rl;SX.reload()}
 function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
- am--;bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;mf=.055;shk=Math.max(shk,w.rc*28);SX.shot(1,wi);
+ am--;bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;mf=.055;shk=Math.max(shk,w.rc*24);SX.shot(1,wi);
  const recoilScale=ads?(wi===2?.45:.65):1;
  pl.pit=cl(pl.pit+w.rc*recoilScale,-1.4,1.4);
  pl.yaw+=(Math.random()-.5)*w.rc*.65*recoilScale;
@@ -1268,8 +1268,8 @@ function upd(dt){
 
  if(pl.og&&l>.1){bobPhase+=dt*(spr?13.5:9.5);stp+=dt*(spr?8.2:6.5);if(stp>2.4){stp=0;SX.step()}}else{bobPhase+=dt*2.1}
  stepLookSmoothing(dt);
- cam.position.set(pl.x,pl.y+(pl.dead?.35:1.6),pl.z);shk=Math.max(0,shk-dt*8);cam.rotation.set(pl.pit+(Math.random()-.5)*shk*.01,pl.yaw,(Math.random()-.5)*shk*.02);cam.updateMatrixWorld();
- for(const k in bu)if(bu[k]>0)bu[k]-=dt;for(let i=0;i<3;i++)if(cd[i]>0)cd[i]-=dt;fcd-=dt;rec=Math.max(0,rec-dt*8);mf-=dt;hm-=dt;if(hm<=0)hCrit=0;dm=Math.max(0,dm-dt*1.5);
+ cam.position.set(pl.x,pl.y+(pl.dead?.35:1.6),pl.z);shk=Math.max(0,shk-dt*10);cam.rotation.set(pl.pit+(Math.random()-.5)*shk*.0065,pl.yaw,(Math.random()-.5)*shk*.012);cam.updateMatrixWorld();
+ for(const k in bu)if(bu[k]>0)bu[k]-=dt;for(let i=0;i<3;i++)if(cd[i]>0)cd[i]-=dt;fcd-=dt;rec=Math.max(0,rec-dt*8);mf-=dt;hm-=dt;if(hm<=0)hCrit=0;dm=Math.max(0,dm-dt*1.8);
  if(rl>0){rl-=dt;if(rl<=0){const n=Math.min(WP[wi].mag-am,res);am+=n;res-=n}}
  if(fi&&!pl.dead)shoot();pickups(dt,now);aimAssist(dt);
  if(now-lh>=10&&pl.hp<100)pl.hp=Math.min(100,pl.hp+3*(ch==1?2:1)*dt);
@@ -1290,7 +1290,7 @@ function upd(dt){
   if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.45}
   else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.05}
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
-   tracer(o,t,0x74c0fc);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,6.5);SX.hurt()}}}
+   tracer(o,t,0x74c0fc);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,3.6);SX.hurt()}}}
  });
  if(mm)mpTick(dt,now);else if(pl.hp<=0)end(0);else if(en.every(e=>e.dead))end(1)}
 
@@ -1307,7 +1307,7 @@ function fx(dt){
  const isSniperScope=(activeAds && wi===2);
  gun.visible=!isSniperScope;
  $('scopeOverlay').classList.toggle('on',isSniperScope);
- $('xh').style.opacity=isSniperScope?'0':'1';
+ $('xh').style.opacity=isSniperScope?'0':'0.8';
  const swayAmp=activeAds?.0025:(spr?.012:.0075);
  const bobX=Math.cos(bobPhase*.5)*swayAmp,bobY=Math.abs(Math.sin(bobPhase))*swayAmp;
  gun.position.x=((activeAds?0:.2)+rSide+bobX);
@@ -1328,7 +1328,13 @@ function hud(){
   else{lastRl=0;$('amCur').textContent=am;if(lastMag!==w.mag){lastMag=w.mag;lastAm=-1;const cols=w.mag<=8?w.mag:15;pips.style.gridTemplateColumns='repeat('+cols+',1fr)';pips.innerHTML=Array.from({length:w.mag},(_,i)=>'<div class="am-pip"></div>').join('')}if(lastAm!==am){lastAm=am;const nodes=pips.children;for(let i=0;i<nodes.length;i++)nodes[i].className='am-pip'+(i>=am?' empty':'')}}
   $('kl').textContent=mm?'킬 '+kills+' / 데스 '+dth:'소탕 '+kills+' / '+en.length+' · '+score+'점';
   $('rd').textContent=mm?(matchCfg.mode==='1v1'?'1대1 R'+matchState.round:(myTeam==='red'?'레드팀':'블루팀')):(CH[ch].n+' · R'+(rnd+1));
-  $('dv').style.opacity=dm*.92;$('dmgDir').style.opacity=(dm>.05&&st==1&&!pl.dead)?Math.min(1,dm*1.15):'0';$('dmgDir').style.transform='rotate('+dmgAngle.toFixed(3)+'rad)';
+  const lowVig=$('lowHpVignette');
+  if(lowVig){
+    const lowRatio=(st===1&&!pl.dead&&hpVal<50)?Math.min(1,(50-hpVal)/50):0;
+    const hitBoost=(dm>.05&&hpVal<50)?dm*.35:0;
+    lowVig.style.opacity=Math.min(.92,(lowRatio*.62+hitBoost)).toFixed(3);
+  }
+  $('dv').style.opacity=(dm*.78).toFixed(3);$('dmgDir').style.opacity=(dm>.05&&st==1&&!pl.dead)?Math.min(1,dm*1.1):'0';$('dmgDir').style.transform='rotate('+dmgAngle.toFixed(3)+'rad)';
   $('xh').className=hm>0?'h':'';$('hitMarker').className=(hm>0?'on':'')+(hCrit?' crit':'');
   for(let i=0;i<3;i++){const b=$('s'+i),t=cd[i]>0?Math.ceil(cd[i])+'':CH[ch].k[i][0];if(b.textContent!=t)b.textContent=t;b.style.opacity=cd[i]>0?.45:1}
   const c=bu.shield>0?'56,217,169':bu.cloak>0?'176,107,255':bu.spd>0?'255,122,47':bu.dmg>0?'252,196,25':'';$('sd').style.boxShadow=c?'inset 0 0 80px 10px rgba('+c+',.42)':'none';
@@ -1672,7 +1678,7 @@ function mpSpawn(){
 }
 function hitMe(n,from,hd,srcX,srcZ){
   const t=performance.now()/1e3;if(pl.dead||t<pl.inv||matchState.phase!=='playing')return;
-  pl.hp-=n*(bu.shield>0?.3:1);triggerDamageFeedback(srcX,srcZ);lh=t;shk=Math.max(shk,6.5);SX.hurt();
+  pl.hp-=n*(bu.shield>0?.3:1);triggerDamageFeedback(srcX,srcZ);lh=t;shk=Math.max(shk,3.6);SX.hurt();
   if(pl.hp<=0){pl.hp=0;pl.dead=1;dth++;pl.dt=((matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round'))?999:3;mpSend({t:'kill',to:from,hd:hd?1:0},from);sendState(true)}
 }
 function mpTick(dt){
@@ -1709,7 +1715,8 @@ function pop(t){if(!t)return;const p=$('pop');p.textContent=t;popT=1.5}
 function kill(e,hd,pt){kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));if(hd)slow=.3;drop(e)}
 function mkMedMesh(x,z,y=.45){const g=new THREE.Group();const box=new THREE.Mesh(new THREE.BoxGeometry(.44,.32,.44),new THREE.MeshStandardMaterial({color:0xd8dde4,roughness:.75,metalness:.08,envMapIntensity:.35}));const c1=new THREE.Mesh(new THREE.BoxGeometry(.26,.34,.09),new THREE.MeshBasicMaterial({color:0x2ecc71}));const c2=new THREE.Mesh(new THREE.BoxGeometry(.09,.34,.26),new THREE.MeshBasicMaterial({color:0x2ecc71}));g.add(box,c1,c2);g.position.set(x,y+.45,z);sc.add(g);return g}
 function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
-function drop(e){if(!e.hv&&Math.random()>.55)return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
+/* 멀티플레이에서는 처치 시 회복/드롭 아이템 생성 안 함 */
+function drop(e){if(mm||(!e.hv&&Math.random()>.55))return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
 function pickups(dt,now){
  mapPacks.forEach(p=>{if(p.cd>0){p.cd-=dt;if(p.cd<=0)p.m.visible=true;return}p.m.rotation.y+=dt*2;if(Math.hypot(p.x-pl.x,p.z-pl.z)<1.35&&Math.abs((p.y||0)-pl.y)<1.4&&!pl.dead&&pl.hp<100){pl.hp=Math.min(100,pl.hp+40);p.cd=15;p.m.visible=false;pop('+40 체력 회복')}});
  pk=pk.filter(p=>{p.life-=dt;p.m.rotation.y+=dt*2.5;if(Math.hypot(p.m.position.x-pl.x,p.m.position.z-pl.z)<1.25&&!pl.dead){if(p.t0)pl.hp=Math.min(100,pl.hp+35);else res=Math.min(res+WP[wi].mag,WP[wi].res*2);sc.remove(p.m);return false}if(p.life<=0){sc.remove(p.m);return false}return true})
