@@ -16,7 +16,6 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"N
 #app{position:relative;height:100%;overflow:hidden}
 canvas{position:absolute;inset:0;display:block}
 
-/* 상단 좌측 HUD (겹침 방지 및 깔끔한 다크 패널) */
 #hud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:7px;pointer-events:none;font-weight:700;font-size:12.5px;z-index:22}
 .hud-top-row{display:flex;gap:8px;align-items:stretch}
 .hud-sub-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -41,7 +40,6 @@ canvas{position:absolute;inset:0;display:block}
 .am-pip.empty{background:rgba(255,255,255,.12);opacity:.5}
 .am-reloading{font-size:11.5px;font-weight:800;color:var(--ac);padding:2px 0}
 
-/* 중앙 조준점 & 스코프 */
 #xh{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border:1.5px solid rgba(255,255,255,.82);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.45);pointer-events:none;z-index:23}
 #xh.h{border-color:#fa5252;transform:scale(1.45)}
 #scopeOverlay{
@@ -77,7 +75,6 @@ canvas{position:absolute;inset:0;display:block}
 #js{width:92px;height:92px;margin:-46px 0 0 -46px;background:rgba(255,255,255,.05)}
 #jk{width:38px;height:38px;margin:-19px 0 0 -19px;background:rgba(255,255,255,.28)}
 
-/* 메인 메뉴 오버레이 */
 #ov{
   position:absolute;inset:0;z-index:40;
   display:flex;flex-direction:row;align-items:stretch;justify-content:space-between;
@@ -148,14 +145,12 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   .menu-right{align-items:flex-start}
 }
 
-/* 우측 하단 조작 버튼 (겹침 없는 깔끔한 배치) */
 #bt{display:none;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));flex-direction:column;align-items:flex-end;gap:9px;pointer-events:none;z-index:25}
 #bt div{display:flex;gap:8px}
 #bt button{width:54px;height:54px;border-radius:50%;padding:0;pointer-events:auto;font-size:11.5px;background:var(--pn);border:1.5px solid rgba(255,255,255,.28);color:#f1f5f9;backdrop-filter:blur(6px)}
 #bt #bf{width:76px;height:76px;font-size:14px;font-weight:900;background:rgba(255,122,47,.32);border-color:rgba(255,122,47,.75)}
 @media (pointer:coarse){#bt{display:flex}#bf2{display:block}}
 
-/* 스킬 버튼은 발사/상단 버튼 위쪽에 분리 배치 */
 #sk{position:fixed;right:14px;bottom:calc(168px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;z-index:25}
 #sk button{width:50px;height:50px;border-radius:50%;padding:0;font-size:10.5px;background:var(--pn);border:1.5px solid rgba(255,255,255,.24);color:#f1f5f9;backdrop-filter:blur(6px)}
 #sk button:active,#bt button:active,#bf2:active{background:rgba(255,255,255,.24)}
@@ -169,16 +164,13 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #sd{position:absolute;inset:0;pointer-events:none;transition:box-shadow .2s;z-index:19}
 #hud span,#sb{opacity:.92}
 
-/* 좌측 상단 유틸 버튼들 (HUD 아래에 세로/가로 겹치지 않게 정렬) */
 #fsb{position:absolute;left:12px;top:128px;width:32px;height:32px;padding:0;font-size:14px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:25;backdrop-filter:blur(6px)}
 #roomtag{position:absolute;top:128px;left:50px;background:var(--pn);color:var(--ac);padding:6px 10px;border-radius:8px;border:1px solid var(--pn-border);font-weight:800;font-size:12px;pointer-events:none;display:none;z-index:22;backdrop-filter:blur(6px)}
 #editBtn{position:absolute;left:12px;top:166px;height:32px;padding:0 10px;font-size:11.5px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:25;backdrop-filter:blur(6px)}
 
-/* 좌측 하단 보조 발사 버튼 */
 #bf2{display:none;position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:66px;height:66px;border-radius:50%;padding:0;font-size:13px;background:rgba(255,122,47,.28);border:1.5px solid rgba(255,122,47,.7);color:#fff;z-index:25;backdrop-filter:blur(6px)}
 #ov label{font-size:13px;display:flex;gap:8px;align-items:center}
 
-/* 우측 상단 레이더 & 가로전환 버튼 (겹치지 않게 분리) */
 #rotBtn{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));height:32px;padding:0 11px;font-size:11.5px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:65;backdrop-filter:blur(6px)}
 #rdr{inset:auto;top:50px;right:12px;width:96px;height:96px;pointer-events:none;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:22}
 
@@ -645,7 +637,7 @@ function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
   const h=RC.intersectObjects(tg,true)[0];let end;
   if(h){end=h.point;const e=h.object.userData.e,hd=h.object.userData.hd;
    if(e){blood(h.point,RC.ray.direction,hd?22:12);const dg=(hd?w.hd:w.dmg)*(bu.dmg>0?2:1);
-    if(e.rem){if(!isFriendly(e)){e.fl=.1;hm=.2;SX.hit();mpSend({t:'hit',to:e.peer,dmg:dg,hd:hd?1:0})}}
+    if(e.rem){if(!isFriendly(e)){e.fl=.1;hm=.2;SX.hit();mpSend({t:'hit',to:e.peer,dmg:dg,hd:hd?1:0},e.peer)}}
     else{e.hp-=dg;e.fl=.1;e.see=1;e.lt=1;hm=.2;SX.hit();if(e.hp<=0&&!e.dead){e.dead=1;e.t=0;kill(e,hd,h.point)}}}
    else{spk.position.copy(h.point);spk.visible=true;spt=.08}}
   else{end=new THREE.Vector3(0,0,-60);cam.localToWorld(end)}
@@ -824,7 +816,7 @@ const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.
 hold('bf',()=>fi=1,()=>fi=0);hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
 hold('bf2',()=>fi=1,()=>fi=0);hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));['bf','bf2'].forEach(id=>{const b=$(id);let lx=0,ly=0,aimPid=null;b.addEventListener('pointerdown',e=>{lx=e.clientX;ly=e.clientY;aimPid=e.pointerId;try{b.setPointerCapture(e.pointerId)}catch(_){}});b.addEventListener('pointermove',e=>{if(!fi||st!=1||e.pointerId!==aimPid)return;const dx=e.clientX-lx,dy=e.clientY-ly;look(dx*.75,dy*.75);lx=e.clientX;ly=e.clientY});const clr=e=>{if(e.pointerId===aimPid)aimPid=null};b.addEventListener('pointerup',clr);b.addEventListener('pointercancel',clr)});
 
-// PeerJS 멀티플레이 엔진
+// PeerJS 멀티플레이 엔진 (1대1 모드 & 6대6 팀전 분리)
 let mm=0,rp={},dth=0,lsend=0,sbt=0,roomCode='',isHost=false,kaTimer=0;
 let myId='',inLobby=false,peer=null,conns={};
 let myTeam='red';
@@ -836,10 +828,7 @@ const matchState={
   timer:60,
   redScore:0,
   blueScore:0,
-  roundBanner:'',
-  bannerT:0,
-  winnerText:'',
-  winnerSub:''
+  bannerT:0
 };
 
 const peerIdOf=code=>'tsweep3d-'+code.toUpperCase();
@@ -886,12 +875,21 @@ function updateMatchHud(){
   $('mhTimer').textContent=fmtTime(matchState.timer);
 }
 
+function syncModeButtonsUI(){
+  document.querySelectorAll('#mpModeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mpmode===matchCfg.mode));
+  $('mpSubSeg').style.display=(matchCfg.mode==='6v6')?'flex':'none';
+  if(matchCfg.mode==='1v1'){
+    inLobby=false;
+    $('lobbyBox').classList.remove('on');
+    $('mpJoinRow').style.display='flex';
+  }
+}
+
 document.querySelectorAll('#mpModeSeg button[data-mpmode]').forEach(btn=>{
   btn.onclick=()=>{
     aud();
     matchCfg.mode=btn.dataset.mpmode;
-    document.querySelectorAll('#mpModeSeg button').forEach(b=>b.classList.toggle('on',b===btn));
-    $('mpSubSeg').style.display=(matchCfg.mode==='6v6')?'flex':'none';
+    syncModeButtonsUI();
   };
 });
 document.querySelectorAll('#mpSubSeg button[data-mpsub]').forEach(btn=>{
@@ -901,7 +899,7 @@ document.querySelectorAll('#mpSubSeg button[data-mpsub]').forEach(btn=>{
     document.querySelectorAll('#mpSubSeg button').forEach(b=>b.classList.toggle('on',b===btn));
     document.querySelectorAll('#lbSubSwitch button').forEach(b=>b.classList.toggle('on',b.dataset.lbsub===matchCfg.sub));
     syncLobbyUI();
-    if(isHost)broadcastLobby();
+    if(isHost&&matchCfg.mode==='6v6')broadcastLobby();
   };
 });
 document.querySelectorAll('#lbSubSwitch button[data-lbsub]').forEach(btn=>{
@@ -909,14 +907,18 @@ document.querySelectorAll('#lbSubSwitch button[data-lbsub]').forEach(btn=>{
     if(!isHost)return;
     aud();
     matchCfg.sub=btn.dataset.lbsub;
-    document.querySelectorAll('#lbSubSwitch button').forEach(b=>b.classList.toggle('on',b.dataset.lbsub===matchCfg.sub));
+    document.querySelectorAll('#lbSubSwitch button').forEach(b=>b.classList.toggle('on',b===btn));
     document.querySelectorAll('#mpSubSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mpsub===matchCfg.sub));
     syncLobbyUI();
     broadcastLobby();
   };
 });
 
-$('gm').onclick=()=>$('mpbox').classList.toggle('on');
+$('gm').onclick=()=>{
+  aud();
+  $('mpbox').classList.toggle('on');
+  syncModeButtonsUI();
+};
 
 function makeCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.random()*c.length|0];return s}
 
@@ -934,22 +936,31 @@ function mpSend(data,targetId){
   }
 }
 
+function sendJoinPacketTo(conn){
+  if(!conn||!conn.open||!myId)return;
+  conn.send({t:'join_req',from:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode});
+}
+
 function attachConn(c){
   if(!c||!c.peer)return;
   conns[c.peer]=c;
   c.on('open',()=>{
     conns[c.peer]=c;
     if(!isHost && c.peer===peerIdOf(roomCode)){
-      c.send({t:'join_req',from:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode});
+      sendJoinPacketTo(c);
+      if(matchCfg.mode==='1v1' && matchState.phase!=='playing'){
+        launchMultiMatch(false);
+      }
     }else if(isHost){
-      broadcastLobby();
+      if(matchCfg.mode==='6v6')broadcastLobby();
+      else sendState(true);
     }
   });
   c.on('data',d=>handleMsg(c.peer,d));
   c.on('close',()=>{
     delete conns[c.peer];
     if(rp[c.peer]){sc.remove(rp[c.peer].g);if(rp[c.peer].tagEl)rp[c.peer].tagEl.remove();delete rp[c.peer]}
-    if(lobbyRoster[c.peer]){delete lobbyRoster[c.peer];if(inLobby)syncLobbyUI()}
+    if(lobbyRoster[c.peer]){delete lobbyRoster[c.peer];if(inLobby&&matchCfg.mode==='6v6')syncLobbyUI()}
   });
   c.on('error',()=>{});
 }
@@ -965,7 +976,7 @@ function initPeer(id,onOpen){
   p.on('error',err=>{
     const tp=err&&err.type?err.type:'';
     if(tp==='unavailable-id')$('msg').textContent='이미 사용 중인 방 코드입니다. 다시 눌러 보세요.';
-    else if(tp==='peer-unavailable')$('msg').textContent='해당 방 코드를 찾을 수 없어요. 코드를 확인해 주세요.';
+    else if(tp==='peer-unavailable')$('msg').textContent='해당 방 코드를 찾을 수 없어요. 방장이 먼저 방을 만들었는지 확인해 주세요.';
     else $('msg').textContent='P2P 연결 오류: '+(tp||err.message||'연결 실패');
   });
   return p;
@@ -973,7 +984,13 @@ function initPeer(id,onOpen){
 
 function syncLobbyUI(){
   const lb=$('lobbyBox');
-  if(!inLobby){lb.classList.remove('on');$('mpJoinRow').style.display='flex';$('mpModeSeg').style.display='flex';$('mpSubSeg').style.display=(matchCfg.mode==='6v6')?'flex':'none';return}
+  if(!inLobby || matchCfg.mode!=='6v6'){
+    lb.classList.remove('on');
+    $('mpJoinRow').style.display='flex';
+    $('mpModeSeg').style.display='flex';
+    $('mpSubSeg').style.display=(matchCfg.mode==='6v6')?'flex':'none';
+    return;
+  }
   lb.classList.add('on');
   $('mpJoinRow').style.display='none';
   $('mpModeSeg').style.display='none';
@@ -1012,10 +1029,10 @@ window.hostMoveTeam=(pid,targetTeam)=>{
 };
 
 function broadcastLobby(){
-  if(!isHost)return;
+  if(!isHost||matchCfg.mode!=='6v6')return;
   mpSend({
     t:'lobby_sync',
-    mode:matchCfg.mode,
+    mode:'6v6',
     sub:matchCfg.sub,
     roster:lobbyRoster
   });
@@ -1057,14 +1074,21 @@ $('startMatchBtn').onclick=()=>{
   const bCnt=all.filter(x=>x.team==='blue').length;
   if(rCnt===0||bCnt===0){pop('레드팀과 블루팀 모두 최소 1명 이상 있어야 합니다');return}
   launchMultiMatch(true);
-  mpSend({t:'match_start',mode:matchCfg.mode,sub:matchCfg.sub,roster:lobbyRoster});
+  mpSend({t:'match_start',mode:'6v6',sub:matchCfg.sub,roster:lobbyRoster});
 };
 
 function enterLobby(code,host){
-  mm=1;isHost=host;roomCode=code;inLobby=true;
-  matchState.phase='lobby';
+  mm=1;isHost=host;roomCode=code;
   $('mpbox').classList.add('on');
   $('matchEndModal').classList.remove('on');
+  if(matchCfg.mode==='1v1'){
+    inLobby=false;
+    $('lobbyBox').classList.remove('on');
+    launchMultiMatch(host);
+    return;
+  }
+  inLobby=true;
+  matchState.phase='lobby';
   if(host){
     myTeam='red';
     for(const k in lobbyRoster)delete lobbyRoster[k];
@@ -1077,7 +1101,11 @@ function launchMultiMatch(fromHost){
   inLobby=false;
   $('lobbyBox').classList.remove('on');
   $('matchEndModal').classList.remove('on');
-  if(lobbyRoster[myId])myTeam=lobbyRoster[myId].team||'red';
+  if(matchCfg.mode==='1v1'){
+    myTeam=fromHost?'red':'blue';
+  }else if(lobbyRoster[myId]){
+    myTeam=lobbyRoster[myId].team||'red';
+  }
   mm=1;dth=0;kills=0;
   matchState.phase='playing';
   matchState.round=1;
@@ -1088,11 +1116,14 @@ function launchMultiMatch(fromHost){
 
   for(const id in rp){
     const info=lobbyRoster[id];
-    if(info){
-      rp[id].team=info.team;
-      const hx=getTeamHex(info.team,rp[id].colHex);
-      rp[id].colHex=hx;
-      applyCharColor(rp[id],hx);
+    const tm=(matchCfg.mode==='1v1')?(myTeam==='red'?'blue':'red'):((info&&info.team)||rp[id].team||'blue');
+    rp[id].team=tm;
+    const hx=getTeamHex(tm,rp[id].colHex);
+    rp[id].colHex=hx;
+    applyCharColor(rp[id],hx);
+    if(rp[id].tagEl){
+      rp[id].tagEl.textContent=matchCfg.mode==='6v6'?`[${tm==='red'?'RED':'BLUE'}] ${rp[id].nick}`:rp[id].nick;
+      rp[id].tagEl.style.borderColor=matchCfg.mode==='6v6'?(tm==='red'?'#ff6b6b':'#4dabf7'):'rgba(255,255,255,.22)';
     }
   }
 
@@ -1101,13 +1132,13 @@ function launchMultiMatch(fromHost){
   st=1;
   $('ov').hidden=true;
   $('roomtag').style.display='block';
-  $('roomtag').textContent='방 코드: '+roomCode;
+  $('roomtag').textContent='방 코드: '+roomCode+(matchCfg.mode==='1v1'?' · 1대1':'');
   if(LO){
     try{if(!document.fullscreenElement && !document.webkitFullscreenElement)fsT(1)}catch(_){}
     forceLandscape();
   }
   const title=matchCfg.mode==='1v1'
-    ?'1대1 라운드 시작! (5킬 선승)'
+    ?'1대1 라운드 시작! (방 코드: '+roomCode+' · 5킬 선승)'
     :(matchCfg.sub==='tdm'?'6대6 팀 데스매치 시작! (30킬 선승)':'6대6 라운드 섬멸 시작! (5라운드 선승)');
   pop(title);
   updateMatchHud();
@@ -1163,6 +1194,10 @@ function handleMsg(fromId,d){
 
   if(d.t==='join_req'){
     if(!isHost)return;
+    if(matchCfg.mode==='1v1'){
+      sendState(true);
+      return;
+    }
     const total=Object.keys(lobbyRoster).length;
     if(total>=12){
       mpSend({t:'join_reject',target:sender,reason:'방 정원(12명)이 가득 찼습니다.'},sender);
@@ -1181,7 +1216,7 @@ function handleMsg(fromId,d){
     syncLobbyUI();
     broadcastLobby();
     if(matchState.phase==='playing'){
-      mpSend({t:'match_start',mode:matchCfg.mode,sub:matchCfg.sub,roster:lobbyRoster},sender);
+      mpSend({t:'match_start',mode:'6v6',sub:matchCfg.sub,roster:lobbyRoster},sender);
     }
   }
   else if(d.t==='join_reject'){
@@ -1191,7 +1226,7 @@ function handleMsg(fromId,d){
     }
   }
   else if(d.t==='team_req'){
-    if(!isHost||!lobbyRoster[sender])return;
+    if(!isHost||matchCfg.mode!=='6v6'||!lobbyRoster[sender])return;
     const reqTeam=d.team==='blue'?'blue':'red';
     const cnt=Object.values(lobbyRoster).filter(x=>x.team===reqTeam).length;
     if(cnt<6)lobbyRoster[sender].team=reqTeam;
@@ -1200,8 +1235,8 @@ function handleMsg(fromId,d){
     broadcastLobby();
   }
   else if(d.t==='lobby_sync'){
-    if(isHost)return;
-    matchCfg.mode=d.mode||'6v6';
+    if(isHost||matchCfg.mode==='1v1')return;
+    matchCfg.mode='6v6';
     matchCfg.sub=d.sub||'tdm';
     for(const k in lobbyRoster)delete lobbyRoster[k];
     Object.assign(lobbyRoster,d.roster||{});
@@ -1211,7 +1246,8 @@ function handleMsg(fromId,d){
     syncLobbyUI();
   }
   else if(d.t==='match_start'){
-    matchCfg.mode=d.mode||'6v6';
+    if(matchCfg.mode==='1v1')return;
+    matchCfg.mode='6v6';
     matchCfg.sub=d.sub||'tdm';
     for(const k in lobbyRoster)delete lobbyRoster[k];
     Object.assign(lobbyRoster,d.roster||{});
@@ -1231,7 +1267,7 @@ function handleMsg(fromId,d){
   }
   else if(d.t==='state'){
     let r=rp[sender];
-    const rTeam=(lobbyRoster[sender]&&lobbyRoster[sender].team)||d.team||'blue';
+    const rTeam=(matchCfg.mode==='1v1')?(myTeam==='red'?'blue':'red'):((lobbyRoster[sender]&&lobbyRoster[sender].team)||d.team||'blue');
     const colHex=getTeamHex(rTeam,(+d.col)>0?(+d.col):0x228be6);
     if(!r){
       const c=mkChar([colHex,0x252a34,0xc89b72,0x1e2229]);
@@ -1362,7 +1398,9 @@ $('mkroom').onclick=()=>{
   roomCode=code;isHost=true;mm=1;
   peer=initPeer(peerIdOf(code),pid=>{
     enterLobby(code,true);
-    $('msg').textContent='방 ['+code+'] 생성 완료! 상대가 코드를 입력하고 참가할 때까지 기다리세요.';
+    $('msg').textContent=matchCfg.mode==='1v1'
+      ?'1대1 방 ['+code+'] 생성 완료! 상대가 코드를 입력하고 참가할 때까지 기다리세요.'
+      :'6대6 방 ['+code+'] 생성 완료! 팀을 고른 뒤 게임 시작을 누르세요.';
   });
 };
 
