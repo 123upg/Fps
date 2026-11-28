@@ -818,26 +818,30 @@ const matchState={
 };
 
 const PREFIX='tsweep3d-game-';
-const PEER_CFG={
-  debug:0,
-  config:{
-    iceServers:[
-      {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'},
-      {urls:'stun:stun2.l.google.com:19302'},
-      {urls:'stun:stun3.l.google.com:19302'},
-      {urls:'stun:stun4.l.google.com:19302'},
-      {urls:'stun:global.stun.twilio.com:3478'},
-      {
-        urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],
-        username:'openrelayproject',
-        credential:'openrelayproject'
-      }
-    ],
-    iceCandidatePoolSize:10
-  }
+const PEER_SERVERS=[
+  undefined,
+  {host:'0.peerjs.com',port:443,secure:true,path:'/'},
+  {host:'peerjs-server.herokuapp.com',port:443,secure:true,path:'/'}
+];
+const ICE_CFG={
+  iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'stun:stun2.l.google.com:19302'},
+    {urls:'stun:stun3.l.google.com:19302'},
+    {urls:'stun:stun4.l.google.com:19302'},
+    {urls:'stun:global.stun.twilio.com:3478'},
+    {urls:'stun:stun.services.mozilla.com:3478'}
+  ],
+  iceCandidatePoolSize:10
 };
 const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+
+function createPeerInstance(id,serverIdx){
+  const srv=PEER_SERVERS[serverIdx]||undefined;
+  const opts=Object.assign({},srv||{},{debug:0,config:ICE_CFG});
+  return id?new Peer(id,opts):new Peer(opts);
+}
 
 function isFriendly(r){
   if(!mm||!r)return false;
@@ -1335,43 +1339,40 @@ $('mkroom').onclick=()=>{
   if(!window.Peer){$('msg').textContent='멀티 모듈(PeerJS)을 불러오지 못했어요.';return}
   mpStop();
   const code=makeCode();
-  $('msg').textContent='방 ['+code+'] 생성 중...';
-  peer=new Peer(PREFIX+code,PEER_CFG);
-  peer.on('open',()=>{
-    if(matchCfg.mode==='1v1'){
-      mm=1;isHost=true;roomCode=code;myTeam='red';
-      lobbyRoster[peer.id]={id:peer.id,nick:getNick(),team:'red',col:getChosenHex(),isHost:true};
-      launchMultiMatch(true);
-    }else{
-      enterLobby(code,true);
-      $('msg').textContent='6대6 대기실 생성 완료! 팀을 나누고 게임 시작을 누르세요.';
-    }
-  });
-  peer.on('connection',conn=>bindConn(conn));
-  peer.on('disconnected',()=>{if(peer&&!peer.destroyed)try{peer.reconnect()}catch(_){}});
-  peer.on('error',e=>{
-    if(e.type==='unavailable-id'){
-      const code2=makeCode();
-      $('msg').textContent='코드 중복으로 ['+code2+'] 다시 생성 중...';
-      try{peer.destroy()}catch(_){}
-      peer=new Peer(PREFIX+code2,PEER_CFG);
-      peer.on('open',()=>{
-        if(matchCfg.mode==='1v1'){
-          mm=1;isHost=true;roomCode=code2;myTeam='red';
-          lobbyRoster[peer.id]={id:peer.id,nick:getNick(),team:'red',col:getChosenHex(),isHost:true};
-          launchMultiMatch(true);
-        }else{
-          enterLobby(code2,true);
-          $('msg').textContent='6대6 대기실 생성 완료!';
-        }
-      });
-      peer.on('connection',conn=>bindConn(conn));
-      peer.on('disconnected',()=>{if(peer&&!peer.destroyed)try{peer.reconnect()}catch(_){}});
-      peer.on('error',e2=>{$('msg').textContent='방 생성 오류 ('+e2.type+'). 다시 눌러 주세요.'});
-      return;
-    }
-    $('msg').textContent='방 생성 오류 ('+e.type+'). 다시 눌러 주세요.';
-  });
+  let srvIdx=0,opened=false;
+  const tryHost=(cCode)=>{
+    roomCode=cCode;
+    $('msg').textContent='방 ['+cCode+'] 생성 중... (서버 '+(srvIdx+1)+'/'+PEER_SERVERS.length+')';
+    peer=createPeerInstance(PREFIX+cCode,srvIdx);
+    peer.on('open',()=>{
+      if(opened)return;opened=true;
+      if(matchCfg.mode==='1v1'){
+        mm=1;isHost=true;roomCode=cCode;myTeam='red';
+        lobbyRoster[peer.id]={id:peer.id,nick:getNick(),team:'red',col:getChosenHex(),isHost:true};
+        launchMultiMatch(true);
+      }else{
+        enterLobby(cCode,true);
+        $('msg').textContent='6대6 대기실 생성 완료! 팀을 나누고 게임 시작을 누르세요.';
+      }
+    });
+    peer.on('connection',conn=>bindConn(conn));
+    peer.on('error',e=>{
+      if(opened)return;
+      if(e.type==='unavailable-id'){
+        try{peer.destroy()}catch(_){}
+        tryHost(makeCode());
+        return;
+      }
+      if(srvIdx+1<PEER_SERVERS.length){
+        srvIdx++;
+        try{peer.destroy()}catch(_){}
+        tryHost(cCode);
+        return;
+      }
+      $('msg').textContent='방 생성 오류 ('+e.type+'). 다시 눌러 주세요.';
+    });
+  };
+  tryHost(code);
 };
 
 $('jnroom').onclick=()=>{
@@ -1380,36 +1381,46 @@ $('jnroom').onclick=()=>{
   const code=$('rcode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(code.length!==4){$('msg').textContent='4자리 방 코드를 정확히 입력하세요.';return}
   mpStop();
-  $('msg').textContent='방 ['+code+'] 서버 탐색 중...';
-  peer=new Peer(undefined,PEER_CFG);
-  let done=false;
+  let srvIdx=0,done=false;
   const fail=(txt)=>{if(done)return;done=true;$('msg').textContent=txt;mpStop()};
-  const tm=setTimeout(()=>fail('연결 시간 초과. 방장이 화면을 켜둔 상태인지 확인하세요.'),20000);
+  const tm=setTimeout(()=>fail('연결 시간 초과. 와이파이/방화벽이나 다른 서버를 확인하세요.'),25000);
 
-  peer.on('open',()=>{
+  const tryJoin=()=>{
     if(done)return;
-    $('msg').textContent='방 ['+code+'] P2P 터널 연결 중...';
-    const conn=peer.connect(PREFIX+code,{reliable:true,serialization:'json'});
-    conn.on('open',()=>{
-      if(done)return;done=true;clearTimeout(tm);
-      roomCode=code;isHost=false;mm=1;
-      bindConn(conn);
-      if(matchCfg.mode==='1v1'){
-        myTeam='blue';
-        launchMultiMatch(false);
-      }else{
-        enterLobby(code,false);
-        $('msg').textContent='6대6 대기실 입장 완료! 팀을 선택해 주세요.';
-      }
+    $('msg').textContent='방 ['+code+'] 연결 시도 중... (서버 '+(srvIdx+1)+'/'+PEER_SERVERS.length+')';
+    peer=createPeerInstance(undefined,srvIdx);
+    let connectedOnce=false;
+    peer.on('open',()=>{
+      if(done)return;
+      const conn=peer.connect(PREFIX+code,{reliable:true,serialization:'json'});
+      conn.on('open',()=>{
+        if(done)return;done=true;connectedOnce=true;clearTimeout(tm);
+        roomCode=code;isHost=false;mm=1;
+        bindConn(conn);
+        if(matchCfg.mode==='1v1'){
+          myTeam='blue';
+          launchMultiMatch(false);
+        }else{
+          enterLobby(code,false);
+          $('msg').textContent='6대6 대기실 입장 완료! 팀을 선택해 주세요.';
+        }
+      });
+      conn.on('error',()=>{
+        if(!done && !connectedOnce && srvIdx+1<PEER_SERVERS.length){
+          srvIdx++;try{peer.destroy()}catch(_){}tryJoin();
+        }
+      });
     });
-    conn.on('error',err=>{clearTimeout(tm);fail('연결 실패 ('+(err?.type||'error')+')')});
-  });
-  peer.on('disconnected',()=>{if(!done&&peer&&!peer.destroyed)try{peer.reconnect()}catch(_){}});
-  peer.on('error',e=>{
-    clearTimeout(tm);
-    if(e.type==='peer-unavailable')fail('존재하지 않는 방 코드['+code+']입니다.');
-    else fail('접속 오류 ('+e.type+')');
-  });
+    peer.on('error',e=>{
+      if(done)return;
+      if(e.type==='peer-unavailable'){clearTimeout(tm);fail('존재하지 않는 방 코드['+code+']입니다.');return}
+      if(!connectedOnce && srvIdx+1<PEER_SERVERS.length){
+        srvIdx++;try{peer.destroy()}catch(_){}tryJoin();return;
+      }
+      clearTimeout(tm);fail('접속 오류 ('+e.type+')');
+    });
+  };
+  tryJoin();
 };
 
 function sendState(force){
