@@ -919,7 +919,6 @@ function mkChar(c){
   };
   const L=leg(-.125,-1),Rg=leg(.125,1);
 
-  /* 골반·허리 슬림화 */
   const pelvis=pt(CG(.142,.138,.21,20),u,0,.97,0,body);
   pelvis.scale.set(.96,1,.82);
   const waist=pt(CG(.148,.168,.21,20),u,0,1.15,0,body);
@@ -991,6 +990,22 @@ const WP=[
 ];
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
+
+/* 거리별 데미지 감소 계수 (저격총 wi===2 제외, 완만한 감쇠) */
+function getDistanceFalloff(wIdx,dist){
+  if(wIdx===2)return 1; // 저격총은 거리 감소 없음
+  if(wIdx===0){ // 돌격소총: 14m 이후 완만히 감소, 최대 0.72
+    if(dist<=14)return 1;
+    const t=Math.min(1,(dist-14)/36);
+    return 1-0.28*t;
+  }
+  if(wIdx===1){ // 샷건: 7m 이후 감소, 최대 0.55
+    if(dist<=7)return 1;
+    const t=Math.min(1,(dist-7)/21);
+    return 1-0.45*t;
+  }
+  return 1;
+}
 
 const gun=new THREE.Group();
 const MT=(c,r,m,map,bump,bumpScale=.012,envInt=.42)=>new THREE.MeshStandardMaterial({
@@ -1209,7 +1224,7 @@ function shoot(){const w=WP[wi];if(fcd>0||rl>0)return;if(am<=0){reload();return}
  for(let k=0;k<w.pel;k++){V.set((Math.random()-.5)*effSpread,(Math.random()-.5)*effSpread);RC.setFromCamera(V,cam);
   const h=RC.intersectObjects(tg,true)[0];let end;
   if(h){end=h.point;const e=h.object.userData.e,hd=h.object.userData.hd;
-   if(e){blood(h.point,RC.ray.direction,hd?24:13);const dg=(hd?w.hd:w.dmg)*(bu.dmg>0?2:1);
+   if(e){blood(h.point,RC.ray.direction,hd?24:13);const falloff=getDistanceFalloff(wi,h.distance);const dg=(hd?w.hd:w.dmg)*falloff*(bu.dmg>0?2:1);
     if(e.rem){if(!isFriendly(e)){e.fl=.11;triggerHitFeedback(hd);mpSend({t:'hit',to:e.peer,dmg:dg,hd:hd?1:0},e.peer)}}
     else{e.hp-=dg;e.fl=.11;e.see=1;e.lt=1;triggerHitFeedback(hd);if(e.hp<=0&&!e.dead){e.dead=1;e.t=0;kill(e,hd,h.point)}}}
    else{spk.position.copy(h.point);spk.visible=true;spt=.08}}
@@ -1715,7 +1730,6 @@ function pop(t){if(!t)return;const p=$('pop');p.textContent=t;popT=1.5}
 function kill(e,hd,pt){kills++;if(ch==0)pl.hp=Math.min(100,pl.hp+10);SX.kill();blood(pt,RC.ray.direction,e.hv?40:24);const t=performance.now()/1e3;strk=t-lk<4?strk+1:1;lk=t;score+=100*(hd?2:1)*(e.hv?3:1)*strk;pop((hd?'헤드샷! ':'')+(e.hv?'중장갑 처치! ':''));if(hd)slow=.3;drop(e)}
 function mkMedMesh(x,z,y=.45){const g=new THREE.Group();const box=new THREE.Mesh(new THREE.BoxGeometry(.44,.32,.44),new THREE.MeshStandardMaterial({color:0xd8dde4,roughness:.75,metalness:.08,envMapIntensity:.35}));const c1=new THREE.Mesh(new THREE.BoxGeometry(.26,.34,.09),new THREE.MeshBasicMaterial({color:0x2ecc71}));const c2=new THREE.Mesh(new THREE.BoxGeometry(.09,.34,.26),new THREE.MeshBasicMaterial({color:0x2ecc71}));g.add(box,c1,c2);g.position.set(x,y+.45,z);sc.add(g);return g}
 function spawnMapMedkits(){mapPacks.forEach(p=>sc.remove(p.m));mapPacks=[];[[42,42,2.6],[20,14.5,2.6],[64,69.5,2.6],[10,10,0],[74,74,0]].forEach(([mx,mz,my])=>mapPacks.push({m:mkMedMesh(mx,mz,my),x:mx,z:mz,y:my,cd:0}))}
-/* 멀티플레이에서는 처치 시 회복/드롭 아이템 생성 안 함 */
 function drop(e){if(mm||(!e.hv&&Math.random()>.55))return;const t0=Math.random()<.5,m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshBasicMaterial({color:t0?0x5cff7a:0xffd34d}));m.position.set(e.x,(e.y||0)+.5,e.z);sc.add(m);pk.push({m,t0,life:20})}
 function pickups(dt,now){
  mapPacks.forEach(p=>{if(p.cd>0){p.cd-=dt;if(p.cd<=0)p.m.visible=true;return}p.m.rotation.y+=dt*2;if(Math.hypot(p.x-pl.x,p.z-pl.z)<1.35&&Math.abs((p.y||0)-pl.y)<1.4&&!pl.dead&&pl.hp<100){pl.hp=Math.min(100,pl.hp+40);p.cd=15;p.m.visible=false;pop('+40 체력 회복')}});
