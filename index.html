@@ -473,7 +473,6 @@ const CH=[
 let ch=0,cd=[0,0,0],ext=0,exr=5;
 const bu={spd:0,rof:0,shield:0,cloak:0,dmg:0,dash:0};
 
-/* PannerNode 기반 3D 공간음향 오디오 엔진 */
 let A;
 const aud=()=>{
   try{
@@ -541,7 +540,6 @@ const SX={
   lose:()=>[330,262,196].forEach((f,i)=>tone(f,f*.9,.35,.2,'sawtooth',i*.25))
 };
 
-/* 대형 아키텍처 맵: 84m x 84m 로우폴리 콘크리트 아레나 */
 const ARENA_W=84,ARENA_D=84,WALL_H=8.5;
 const R=28,S=ARENA_W/R;
 
@@ -576,7 +574,6 @@ const SOLID_BOXES=[
   {xMin:31,xMax:34.2,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
   {xMin:49.8,xMax:53,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
 
-  /* 지상 숨기/엄폐용 직사각형 컨테이너 3개 */
   {xMin:24.5,xMax:32.5,zMin:20.5,zMax:23.3,h:2.55,kind:'container',col:0x3f593a},
   {xMin:52.0,xMax:60.0,zMin:60.5,zMax:63.3,h:2.55,kind:'container',col:0x7d3a28},
   {xMin:37.5,xMax:40.3,zMin:49.0,zMax:56.5,h:2.55,kind:'container',col:0x334b66},
@@ -720,17 +717,54 @@ function los(x0,z0,x1,z1,y0=1.2,y1=1.2){
 }
 
 const sc=new THREE.Scene();
-const cam=new THREE.PerspectiveCamera(72,1,.1,140);cam.rotation.order='YXZ';sc.add(cam);
+const cam=new THREE.PerspectiveCamera(72,1,.06,150);cam.rotation.order='YXZ';sc.add(cam);
 let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch(e){$('msg').textContent='이 환경에서는 3D(WebGL)를 쓸 수 없어요.';throw e}
-const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.75));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.05;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
+const cv=ren.domElement;
+const LO=matchMedia('(pointer:coarse)').matches;
+ren.setPixelRatio(Math.min(devicePixelRatio||1,LO?1.75:2));
+ren.outputEncoding=THREE.sRGBEncoding;
+ren.toneMapping=THREE.ACESFilmicToneMapping;
+ren.toneMappingExposure=1.12;
+ren.shadowMap.enabled=true;
+ren.shadowMap.type=THREE.PCFSoftShadowMap;
+ren.physicallyCorrectLights=true;
+$('app').insertBefore(cv,$('app').firstChild);
 
-/* 블렌더 스타일 블룸 & 후처리 패스 복구 */
+/* 절차식 PBR 반사 환경맵(PMREM) 생성 -> 금속·총기·콘크리트 반사광 극대화 */
+function buildStudioEnvMap(renderer){
+  if(!renderer||!THREE.PMREMGenerator)return null;
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const envScene=new THREE.Scene();
+  envScene.background=new THREE.Color(0x141a24);
+
+  const addPanel=(w,h,col,x,y,z,rx,ry)=>{
+    const m=new THREE.Mesh(
+      new THREE.PlaneGeometry(w,h),
+      new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide})
+    );
+    m.position.set(x,y,z);
+    if(rx)m.rotation.x=rx;
+    if(ry)m.rotation.y=ry;
+    envScene.add(m);
+  };
+  addPanel(16,4,0xfff2dc,0,9,4,Math.PI/2.4,0);
+  addPanel(14,3.5,0x7dd3fc,-11,6,-6,0.3,Math.PI/3);
+  addPanel(12,3,0xff9e5e,11,5,-7,0.25,-Math.PI/3);
+  addPanel(20,5,0x2b3546,0,-8,0,-Math.PI/2,0);
+
+  const rt=pmrem.fromScene(envScene,0.035);
+  pmrem.dispose();
+  return rt.texture;
+}
+sc.environment=buildStudioEnvMap(ren);
+
 let composer=null,bloomPass=null;
 if(window.THREE.EffectComposer&&window.THREE.UnrealBloomPass){
   composer=new THREE.EffectComposer(ren);
   const renderPass=new THREE.RenderPass(sc,cam);
   composer.addPass(renderPass);
-  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.35:.52,.44,.8);
+  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.32:.46,.38,.86);
   composer.addPass(bloomPass);
 }
 
@@ -742,18 +776,48 @@ const rz=()=>{
 };
 addEventListener('resize',rz);rz();
 
-sc.add(new THREE.HemisphereLight(0x8fa1b8,0x1a1f29,.72));
-const dl=new THREE.DirectionalLight(0xe8cba8,1.3);dl.position.set(92,64,24);dl.target.position.set(42,0,42);sc.add(dl,dl.target);dl.castShadow=true;
-const shRes=LO?1024:2048;dl.shadow.mapSize.set(shRes,shRes);Object.assign(dl.shadow.camera,{left:-52,right:52,top:52,bottom:-52,near:10,far:190});dl.shadow.camera.updateProjectionMatrix();dl.shadow.bias=-.00035;
+/* 물리 기반 조명 + 근접 고해상도 섀도우 카메라 */
+const hemiLight=new THREE.HemisphereLight(0xaec2dc,0x191e28,1.15);
+sc.add(hemiLight);
 
-const rimLight=new THREE.DirectionalLight(0x5c7696,.45);rimLight.position.set(-65,40,72);sc.add(rimLight);
-const fL=new THREE.PointLight(0xffb454,0,16);fL.position.set(0,0,-.95);cam.add(fL);
-const world=new THREE.Group();sc.add(world);
+const dl=new THREE.DirectionalLight(0xffe0b5,3.2);
+dl.position.set(28,34,20);
+dl.target.position.set(14,0,14);
+sc.add(dl,dl.target);
+dl.castShadow=true;
+const shRes=LO?1536:2048;
+dl.shadow.mapSize.set(shRes,shRes);
+const shHalf=22;
+Object.assign(dl.shadow.camera,{left:-shHalf,right:shHalf,top:shHalf,bottom:-shHalf,near:4,far:95});
+dl.shadow.camera.updateProjectionMatrix();
+dl.shadow.bias=-.00022;
+dl.shadow.normalBias=.018;
 
-sc.background=new THREE.Color(0x10141c);
-sc.fog=new THREE.FogExp2(0x131822,.011);
+const rimLight=new THREE.DirectionalLight(0x69a8ff,1.25);
+rimLight.position.set(-32,22,-28);
+sc.add(rimLight);
 
-/* 정적 지오메트리 머지 + 발광 메쉬 + 그림자 캐스트/리시브 */
+const fillLight=new THREE.DirectionalLight(0xff9d5c,.68);
+fillLight.position.set(-20,12,26);
+sc.add(fillLight);
+
+const fL=new THREE.PointLight(0xffb454,0,18,1.6);
+fL.position.set(0,0,-.95);
+cam.add(fL);
+
+const world=new THREE.Group();
+sc.add(world);
+
+sc.background=new THREE.Color(0x0d1118);
+sc.fog=new THREE.FogExp2(0x10151f,.0095);
+
+function syncShadowFrustumToPlayer(){
+  const cx=pl.x,cz=pl.z;
+  dl.position.set(cx+24,30,cz+18);
+  dl.target.position.set(cx,0,cz);
+  dl.target.updateMatrixWorld();
+}
+
 const mergeBuckets=new Map();
 function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   let g=geo.clone();
@@ -771,27 +835,27 @@ function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   mergeBuckets.get(key).geos.push(g);
 }
 
-const floorMat=new THREE.MeshStandardMaterial({color:0x363c46,roughness:.88,metalness:.06,flatShading:true});
+const floorMat=new THREE.MeshStandardMaterial({color:0x3a424f,roughness:.76,metalness:.14,flatShading:true});
 const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),floorMat);
 flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveShadow=true;world.add(flr);
 
-const wallMat=new THREE.MeshStandardMaterial({color:0x697280,roughness:.84,metalness:.08,flatShading:true});
-const pillarMat=new THREE.MeshStandardMaterial({color:0x586170,roughness:.82,metalness:.12,flatShading:true});
-const crateMat=new THREE.MeshStandardMaterial({color:0x8c5327,roughness:.76,metalness:.1,flatShading:true});
-const deckMat=new THREE.MeshStandardMaterial({color:0x3e4654,roughness:.84,metalness:.1,flatShading:true});
-const rampMat=new THREE.MeshStandardMaterial({color:0x353c48,roughness:.84,metalness:.1,flatShading:true});
-const railMat=new THREE.MeshStandardMaterial({color:0x8e99a8,roughness:.66,metalness:.25,flatShading:true});
-const steelTrimMat=new THREE.MeshStandardMaterial({color:0x222730,roughness:.72,metalness:.28,flatShading:true});
-const aoBandMat=new THREE.MeshStandardMaterial({color:0x141820,roughness:.95,metalness:.02,flatShading:true});
-const laneMat=new THREE.MeshBasicMaterial({color:0xd97438,transparent:true,opacity:.26});
-const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xfff1d6,emissive:0xffb86c,emissiveIntensity:1.75,roughness:.3,metalness:.1});
-const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0x9be7ff,emissive:0x38bdf8,emissiveIntensity:1.65,roughness:.3,metalness:.1});
+const wallMat=new THREE.MeshStandardMaterial({color:0x6d7787,roughness:.78,metalness:.14,flatShading:true});
+const pillarMat=new THREE.MeshStandardMaterial({color:0x596373,roughness:.74,metalness:.2,flatShading:true});
+const crateMat=new THREE.MeshStandardMaterial({color:0x9c5a27,roughness:.68,metalness:.14,flatShading:true});
+const deckMat=new THREE.MeshStandardMaterial({color:0x424b5b,roughness:.76,metalness:.18,flatShading:true});
+const rampMat=new THREE.MeshStandardMaterial({color:0x373f4d,roughness:.78,metalness:.16,flatShading:true});
+const railMat=new THREE.MeshStandardMaterial({color:0x9aa6b8,roughness:.42,metalness:.55,flatShading:true});
+const steelTrimMat=new THREE.MeshStandardMaterial({color:0x232934,roughness:.5,metalness:.58,flatShading:true});
+const aoBandMat=new THREE.MeshStandardMaterial({color:0x11151c,roughness:.95,metalness:.05,flatShading:true});
+const laneMat=new THREE.MeshBasicMaterial({color:0xff8533,transparent:true,opacity:.32});
+const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xfff4de,emissive:0xffbe73,emissiveIntensity:2.1,roughness:.25,metalness:.1});
+const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0xb8ecff,emissive:0x38bdf8,emissiveIntensity:1.95,roughness:.25,metalness:.1});
 
 {
   addMergedPart(laneMat,new THREE.PlaneGeometry(.38,ARENA_D-8),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
   addMergedPart(laneMat,new THREE.PlaneGeometry(ARENA_W-8,.38),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
 
-  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,36),new THREE.MeshBasicMaterial({color:0xd97438,transparent:true,opacity:.32,side:2}));
+  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,36),new THREE.MeshBasicMaterial({color:0xff8533,transparent:true,opacity:.36,side:2}));
   midRing.rotation.x=-Math.PI/2;midRing.position.set(ARENA_W/2,.02,ARENA_D/2);world.add(midRing);
 
   for(let z=14;z<=70;z+=14){
@@ -806,7 +870,7 @@ const containerMatCache={};
 function getContainerMat(hex){
   const k=hex||0x3f593a;
   if(!containerMatCache[k]){
-    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.74,metalness:.18,flatShading:true});
+    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.62,metalness:.36,flatShading:true});
   }
   return containerMatCache[k];
 }
@@ -816,13 +880,18 @@ SOLID_BOXES.forEach(b=>{
   const cx=(b.xMin+b.xMax)/2,cz=(b.zMin+b.zMax)/2;
   if(b.kind==='container'){
     addMergedPart(getContainerMat(b.col),new THREE.BoxGeometry(w,b.h,d),[cx,b.h/2,cz]);
-    addMergedPart(aoBandMat,new THREE.BoxGeometry(w+.06,.24,d+.06),[cx,.12,cz],null,false,true);
+    addMergedPart(aoBandMat,new THREE.BoxGeometry(w+.06,.26,d+.06),[cx,.13,cz],null,false,true);
     addMergedPart(steelTrimMat,new THREE.BoxGeometry(w+.1,.12,d+.1),[cx,b.h-.03,cz],null,false,false);
+    const ribCount=Math.max(3,Math.floor((b.xMax-b.xMin)/1.3));
+    for(let i=1;i<ribCount;i++){
+      const rx=b.xMin+((b.xMax-b.xMin)*i)/ribCount;
+      addMergedPart(steelTrimMat,new THREE.BoxGeometry(.08,b.h-.14,d+.05),[rx,b.h/2,cz],null,true,true);
+    }
     return;
   }
   const mat=b.kind==='crate'?crateMat:(b.kind==='pillar'?pillarMat:wallMat);
   addMergedPart(mat,new THREE.BoxGeometry(w,b.h,d),[cx,b.h/2,cz]);
-  addMergedPart(aoBandMat,new THREE.BoxGeometry(w+.08,.36,d+.08),[cx,.18,cz],null,false,true);
+  addMergedPart(aoBandMat,new THREE.BoxGeometry(w+.08,.38,d+.08),[cx,.19,cz],null,false,true);
   if(b.kind==='wall'||b.kind==='pillar'){
     addMergedPart(steelTrimMat,new THREE.BoxGeometry(w+.14,.14,d+.14),[cx,2.6,cz],null,false,false);
     addMergedPart(steelTrimMat,new THREE.BoxGeometry(w+.16,.2,d+.16),[cx,b.h+.05,cz],null,false,false);
@@ -898,8 +967,8 @@ if(window.THREE.BufferGeometryUtils&&window.THREE.BufferGeometryUtils.mergeBuffe
 mergeBuckets.clear();
 
 const GC={};
-const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=14)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=14)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
-function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
+const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=16)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=16)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
+function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;o.receiveShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
@@ -911,36 +980,39 @@ function mkChar(c){
     emissive:new THREE.Color(emissiveHex),emissiveIntensity:emInt
   });
 
-  const u=M(solidHex,.78,.06,solidHex,.08);
-  const v=M(solidHex,.72,.1,solidHex,.1);
-  const s=M(0xe6b896,.78,.02);
-  const d=M(0x1c2129,.82,.12);
-  const mt=M(0x475060,.62,.3);
-  const visor=M(0xfff3bf,.35,.2,solidHex,.45);
-  const beacon=M(solidHex,.5,.15,solidHex,.55);
+  const u=M(solidHex,.64,.22,solidHex,.12);
+  const v=M(solidHex,.54,.36,solidHex,.14);
+  const s=M(0xe6b896,.72,.04);
+  const d=M(0x181d26,.68,.38);
+  const mt=M(0x647085,.35,.76);
+  const visor=M(0xfff3bf,.2,.25,solidHex,.85);
+  const beacon=M(solidHex,.35,.25,solidHex,.95);
   const ms=[u,v,s,d,mt,visor,beacon];
 
   const leg=(x,side)=>{
     const p=new THREE.Group();p.position.set(x,.92,0);g.add(p);
-    pt(CG(.13,.11,.46,12),u,0,-.2,0,p);
-    pt(CG(.115,.095,.42,12),d,0,-.56,0,p);
+    pt(CG(.13,.11,.46,14),u,0,-.2,0,p);
+    pt(BG(.18,.11,.22),mt,0,-.34,.05,p);
+    pt(CG(.115,.095,.42,14),d,0,-.56,0,p);
     const boot=pt(BG(.18,.13,.34),d,0,-.84,.05,p);
     boot.scale.set(1.08,1,1.1);
     return p;
   };
   const L=leg(-.15,-1),Rg=leg(.15,1);
 
-  pt(CG(.16,.15,.22,12),d,0,.98,0,body);
-  const torso=pt(CG(.25,.21,.38,14),u,0,1.34,0,body);
+  pt(CG(.16,.15,.22,14),d,0,.98,0,body);
+  const torso=pt(CG(.25,.21,.38,16),u,0,1.34,0,body);
   torso.scale.set(1.22,1,.95);
   pt(BG(.52,.34,.32),v,0,1.38,.02,body);
+  pt(BG(.14,.12,.08),mt,-.14,1.44,.19,body);
+  pt(BG(.14,.12,.08),mt,.14,1.44,.19,body);
   pt(BG(.38,.36,.2),d,0,1.36,-.21,body);
 
   const head=new THREE.Group();head.position.set(0,1.64,0);body.add(head);
-  pt(CG(.085,.095,.12,12),s,0,.02,0,head);
-  const cranium=pt(SG(.185,14),u,0,.2,.01,head,1);
+  pt(CG(.085,.095,.12,14),s,0,.02,0,head);
+  const cranium=pt(SG(.185,16),u,0,.2,.01,head,1);
   cranium.scale.set(1.08,1.06,1.12);
-  const faceMask=pt(BG(.24,.15,.16),s,0,.15,.08,head,1);
+  pt(BG(.24,.15,.16),s,0,.15,.08,head,1);
   pt(BG(.29,.075,.08),visor,0,.19,.15,head,1);
   pt(BG(.36,.07,.22),beacon,0,.22,-.01,head,1);
 
@@ -948,16 +1020,16 @@ function mkChar(c){
     const p=new THREE.Group();p.position.set(x,1.5,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
     const pauldron=pt(BG(.24,.22,.28),v,side*.05,0,0,p);
     pauldron.scale.set(1.15,1.05,1.1);
-    pt(CG(.095,.085,.28,12),u,0,-.16,0,p);
+    pt(CG(.095,.085,.28,14),u,0,-.16,0,p);
     const f=new THREE.Group();f.position.y=-.28;f.rotation.x=-.95;p.add(f);
-    pt(CG(.085,.075,.28,12),d,0,-.14,0,f);
+    pt(CG(.085,.075,.28,14),d,0,-.14,0,f);
     pt(BG(.11,.1,.14),mt,0,-.3,.02,f);
     return p;
   };
   arm(-.36,-.98,.48,-1);arm(.36,-.78,-.45,1);
 
   pt(BG(.13,.15,.72),mt,0,1.36,.48,body);
-  pt(CG(.065,.065,.55,12),d,0,1.36,.86,body).rotation.x=Math.PI/2;
+  pt(CG(.065,.065,.55,14),d,0,1.36,.86,body).rotation.x=Math.PI/2;
   pt(BG(.11,.22,.14),beacon,0,1.22,.38,body);
 
   return{g,body,head,L,R:Rg,ms};
@@ -989,21 +1061,32 @@ function getDistanceFalloff(wIdx,dist){
   return 1;
 }
 
-/* 디테일 총기 모델링 복구 (돌출 형상 + 회전 배럴 + 스코프 + 탄피/파츠) */
+/* 초정밀 3종 총기 모델링: 다층 금속/폴리머/우드/광학 파츠 + 그림자 캐스트 */
 const gun=new THREE.Group();
-const MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m,flatShading:true});
-const gm1=MT(0x2b313c,.62,.4);
-const gm2=MT(0x161920,.72,.28);
-const gm3=MT(0x525c6e,.54,.44);
-const glv=MT(0x1d2129,.82,.08);
-const wd=MT(0x8c461e,.74,.06);
-const snM=MT(0x252a34,.58,.42);
-const scpM=MT(0x181c24,.54,.44);
-const accRed=MT(0xd9382e,.6,.22);
-const brassM=MT(0xc99636,.5,.46);
-const lensM=MT(0x38bdf8,.3,.35);
+const MT=(c,r,m,em=0,ei=0)=>new THREE.MeshStandardMaterial({
+  color:c,roughness:r,metalness:m,flatShading:true,
+  emissive:new THREE.Color(em),emissiveIntensity:ei
+});
+const gm1=MT(0x2d3440,.42,.72);
+const gm2=MT(0x151820,.58,.45);
+const gm3=MT(0x6b778c,.24,.88);
+const steelBright=MT(0xa8b5c8,.18,.94);
+const glv=MT(0x1a1e26,.76,.18);
+const wd=MT(0x9b4c20,.58,.14);
+const snM=MT(0x232832,.3,.84);
+const scpM=MT(0x161a22,.32,.78);
+const accRed=MT(0xff3b30,.35,.4,0xff2e2e,.9);
+const brassM=MT(0xe5ab38,.24,.9);
+const lensM=MT(0x38bdf8,.1,.35,0x38bdf8,1.35);
 
-const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
+const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
+  const o=new THREE.Mesh(geo,m);
+  o.position.set(x,y,z);
+  if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;
+  if(cast){o.castShadow=true;o.receiveShadow=true}
+  p.add(o);
+  return o;
+};
 
 function makeExtrudeShape(pts,depth,bevel=.008){
   const sh=new THREE.Shape();
@@ -1015,7 +1098,7 @@ function makeExtrudeShape(pts,depth,bevel=.008){
   return geo;
 }
 
-function makeLatheZ(profilePts,segs=16){
+function makeLatheZ(profilePts,segs=18){
   const v2s=profilePts.map(([r,y])=>new THREE.Vector2(Math.max(.001,r),y));
   const geo=new THREE.LatheGeometry(v2s,segs);
   geo.rotateX(-Math.PI/2);
@@ -1025,75 +1108,139 @@ function makeLatheZ(profilePts,segs=16){
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
-{const g=wModels[0];
- const recGeo=makeExtrudeShape([[-.24,-.046],[.23,-.046],[.22,.054],[-.14,.06],[-.24,.022]],.064,.007);
- addTo(g,recGeo,gm1,0,.002,0,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.056,.022,.43),gm3,0,.064,-.02);
- addTo(g,new THREE.BoxGeometry(.064,.074,.25),gm2,0,-.008,-.32);
- addTo(g,makeLatheZ([[.015,0],[.015,.22],[.021,.23],[.021,.25],[.013,.26],[.013,.37],[.023,.38],[.023,.45],[.015,.46]],16),snM,0,.014,-.34);
- addTo(g,new THREE.CylinderGeometry(.025,.024,.095,14),gm3,0,.014,-.72,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.016,.016,.024,12),brassM,0,.014,-.768,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.022,.022,.26,14),gm3,0,-.004,.33,Math.PI/2);
- addTo(g,makeExtrudeShape([[0,.032],[.24,.048],[.25,-.068],[.12,-.038],[0,-.032]],.048,.007),gm2,0,-.016,.34,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.056,.116,.024),glv,0,-.012,.472);
- addTo(g,makeExtrudeShape([[0,0],[.086,0],[.068,-.175],[-.014,-.175]],.042,.006),gm2,0,-.042,.092,0,-Math.PI/2,0);
- addTo(g,makeExtrudeShape([[-.036,0],[.036,0],[.058,-.165],[-.014,-.175]],.044,.007),gm1,0,-.045,-.12,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.062,.044,.09),gm2,0,.098,-.03);
- addTo(g,new THREE.BoxGeometry(.046,.028,.006),lensM,0,.104,-.03);
- addTo(g,new THREE.BoxGeometry(.012,.012,.004),accRed,0,.104,-.026);
- addTo(g,new THREE.BoxGeometry(.082,.08,.125),glv,0,-.076,-.26);
- addTo(g,new THREE.BoxGeometry(.082,.09,.105),glv,0,-.122,.1);
+/* 1. 돌격소총 (AR-15/MK18 스타일: 피카티니 레일 슬롯, 가스블록, 탄창, 개머리판, 홀로그램 사이트) */
+{
+  const g=wModels[0];
+  const upperRec=makeExtrudeShape([[-.25,-.032],[.24,-.032],[.23,.058],[-.15,.064],[-.25,.024]],.066,.007);
+  const lowerRec=makeExtrudeShape([[-.18,-.068],[.16,-.068],[.15,-.028],[-.18,-.028]],.058,.006);
+  addTo(g,upperRec,gm1,0,.008,0,0,-Math.PI/2,0);
+  addTo(g,lowerRec,gm2,0,.002,.03,0,-Math.PI/2,0);
+
+  addTo(g,new THREE.BoxGeometry(.058,.018,.46),gm3,0,.068,-.03);
+  for(let rz=-.22;rz<=.16;rz+=.042){
+    addTo(g,new THREE.BoxGeometry(.064,.009,.016),steelBright,0,.076,rz);
+  }
+
+  addTo(g,new THREE.BoxGeometry(.068,.076,.28),gm2,0,-.006,-.34);
+  for(let rz=-.46;rz<=-.22;rz+=.04){
+    addTo(g,new THREE.BoxGeometry(.074,.012,.015),gm3,0,.028,rz);
+    addTo(g,new THREE.BoxGeometry(.074,.012,.015),gm3,0,-.038,rz);
+  }
+  addTo(g,new THREE.BoxGeometry(.012,.05,.24),steelBright,.037,-.006,-.34);
+  addTo(g,new THREE.BoxGeometry(.012,.05,.24),steelBright,-.037,-.006,-.34);
+
+  addTo(g,makeLatheZ([
+    [.016,0],[.016,.24],[.022,.25],[.022,.28],
+    [.014,.29],[.014,.42],[.025,.43],[.025,.52],[.015,.53]
+  ],18),steelBright,0,.014,-.36);
+  addTo(g,new THREE.BoxGeometry(.044,.048,.048),gm1,0,.014,-.62);
+  addTo(g,new THREE.CylinderGeometry(.026,.025,.1,16),gm3,0,.014,-.78,Math.PI/2);
+  for(let i=0;i<4;i++){
+    const ang=(i*Math.PI)/2;
+    addTo(g,new THREE.BoxGeometry(.012,.018,.07),gm2,Math.cos(ang)*.024,.014+Math.sin(ang)*.024,-.8);
+  }
+  addTo(g,new THREE.CylinderGeometry(.014,.014,.025,14),brassM,0,.014,-.835,Math.PI/2);
+
+  addTo(g,new THREE.CylinderGeometry(.022,.022,.28,16),gm3,0,-.004,.35,Math.PI/2);
+  addTo(g,makeExtrudeShape([[0,.034],[.25,.05],[.26,-.072],[.12,-.04],[0,-.034]],.05,.007),gm2,0,-.016,.36,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.058,.122,.026),glv,0,-.012,.495);
+
+  const magGeo=makeExtrudeShape([[0,0],[.095,0],[.078,-.19],[-.018,-.19]],.042,.006);
+  addTo(g,magGeo,gm2,0,-.042,.1,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.046,.016,.105),steelBright,0,-.228,.12);
+
+  const gripGeo=makeExtrudeShape([[-.038,0],[.038,0],[.062,-.175],[-.016,-.185]],.044,.007);
+  addTo(g,gripGeo,gm1,0,-.045,-.12,0,-Math.PI/2,0);
+
+  const holo=new THREE.Group();
+  holo.position.set(0,.098,-.03);
+  g.add(holo);
+  addTo(holo,new THREE.BoxGeometry(.064,.014,.095),gm2,0,-.018,0);
+  addTo(holo,new THREE.BoxGeometry(.011,.046,.078),gm3,-.028,.008,0);
+  addTo(holo,new THREE.BoxGeometry(.011,.046,.078),gm3,.028,.008,0);
+  addTo(holo,new THREE.BoxGeometry(.068,.01,.078),gm3,0,.028,0);
+  addTo(holo,new THREE.PlaneGeometry(.044,.034),lensM,0,.008,-.036,0,Math.PI,0);
+  addTo(holo,new THREE.BoxGeometry(.007,.007,.005),accRed,0,.008,-.032);
+
+  addTo(g,new THREE.BoxGeometry(.084,.082,.13),glv,0,-.076,-.26);
+  addTo(g,new THREE.BoxGeometry(.084,.092,.11),glv,0,-.122,.1);
 }
 
-{const g=wModels[1];
- addTo(g,makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.058],[-.15,.062],[-.23,.02]],.072,.008),gm3,0,.002,0,0,-Math.PI/2,0);
- addTo(g,makeLatheZ([[.022,0],[.022,.48],[.026,.49],[.026,.52],[.02,.53]],16),snM,0,.022,-.22);
- addTo(g,new THREE.BoxGeometry(.052,.016,.46),gm2,0,.046,-.44);
- addTo(g,new THREE.CylinderGeometry(.021,.021,.46,14),gm1,0,-.022,-.41,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.045,.049,.25,14),wd,0,-.034,-.38,Math.PI/2);
- addTo(g,makeExtrudeShape([[0,.056],[.33,.042],[.35,-.092],[.14,-.052],[0,-.046]],.058,.009),wd,0,-.01,.18,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.064,.126,.024),glv,0,-.02,.522);
- [-.052,-.017,.017,.052].forEach(zOff=>{
-   addTo(g,new THREE.CylinderGeometry(.012,.012,.072,10),accRed,-.044,.005,zOff,Math.PI/2);
-   addTo(g,new THREE.CylinderGeometry(.0125,.0125,.02,10),brassM,-.044,.005,zOff+.044,Math.PI/2);
- });
- addTo(g,new THREE.BoxGeometry(.09,.086,.125),glv,0,-.076,-.37);
- addTo(g,new THREE.BoxGeometry(.09,.094,.11),glv,0,-.12,.12);
+/* 2. 샷건 (컴뱃 펌프 샷건: 플루티드 배럴, 튜브 매거진, 펌프 슬라이드, 셸 홀더, 우드/스틸 디테일) */
+{
+  const g=wModels[1];
+  addTo(g,makeExtrudeShape([[-.24,-.052],[.24,-.052],[.23,.06],[-.16,.064],[-.24,.022]],.074,.008),gm3,0,.002,0,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.01,.036,.12),steelBright,.04,.008,-.02);
+  addTo(g,makeLatheZ([[.023,0],[.023,.5],[.028,.51],[.028,.55],[.021,.56]],18),steelBright,0,.023,-.24);
+  addTo(g,new THREE.BoxGeometry(.054,.018,.52),gm2,0,.05,-.48);
+  addTo(g,new THREE.BoxGeometry(.012,.024,.016),accRed,0,.064,-.72);
+
+  addTo(g,new THREE.CylinderGeometry(.022,.022,.54,16),gm1,0,-.022,-.45,Math.PI/2);
+  addTo(g,new THREE.CylinderGeometry(.025,.025,.03,16),steelBright,0,-.022,-.73,Math.PI/2);
+
+  addTo(g,new THREE.CylinderGeometry(.048,.052,.26,16),wd,0,-.034,-.4,Math.PI/2);
+  for(let pz=-.51;pz<=-.29;pz+=.028){
+    addTo(g,new THREE.CylinderGeometry(.051,.051,.008,16),gm2,0,-.034,pz,Math.PI/2);
+  }
+
+  addTo(g,makeExtrudeShape([[0,.058],[.34,.044],[.36,-.095],[.14,-.054],[0,-.048]],.06,.009),wd,0,-.01,.19,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.066,.128,.026),glv,0,-.02,.535);
+
+  [-.056,-.019,.019,.056].forEach(zOff=>{
+    addTo(g,new THREE.CylinderGeometry(.012,.012,.074,12),accRed,-.045,.006,zOff,Math.PI/2);
+    addTo(g,new THREE.CylinderGeometry(.013,.013,.022,12),brassM,-.045,.006,zOff+.045,Math.PI/2);
+  });
+
+  addTo(g,new THREE.BoxGeometry(.092,.088,.13),glv,0,-.076,-.37);
+  addTo(g,new THREE.BoxGeometry(.092,.096,.112),glv,0,-.12,.12);
 }
 
-{const g=wModels[2];
- addTo(g,makeExtrudeShape([[-.35,-.045],[.33,-.045],[.31,.055],[-.23,.06],[-.35,.022]],.058,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
- addTo(g,new THREE.CylinderGeometry(.009,.009,.048,10),gm3,.038,.014,.06,0,0,Math.PI/2);
- addTo(g,new THREE.SphereGeometry(.015,10,8),gm2,.062,.014,.06);
- addTo(g,makeLatheZ([[.018,0],[.018,.34],[.015,.36],[.015,.68],[.024,.69],[.024,.78],[.015,.79]],16),snM,0,.016,-.38);
- addTo(g,new THREE.CylinderGeometry(.025,.024,.1,14),gm3,0,.016,-1.12,Math.PI/2);
+/* 3. 저격총 (롱레인지 볼트액션 스나이퍼: 머즐 브레이크, 볼트 핸들, 바이포드, 고배율 스코프) */
+{
+  const g=wModels[2];
+  addTo(g,makeExtrudeShape([[-.36,-.046],[.34,-.046],[.32,.056],[-.24,.062],[-.36,.024]],.06,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
 
- const scopeGrp=new THREE.Group();
- scopeGrp.position.set(0,.104,-.06);
- g.add(scopeGrp);
- addTo(scopeGrp,new THREE.BoxGeometry(.044,.014,.34),gm2,0,-.034,0);
- [-.095,.095].forEach(mz=>{
-   addTo(scopeGrp,new THREE.BoxGeometry(.048,.024,.032),gm1,0,-.02,mz);
-   const ring=new THREE.Mesh(new THREE.TorusGeometry(.037,.0065,10,18),gm1);
-   ring.position.set(0,0,mz);
-   scopeGrp.add(ring);
- });
- addTo(scopeGrp,new THREE.CylinderGeometry(.032,.032,.11,16),scpM,0,0,.13,Math.PI/2);
- addTo(scopeGrp,new THREE.CylinderGeometry(.026,.026,.16,16),scpM,0,0,0,Math.PI/2);
- addTo(scopeGrp,new THREE.CylinderGeometry(.041,.041,.13,16),scpM,0,0,-.14,Math.PI/2);
- addTo(scopeGrp,new THREE.CircleGeometry(.037,16),lensM,0,0,-.213,0,Math.PI,0);
- addTo(scopeGrp,new THREE.CircleGeometry(.029,16),lensM,0,0,.192);
+  addTo(g,new THREE.CylinderGeometry(.01,.01,.055,12),steelBright,.04,.014,.06,0,0,Math.PI/2);
+  addTo(g,new THREE.SphereGeometry(.016,12,10),gm2,.068,.014,.06);
 
- addTo(g,makeExtrudeShape([[0,.046],[.32,.038],[.34,-.082],[.15,-.048],[0,-.042]],.056,.008),scpM,0,-.012,.22,0,-Math.PI/2,0);
- addTo(g,new THREE.BoxGeometry(.066,.032,.23),wd,0,.034,.38,.04);
- [-.048,.048].forEach(bx=>addTo(g,new THREE.CylinderGeometry(.01,.007,.22,10),gm3,bx,-.048,-.72,.28));
- addTo(g,new THREE.BoxGeometry(.078,.08,.105),glv,0,-.072,-.25);
- addTo(g,new THREE.BoxGeometry(.078,.09,.105),glv,0,-.11,.08);
+  addTo(g,makeLatheZ([
+    [.019,0],[.019,.36],[.015,.38],[.015,.72],
+    [.026,.73],[.026,.82],[.016,.83]
+  ],18),steelBright,0,.016,-.4);
+  addTo(g,new THREE.CylinderGeometry(.027,.026,.11,16),gm1,0,.016,-1.18,Math.PI/2);
+
+  const scopeGrp=new THREE.Group();
+  scopeGrp.position.set(0,.106,-.06);
+  g.add(scopeGrp);
+  addTo(scopeGrp,new THREE.BoxGeometry(.046,.014,.36),gm2,0,-.036,0);
+  [-.1,.1].forEach(mz=>{
+    addTo(scopeGrp,new THREE.BoxGeometry(.05,.024,.034),gm1,0,-.02,mz);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.038,.007,12,20),gm3);
+    ring.position.set(0,0,mz);
+    ring.castShadow=true;
+    scopeGrp.add(ring);
+  });
+  addTo(scopeGrp,new THREE.CylinderGeometry(.033,.033,.12,18),scpM,0,0,.14,Math.PI/2);
+  addTo(scopeGrp,new THREE.CylinderGeometry(.027,.027,.17,18),scpM,0,0,0,Math.PI/2);
+  addTo(scopeGrp,new THREE.CylinderGeometry(.042,.042,.14,18),scpM,0,0,-.15,Math.PI/2);
+  addTo(scopeGrp,new THREE.CylinderGeometry(.02,.02,.016,16),brassM,0,.032,.02);
+  addTo(scopeGrp,new THREE.CircleGeometry(.038,18),lensM,0,0,-.223,0,Math.PI,0);
+  addTo(scopeGrp,new THREE.CircleGeometry(.03,18),lensM,0,0,.202);
+
+  addTo(g,makeExtrudeShape([[0,.048],[.33,.04],[.35,-.084],[.16,-.05],[0,-.044]],.058,.008),scpM,0,-.012,.22,0,-Math.PI/2,0);
+  addTo(g,new THREE.BoxGeometry(.068,.034,.24),wd,0,.036,.38,.04);
+  [-.05,.05].forEach(bx=>{
+    addTo(g,new THREE.CylinderGeometry(.011,.008,.24,12),steelBright,bx,-.048,-.74,.28);
+    addTo(g,new THREE.BoxGeometry(.014,.01,.028),gm2,bx,-.154,-.85);
+  });
+
+  addTo(g,new THREE.BoxGeometry(.08,.082,.11),glv,0,-.072,-.25);
+  addTo(g,new THREE.BoxGeometry(.08,.092,.11),glv,0,-.11,.08);
 }
 
 function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
 syncWeaponModel();
-const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.32,.32),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.016,-.92);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
+const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.016,-.96);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
 const trc=[];for(let i=0;i<14;i++){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xffffff}));l.visible=false;l.frustumCulled=false;sc.add(l);trc.push({l,t:0})}
 let ti=0;function tracer(a,b,col){const o=trc[ti++%14],p=o.l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;o.l.material.color.setHex(col);o.l.visible=true;o.t=.075}
 const spk=new THREE.Mesh(new THREE.SphereGeometry(.14,6,4),new THREE.MeshBasicMaterial({color:0xffb84d}));spk.visible=false;sc.add(spk);
@@ -1170,7 +1317,7 @@ function reset(skipSpawn){
   pl.x=14.8;pl.y=0;pl.z=42.0;pl.vy=0;pl.yaw=-Math.PI/2;pl.pit=0;lookTargetYaw=null;lookTargetPit=null;burstFxT=0;pl.hp=100;
   wi=0;syncWeaponModel();WA=WP.map(w=>[w.mag,w.res]);am=WA[0][0];res=WA[0][1];kills=0;score=0;strk=0;
   pk.forEach(p=>sc.remove(p.m));pk=[];spawnMapMedkits();ads=false;cd=[0,0,0];for(const k in bu)bu[k]=0;
-  fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();
+  fcd=rl=rec=mf=hm=hCrit=dm=0;pl.dead=0;spawn(mm?0:Math.min(10,6+2*rnd));flow();if(mm&&!skipSpawn)mpSpawn();syncShadowFrustumToPlayer();
 }
 
 function reload(){const w=WP[wi];if(rl>0||am>=w.mag||res<=0||st!=1)return;rl=w.rl;SX.reload()}
@@ -1246,6 +1393,7 @@ function upd(dt){
 
  if(pl.og&&l>.1){bobPhase+=dt*(spr?13.5:9.5);stp+=dt*(spr?8.2:6.5);if(stp>2.4){stp=0;SX.step({x:pl.x,y:pl.y,z:pl.z})}}else{bobPhase+=dt*2.1}
  stepLookSmoothing(dt);
+ syncShadowFrustumToPlayer();
  cam.position.set(pl.x,pl.y+(pl.dead?.35:1.6),pl.z);shk=Math.max(0,shk-dt*10);cam.rotation.set(pl.pit+(Math.random()-.5)*shk*.0065,pl.yaw,(Math.random()-.5)*shk*.012);cam.updateMatrixWorld();
  syncAudioListener(pl.x,pl.y,pl.z,pl.yaw);
 
@@ -1273,8 +1421,8 @@ function upd(dt){
     e.L.rotation.x=Math.sin(e.ph)*.58;e.R.rotation.x=-Math.sin(e.ph)*.58;
   }else{e.L.rotation.x=e.R.rotation.x=0}
   e.fl-=dt;
-  if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.45}
-  else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.08}
+  if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.65}
+  else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.12}
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
    tracer(o,t,0x74c0fc);SX.shot(Math.min(.75,6/d),0,{x:e.x,y:(e.y||0)+1.3,z:e.z});if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,3.6);SX.hurt()}}}
  });
@@ -1302,7 +1450,7 @@ function fx(dt){
  gun.rotation.x=rec*.1+rPitch+bobY*2.2;gun.rotation.y=rYaw+bobX*2.4;gun.rotation.z=rRoll-bobX*1.8;
  const badge=$('rlBadge');
  if(badge){const showRl=(rl>0 && st==1 && !pl.dead);badge.classList.toggle('on',showRl);if(showRl)$('rlText').textContent='재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s'}
- mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?2.2:0;
+ mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?4.2:0;
  trc.forEach(o=>{if(o.t>0&&(o.t-=dt)<=0)o.l.visible=false});if(spt>0&&(spt-=dt)<=0)spk.visible=false;pp.forEach(o=>{if(o.t<=0)return;o.t-=dt;if(o.t<=0){o.m.visible=false;return}o.v.y-=12*dt;o.m.position.addScaledVector(o.v,dt);if(o.m.position.y<.04){o.m.position.y=.04;o.v.set(0,0,0)}})}
 
 let lastMag=-1,lastAm=-1,lastRl=-1;
@@ -1871,7 +2019,7 @@ function sendState(force){
 }
 function mpSpawn(){
   const spot=SPAWN_SPOTS[Math.random()*SPAWN_SPOTS.length|0]||[14.8,42,0];
-  pl.x=spot[0];pl.z=spot[1];pl.y=spot[2];pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;am=WP[wi].mag;res=WP[wi].res;rl=0;sendState(true);
+  pl.x=spot[0];pl.z=spot[1];pl.y=spot[2];pl.vy=0;pl.hp=100;pl.dead=0;pl.inv=performance.now()/1e3+2;am=WP[wi].mag;res=WP[wi].res;rl=0;sendState(true);syncShadowFrustumToPlayer();
 }
 function hitMe(n,from,hd,srcX,srcZ){
   const t=performance.now()/1e3;if(pl.dead||t<pl.inv||matchState.phase!=='playing'||n<=0)return;
@@ -1966,8 +2114,8 @@ function mpFx(dt){
     if(r.al){const dx=r.tx-r.x,dz=r.tz-r.z;r.x+=dx*a;r.y+=(r.ty-r.y)*a;r.z+=dz*a;let dy=r.tyaw-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*a;r.g.rotation.y=r.yaw+Math.PI}
     else{r.t+=dt;r.g.rotation.x=-Math.min(1.5,r.t*4)}
     r.g.position.set(r.x,r.y,r.z);r.fl-=dt;
-    if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.45}
-    else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.08}
+    if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.65}
+    else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.12}
     if(r.tagEl){
       if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
       else{
