@@ -576,6 +576,11 @@ flr.rotation.x=-Math.PI/2;flr.position.set(R*S/2,0,R*S/2);flr.receiveShadow=true
   ring.rotation.x=-Math.PI/2;ring.position.set(cx,.018,cz);world.add(ring);
   const innerRing=new THREE.Mesh(new THREE.RingGeometry(1.8,2.0,36),new THREE.MeshBasicMaterial({color:0x4dabf7,transparent:true,opacity:.35,side:2}));
   innerRing.rotation.x=-Math.PI/2;innerRing.position.set(cx,.016,cz);world.add(innerRing);
+  const cross1=new THREE.Mesh(new THREE.PlaneGeometry(R*S*.78,.15),new THREE.MeshBasicMaterial({color:0xff7a2f,transparent:true,opacity:.22,side:2}));
+  cross1.rotation.x=-Math.PI/2;cross1.position.set(cx,.012,cz);world.add(cross1);
+  const cross2=new THREE.Mesh(new THREE.PlaneGeometry(.15,R*S*.78),new THREE.MeshBasicMaterial({color:0x4dabf7,transparent:true,opacity:.22,side:2}));
+  cross2.rotation.x=-Math.PI/2;cross2.position.set(cx,.012,cz);world.add(cross2);
+
   const beaconPts=[[cx,cz,0xff7a2f,1.3],[3.5*S,3.5*S,0xff6b6b,.9],[(R-3.5)*S,(R-3.5)*S,0x4dabf7,.9]];
   beaconPts.forEach(([bx,bz,col,int])=>{
     const plight=new THREE.PointLight(col,int,18);
@@ -647,9 +652,12 @@ function camo(base){
     x.beginPath();x.roundRect?x.roundRect(Math.random()*112,Math.random()*112,12+Math.random()*18,8+Math.random()*12,3):x.rect(Math.random()*112,Math.random()*112,14,10);
     x.fill();
   }
+  x.strokeStyle='rgba(0,0,0,.18)';x.lineWidth=2;
+  for(let y=32;y<128;y+=32){x.beginPath();x.moveTo(0,y);x.lineTo(128,y);x.stroke()}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;
 }
 
+/* 원래 캐릭터 풀 파츠 모델링 복구 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
@@ -665,18 +673,62 @@ function mkChar(c){
   const leg=(x,side)=>{
     const p=new THREE.Group();p.position.set(x,.92,0);g.add(p);
     pt(CG(.102,.088,.44),u,0,-.22,0,p);
+    pt(BG(.125,.14,.16),v,side*.025,-.22,.02,p,0,0,0,-side*.08);
+    pt(SG(.086),d,0,-.45,.03,p);
+    pt(BG(.13,.12,.09),mt,0,-.45,.085,p);
     pt(CG(.086,.074,.42),u,0,-.66,.01,p);
+    pt(BG(.145,.11,.13),d,0,-.48,.075,p);
     pt(BG(.162,.11,.29),d,0,-.88,.045,p);
+    pt(BG(.155,.05,.31),mt,0,-.925,.045,p);
+    pt(BG(.145,.09,.1),mt,0,-.83,-.065,p);
     return p;
   };
   const L=leg(-.158,-1),Rg=leg(.158,1);
+
   pt(CG(.2,.17,.32),u,0,1.08,0,body);
+  pt(BG(.48,.085,.34),d,0,.97,0,body);
+  pt(BG(.09,.095,.07),mt,0,.97,.175,body);
   pt(BG(.5,.46,.31),v,0,1.38,0,body);
+  pt(BG(.52,.11,.33),d,0,1.53,0,body);
+  pt(BG(.46,.14,.33),u,0,1.16,0,body);
+  [-.15,0,.15].forEach(x=>pt(BG(.095,.13,.065),d,x,1.31,.18,body));
+  pt(BG(.36,.38,.14),d,0,1.4,-.21,body);
+  pt(BG(.3,.12,.06),mt,0,1.52,-.28,body);
+  pt(BG(.24,.15,.06),u,0,1.28,-.28,body);
+
   const head=new THREE.Group();head.position.set(0,1.72,0);body.add(head);
+  pt(CG(.06,.074,.1),s,0,-.04,0,head);
   pt(SG(.112),s,0,.06,.005,head,1);
   pt(SG(.146,18),d,0,.1,-.005,head,1).scale.set(1,.85,1.06);
+  pt(BG(.07,.06,.08),mt,0,.145,.135,head,1,-.25);
+  pt(BG(.035,.035,.04),d,0,.145,.175,head,1);
+  pt(BG(.3,.055,.12),mt,0,.1,.005,head,1);
   pt(BG(.23,.068,.065),visor,0,.07,.128,head,1);
+  pt(BG(.245,.022,.03),d,0,.104,.134,head,1);
+  [-1,1].forEach(k=>{
+    pt(BG(.042,.095,.085),mt,k*.152,.06,0,head,1);
+    pt(CG(.012,.012,.22,8),mt,k*.165,.12,-.03,head,1,.45);
+    pt(SG(.088),u,k*.325,-.17,0,body);
+    pt(BG(.12,.11,.16),v,k*.34,-.15,0,body,0,0,0,-k*.25);
+  });
+
+  const arm=(x,rx,ry)=>{
+    const p=new THREE.Group();p.position.set(x,1.55,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
+    pt(CG(.066,.056,.29),u,0,-.145,0,p);
+    const f=new THREE.Group();f.position.y=-.29;f.rotation.x=-.92;p.add(f);
+    pt(CG(.056,.046,.28),u,0,-.14,0,f);
+    pt(BG(.075,.07,.12),d,0,-.12,.02,f);
+    pt(SG(.056),d,0,-.29,0,f);
+  };
+  arm(-.325,-.96,.56);arm(.325,-.72,-.52);
+
   pt(BG(.074,.115,.52),mt,0,1.38,.46,body);
+  pt(BG(.064,.026,.44),d,0,1.44,.46,body);
+  pt(CG(.015,.015,.42,10),mt,0,1.41,.92,body).rotation.x=Math.PI/2;
+  pt(BG(.064,.064,.23),d,0,1.37,.71,body);
+  pt(BG(.052,.135,.072),d,0,1.27,.46,body);
+  pt(BG(.052,.072,.21),d,0,1.36,.12,body);
+
   return{g,body,head,L,R:Rg,ms};
 }
 
@@ -689,14 +741,58 @@ const WP=[
 ];
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
-const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.42,.68),gm2=MT(0x101114,.48,.58),gm3=MT(0x3b3f46,.32,.78);
+
+/* 원래 3종 무기 풀 파츠 모델링 복구 */
+const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.42,.68),gm2=MT(0x101114,.48,.58),gm3=MT(0x3b3f46,.32,.78),glv=MT(0x1b1b1d,.78,.06),wd=MT(0x7c3f1d,.72,.08),snM=MT(0x1b1e24,.34,.84),scpM=MT(0x14171c,.24,.88),accRed=MT(0xff3b30,.35,.4);
 const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
-wModels.forEach((g,idx)=>{
-  addTo(g,new THREE.BoxGeometry(.064,.098,.45+idx*.12),gm1,0,0,0);
-  addTo(g,new THREE.CylinderGeometry(.014,.014,.42+idx*.16,12),gm3,0,.012,-.52-idx*.08,Math.PI/2);
-});
+
+{const g=wModels[0];
+ addTo(g,new THREE.BoxGeometry(.064,.098,.45),gm1,0,0,0);
+ addTo(g,new THREE.BoxGeometry(.054,.034,.42),gm3,0,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,-.028,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,.028,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.058,.068,.2),gm2,0,-.01,-.29);
+ addTo(g,new THREE.CylinderGeometry(.013,.013,.34,12),gm3,0,.012,-.49,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.022,.022,.082,12),gm2,0,.012,-.67,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.052,.058,.24),gm2,0,-.01,.31);
+ addTo(g,new THREE.BoxGeometry(.044,.15,.072),gm2,0,-.105,.1,.2);
+ addTo(g,new THREE.BoxGeometry(.044,.185,.088),gm1,0,-.13,-.12,-.22);
+ addTo(g,new THREE.BoxGeometry(.058,.046,.08),gm2,0,.098,-.03);
+ addTo(g,new THREE.BoxGeometry(.012,.012,.12),accRed,0,.098,-.07);
+ addTo(g,new THREE.BoxGeometry(.076,.076,.11),glv,0,-.075,-.22);
+ addTo(g,new THREE.BoxGeometry(.076,.086,.095),glv,0,-.12,.1);
+}
+{const g=wModels[1];
+ addTo(g,new THREE.BoxGeometry(.074,.108,.44),snM,0,0,0);
+ addTo(g,new THREE.CylinderGeometry(.025,.025,.48,14),snM,0,.018,-.43,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.05,.018,.38),gm3,0,.042,-.42);
+ addTo(g,new THREE.CylinderGeometry(.018,.018,.38,12),gm2,0,-.026,-.37,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.078,.088,.23),wd,0,-.032,-.37);
+ addTo(g,new THREE.BoxGeometry(.064,.098,.3),wd,0,-.015,.33,.08);
+ addTo(g,new THREE.BoxGeometry(.056,.105,.04),gm3,0,-.015,.48,.08);
+ addTo(g,new THREE.BoxGeometry(.05,.145,.082),wd,0,-.105,.12,.25);
+ addTo(g,new THREE.BoxGeometry(.048,.082,.072),gm2,0,-.085,-.12,-.1);
+ addTo(g,new THREE.BoxGeometry(.084,.082,.115),glv,0,-.075,-.34);
+ addTo(g,new THREE.BoxGeometry(.084,.09,.105),glv,0,-.12,.12);
+}
+{const g=wModels[2];
+ addTo(g,new THREE.BoxGeometry(.06,.098,.64),scpM,0,0,-.06);
+ addTo(g,new THREE.CylinderGeometry(.012,.015,.68,14),gm3,0,.015,-.65,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.018,.018,.12,12),gm2,0,.015,-.99,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.036,.04,.38,16),scpM,0,.098,-.12,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.042,.042,.03,16),gm3,0,.098,-.3,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.042,.042,.03,16),gm3,0,.098,.06,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.024,.024,.065),gm2,0,.056,-.24);
+ addTo(g,new THREE.BoxGeometry(.024,.024,.065),gm2,0,.056,.0);
+ addTo(g,new THREE.BoxGeometry(.044,.115,.068),gm2,0,-.095,.08,.18);
+ addTo(g,new THREE.BoxGeometry(.038,.125,.062),gm1,0,-.105,-.14,-.1);
+ addTo(g,new THREE.BoxGeometry(.056,.088,.3),scpM,0,-.015,.37,.04);
+ addTo(g,new THREE.BoxGeometry(.072,.074,.095),glv,0,-.07,-.22);
+ addTo(g,new THREE.BoxGeometry(.072,.084,.095),glv,0,-.11,.08);
+}
+
 function syncWeaponModel(){wModels.forEach((g,idx)=>{g.visible=(idx===wi)});if(!WP[wi].canAds)ads=false}
 syncWeaponModel();
 const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.26,.26),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.012,-.82);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
@@ -1318,7 +1414,6 @@ applySavedLayout();
 $('rotBtn').onclick=async()=>{aud();if(!document.fullscreenElement&&!document.webkitFullscreenElement)fsT(1);try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(_){}};
 addEventListener('beforeunload',()=>{if(isHost&&roomCode)removeRoomFromHub(roomCode)});
 
-/* 모든 변수와 이벤트 바인딩이 끝난 뒤 안전하게 초기화 및 루프 시작 */
 reset();renderRoomList();
 let lt=performance.now();
 (function loop(t){
