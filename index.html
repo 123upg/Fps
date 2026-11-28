@@ -606,7 +606,6 @@ let ren;try{ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-pe
 const cv=ren.domElement;ren.setPixelRatio(Math.min(devicePixelRatio||1,1.75));const LO=matchMedia('(pointer:coarse)').matches;ren.outputEncoding=THREE.sRGBEncoding;ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=1.28;ren.shadowMap.enabled=true;ren.shadowMap.type=THREE.PCFSoftShadowMap;$('app').insertBefore(cv,$('app').firstChild);
 const rz=()=>{ren.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()};addEventListener('resize',rz);rz();
 
-/* 절차적 환경맵(PMREM) 생성: 금속 총열·리시버·스코프 반사광 확보 */
 {
   const envScene=new THREE.Scene();
   envScene.background=new THREE.Color(0x0c1018);
@@ -685,10 +684,17 @@ const brushedMetalT=TX(256,(x,w)=>{
   }
 },1,1);
 
+const fabricWeaveT=TX(128,(x,w)=>{
+  x.fillStyle='#343b46';x.fillRect(0,0,w,w);
+  for(let y=0;y<w;y+=4)for(let gx=0;gx<w;gx+=4){
+    x.fillStyle=((gx+y)/4)%2===0?'rgba(255,255,255,.05)':'rgba(0,0,0,.12)';
+    x.fillRect(gx,y,3,3);
+  }
+},2,2);
+
 sc.background=new THREE.Color(0x111620);
 sc.fog=new THREE.FogExp2(0x151c28,.0125);
 
-/* 대형 아레나 바닥, 배관·케이블·트러스·조명·단차 몰딩 */
 const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),new THREE.MeshStandardMaterial({map:tileFloorT,bumpMap:tileFloorT,bumpScale:.55,roughness:.78,metalness:.2}));
 flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveShadow=true;world.add(flr);
 
@@ -706,7 +712,6 @@ flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveSha
   const crossAxis=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-8,.38),laneMat);
   crossAxis.rotation.x=-Math.PI/2;crossAxis.position.set(ARENA_W/2,.015,ARENA_D/2);world.add(crossAxis);
 
-  /* 바닥 그레이팅 + 테두리 경고 프레임 */
   [[28,28],[56,28],[28,56],[56,56],[42,20],[42,64]].forEach(([gx,gz])=>{
     const outer=new THREE.Mesh(new THREE.BoxGeometry(2.44,.045,2.44),hazardMat);
     outer.position.set(gx,.02,gz);world.add(outer);
@@ -718,7 +723,6 @@ flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveSha
     }
   });
 
-  /* 상부 파이프 라인 + 거더 + 스트럿 + 조명 바 */
   for(let z=14;z<=70;z+=14){
     const beam=new THREE.Mesh(new THREE.BoxGeometry(ARENA_W-4,.72,1.25),beamMat);
     beam.position.set(ARENA_W/2,WALL_H+.2,z);
@@ -769,7 +773,6 @@ SOLID_BOXES.forEach(b=>{
     const topCap=new THREE.Mesh(new THREE.BoxGeometry(w+.16,.24,d+.16),steelTrimMat);
     topCap.position.set(cx,b.h+.06,cz);
     world.add(topCap);
-    /* 세로 보강 필라스터 */
     if(w>8||d>8){
       const span=w>8?w:d;
       const count=Math.floor(span/4);
@@ -842,7 +845,6 @@ ELEVATED_DECKS.forEach(deck=>{
       collar.position.set(px,colH-.14,pz);
       world.add(collar);
     });
-    /* 기둥 사이 대각 브레이스 */
     if(i<colCount){
       const nextPx=deck.xMin+.8+((w-1.6)*(i+1))/colCount;
       const spanX=nextPx-px;
@@ -885,100 +887,145 @@ ELEVATED_RAMPS.forEach(r=>{
 });
 
 const GC={};
-const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=16)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=18)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
+const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=20)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=20)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
 function camo(base){
   const c=document.createElement('canvas');c.width=c.height=128;
   const x=c.getContext('2d'),b=new THREE.Color(base);
-  const bright=b.clone().lerp(new THREE.Color(0xffffff),.28);
-  const deep=b.clone().multiplyScalar(.78);
+  const bright=b.clone().lerp(new THREE.Color(0xffffff),.22);
+  const deep=b.clone().multiplyScalar(.74);
   x.fillStyle='#'+b.getHexString();x.fillRect(0,0,128,128);
-  for(let i=0;i<28;i++){
+  for(let i=0;i<36;i++){
     x.fillStyle='#'+(i%2===0?bright:deep).getHexString();
-    x.fillRect(Math.random()*108,Math.random()*108,16+Math.random()*16,10+Math.random()*10);
+    x.beginPath();
+    x.ellipse(Math.random()*128,Math.random()*128,10+Math.random()*14,5+Math.random()*8,Math.random()*Math.PI,0,Math.PI*2);
+    x.fill();
   }
-  x.strokeStyle='rgba(255,255,255,.32)';x.lineWidth=3;
-  x.strokeRect(2,2,124,124);
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t;
 }
 
+/* 사람 체형 기반 전술 캐릭터 생성: 구/원통 관절 노출을 줄이고 옷/피부/장비 레이어로 자연스럽게 연결 */
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
   const body=new THREE.Group();g.add(body);
   const accentHex=c[0];
-  const M=(col,r,m,map,emissiveHex=0,emInt=0)=>new THREE.MeshStandardMaterial({
-    color:map?0xffffff:col,map,roughness:r,metalness:m,
+
+  const M=(col,r,m,map,emissiveHex=0,emInt=0,bump=null,bScale=0)=>new THREE.MeshStandardMaterial({
+    color:map?0xffffff:col,map,bumpMap:bump,bumpScale:bScale,
+    roughness:r,metalness:m,
     emissive:new THREE.Color(emissiveHex),emissiveIntensity:emInt
-  }),
-    u=M(0,.62,.15,camo(accentHex),accentHex,.28),
-    v=M(accentHex,.38,.42,null,accentHex,.34),
-    s=M(0xffd8b8,.6,.05),
-    d=M(0x141820,.45,.55),
-    mt=M(0x3a4250,.25,.88),
-    visor=M(0xffffff,.08,.65,null,accentHex,1.2),
-    beacon=M(accentHex,.2,.25,null,accentHex,1.3),
-    ms=[u,v,s,d,mt,visor,beacon];
-
-  const leg=(x,side)=>{
-    const p=new THREE.Group();p.position.set(x,.92,0);g.add(p);
-    pt(CG(.105,.09,.44),u,0,-.22,0,p);
-    pt(BG(.13,.15,.17),v,side*.025,-.22,.02,p,0,0,0,-side*.08);
-    pt(SG(.088),d,0,-.45,.03,p);
-    pt(BG(.135,.12,.095),mt,0,-.45,.085,p);
-    pt(CG(.088,.076,.42),u,0,-.66,.01,p);
-    pt(BG(.15,.115,.135),d,0,-.48,.075,p);
-    pt(BG(.168,.115,.3),d,0,-.88,.045,p);
-    pt(BG(.16,.055,.32),mt,0,-.925,.045,p);
-    pt(BG(.15,.095,.1),mt,0,-.83,-.065,p);
-    return p;
-  };
-  const L=leg(-.158,-1),Rg=leg(.158,1);
-
-  pt(CG(.205,.175,.32),u,0,1.08,0,body);
-  pt(BG(.49,.09,.35),d,0,.97,0,body);
-  pt(BG(.095,.1,.075),mt,0,.97,.175,body);
-  pt(BG(.52,.48,.32),v,0,1.38,0,body);
-  pt(BG(.54,.115,.34),d,0,1.53,0,body);
-  pt(BG(.47,.145,.34),u,0,1.16,0,body);
-  [-.15,0,.15].forEach(x=>pt(BG(.098,.135,.068),d,x,1.31,.18,body));
-  pt(BG(.38,.4,.15),d,0,1.4,-.21,body);
-  pt(BG(.26,.1,.05),beacon,0,1.48,-.29,body);
-  pt(BG(.24,.15,.06),u,0,1.28,-.28,body);
-
-  const head=new THREE.Group();head.position.set(0,1.72,0);body.add(head);
-  pt(CG(.062,.076,.1),s,0,-.04,0,head);
-  pt(SG(.114),s,0,.06,.005,head,1);
-  pt(SG(.15,18),d,0,.1,-.005,head,1).scale.set(1,.85,1.06);
-  pt(BG(.072,.062,.082),mt,0,.145,.135,head,1,-.25);
-  pt(BG(.036,.036,.042),d,0,.145,.175,head,1);
-  pt(BG(.31,.06,.125),v,0,.1,.005,head,1);
-  pt(BG(.245,.075,.07),visor,0,.07,.132,head,1);
-  pt(BG(.255,.025,.035),d,0,.106,.136,head,1);
-  pt(BG(.08,.045,.08),beacon,0,.235,0,head,1);
-  [-1,1].forEach(k=>{
-    pt(BG(.044,.098,.088),mt,k*.154,.06,0,head,1);
-    pt(CG(.013,.013,.23,8),beacon,k*.166,.125,-.03,head,1,.45);
-    pt(SG(.094),u,k*.33,-.17,0,body);
-    pt(BG(.135,.12,.17),v,k*.345,-.15,0,body,0,0,0,-k*.25);
   });
 
-  const arm=(x,rx,ry)=>{
-    const p=new THREE.Group();p.position.set(x,1.55,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
-    pt(CG(.068,.058,.29),u,0,-.145,0,p);
-    const f=new THREE.Group();f.position.y=-.29;f.rotation.x=-.92;p.add(f);
-    pt(CG(.058,.048,.28),u,0,-.14,0,f);
-    pt(BG(.078,.072,.125),d,0,-.12,.02,f);
-    pt(SG(.058),d,0,-.29,0,f);
-  };
-  arm(-.33,-.96,.56);arm(.33,-.72,-.52);
+  /* 전술복(위장 직물 텍스처), 피부톤, 다크 기어(니트/나일론), 팀/클래스 포인트 컬러 */
+  const u=M(0,.78,.06,camo(accentHex),accentHex,.14,fabricWeaveT,.018);
+  const v=M(accentHex,.48,.22,fabricWeaveT,accentHex,.22,fabricWeaveT,.012);
+  const s=M(0xe6b896,.68,.02);
+  const d=M(0x1b2029,.65,.28,fabricWeaveT,0,0,fabricWeaveT,.015);
+  const mt=M(0x3a4250,.32,.82,brushedMetalT,0,0,brushedMetalT,.01);
+  const visor=M(0x16202c,.1,.75,null,accentHex,.55);
+  const beacon=M(accentHex,.28,.2,null,accentHex,.65);
+  const ms=[u,v,s,d,mt,visor,beacon];
 
-  pt(BG(.074,.115,.52),mt,0,1.38,.46,body);
-  pt(BG(.064,.026,.44),d,0,1.44,.46,body);
-  pt(CG(.015,.015,.42,10),mt,0,1.41,.92,body).rotation.x=Math.PI/2;
-  pt(BG(.064,.064,.23),d,0,1.37,.71,body);
-  pt(BG(.052,.135,.072),d,0,1.27,.46,body);
-  pt(BG(.052,.072,.21),d,0,1.36,.12,body);
+  /* 다리: 골반~허벅지~종아리~발목~부츠까지 옷 라인이 겹쳐 이어지도록 구성 */
+  const leg=(x,side)=>{
+    const p=new THREE.Group();p.position.set(x,.93,0);g.add(p);
+    /* 허벅지 상부(골반 안쪽으로 겹침) */
+    const thigh=pt(CG(.118,.098,.43,20),u,0,-.19,0,p);
+    thigh.scale.set(1.08,1,.96);
+    /* 카고 포켓(허벅지 외측) */
+    pt(BG(.042,.15,.13),u,side*.105,-.23,.01,p,0,0,0,-side*.05);
+    /* 종아리(허벅지 하단과 부드럽게 겹쳐 관절 틈 차단) */
+    const calf=pt(CG(.096,.072,.44,20),u,0,-.54,.01,p);
+    calf.scale.set(1.02,1,1.04);
+    /* 무릎 바지 주름 밴드(로봇 무릎 캡 대신 옷감 접힘 표현) */
+    const kneeFold=pt(CG(.102,.102,.06,18),d,0,-.37,.02,p);
+    kneeFold.scale.set(1.04,1,.95);
+    /* 발목 양말/부츠 목 & 발등·발뒤꿈치 일체형 부츠 */
+    pt(CG(.074,.078,.14,18),d,0,-.77,.01,p);
+    const boot=pt(BG(.142,.105,.27),d,0,-.87,.04,p);
+    boot.scale.set(1,1,1.05);
+    const toe=pt(SG(.07,16),d,0,-.885,.14,p);
+    toe.scale.set(1.02,.76,1.15);
+    pt(BG(.146,.042,.28),mt,0,-.925,.04,p);
+    return p;
+  };
+  const L=leg(-.145,-1),Rg=leg(.145,1);
+
+  /* 몸통: 골반/허리/복부/가슴/어깨선 */
+  const pelvis=pt(CG(.185,.165,.22,20),u,0,.97,0,body);
+  pelvis.scale.set(1.12,1,.86);
+  const waist=pt(CG(.172,.186,.22,20),u,0,1.15,0,body);
+  waist.scale.set(1.08,1,.84);
+  const chest=pt(CG(.228,.182,.34,22),u,0,1.38,0,body);
+  chest.scale.set(1.16,1,.88);
+  /* 전술 베스트 & 벨트 */
+  pt(BG(.43,.075,.28),d,0,1.04,0,body);
+  pt(BG(.075,.082,.04),mt,0,1.04,.145,body);
+  const vest=pt(BG(.46,.32,.26),v,0,1.41,.01,body);
+  vest.scale.set(1.02,1,.96);
+  [-.135,0,.135].forEach(px=>pt(BG(.082,.115,.048),d,px,1.34,.145,body));
+  /* 백팩(어깨 뒤에 밀착) */
+  const pack=pt(BG(.34,.36,.13),d,0,1.39,-.175,body);
+  pack.scale.set(1,.96,1);
+  pt(BG(.24,.22,.05),u,0,1.36,-.24,body);
+
+  /* 머리 & 목: 목칼라가 목 아랫부분을 감싸고, 사람 머리/턱선/전술 고글을 얹음 */
+  const head=new THREE.Group();head.position.set(0,1.58,0);body.add(head);
+  /* 목 */
+  const neck=pt(CG(.068,.076,.13,18),s,0,.02,0,head);
+  neck.scale.set(1,1,.95);
+  /* 옷깃(터틀넥/택티컬 칼라) */
+  const collar=pt(CG(.086,.098,.07,18),u,0,-.025,0,head);
+  collar.scale.set(1.06,1,.96);
+  /* 두개골 & 얼굴/턱선 */
+  const cranium=pt(SG(.118,22),s,0,.145,.005,head,1);
+  cranium.scale.set(.94,1.08,1.04);
+  const jaw=pt(CG(.078,.104,.11,18),s,0,.095,.025,head,1);
+  jaw.scale.set(.96,.85,.92);
+  /* 콧대 & 눈썹 라인 */
+  pt(BG(.022,.042,.038),s,0,.135,.122,head,1,.18);
+  pt(BG(.145,.018,.03),s,0,.162,.108,head,1);
+  /* 헤어/비니 캡 */
+  const cap=pt(SG(.123,20),d,0,.168,-.008,head,1);
+  cap.scale.set(.97,.86,1.06);
+  const brim=pt(BG(.15,.016,.07),d,0,.178,.095,head,1,.14);
+  /* 전술 고글(이마/눈 위 착용, 과도한 발광 없이 절제) */
+  const goggle=pt(BG(.195,.046,.042),visor,0,.142,.108,head,1);
+  goggle.scale.set(1,.82,.7);
+  pt(BG(.235,.032,.175),d,0,.156,-.005,head,1);
+  /* 귀 */
+  [-1,1].forEach(side=>{
+    const ear=pt(SG(.026,12),s,side*.112,.135,-.005,head,1);
+    ear.scale.set(.45,1.15,.85);
+  });
+
+  /* 팔: 어깨에서 자연스럽게 내려와 팔꿈치 옷 주름과 전완, 손이 매끄럽게 이어짐 */
+  const arm=(x,rx,ry,side)=>{
+    const p=new THREE.Group();p.position.set(x,1.52,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
+    /* 어깨 캡(몸통 상부와 겹침) */
+    const shCap=pt(SG(.082,16),u,side*.01,-.02,0,p);
+    shCap.scale.set(1.05,.88,1);
+    /* 상박 */
+    const upperArm=pt(CG(.072,.062,.27,18),u,0,-.14,0,p);
+    upperArm.scale.set(1.04,1,.98);
+    /* 하박(상박 끝과 부드럽게 맞물림) */
+    const f=new THREE.Group();f.position.y=-.27;f.rotation.x=-.95;p.add(f);
+    const forearm=pt(CG(.062,.048,.26,18),u,0,-.13,0,f);
+    forearm.scale.set(1.02,1,1);
+    /* 소매 커프스 & 손 */
+    pt(CG(.052,.054,.04,16),d,0,-.255,0,f);
+    const hand=pt(BG(.068,.062,.092),s,0,-.295,.015,f);
+    hand.scale.set(1,.72,1.05);
+    return p;
+  };
+  arm(-.295,-.98,.52,-1);arm(.295,-.76,-.48,1);
+
+  /* 1인칭 시점 시 보이는 어깨/팔 라인 */
+  const fpShoulder=pt(BG(.068,.085,.44),u,0,1.38,.42,body);
+  fpShoulder.scale.set(1,1,.95);
+  pt(CG(.044,.04,.38,14),d,0,1.36,.68,body).rotation.x=Math.PI/2;
+  pt(BG(.055,.06,.18),s,0,1.34,.86,body);
 
   return{g,body,head,L,R:Rg,ms};
 }
@@ -995,7 +1042,7 @@ const WP=[
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null;
 
-/* 정교한 총기 모델링: LatheGeometry(선반 회전 총열/소염기/스코프) + ExtrudeGeometry + 브러시드 메탈/우드/탄피 */
+/* 정교한 총기 모델링: LatheGeometry + ExtrudeGeometry + 브러시드 메탈/우드/탄피 */
 const gun=new THREE.Group();
 const MT=(c,r,m,map,bump,bumpScale=.012)=>new THREE.MeshStandardMaterial({
   color:map?0xffffff:c,map,bumpMap:bump||null,bumpScale:bump?bumpScale:0,
@@ -1024,7 +1071,6 @@ function makeExtrudeShape(pts,depth,bevel=.009){
   return geo;
 }
 
-/* 선반 회전(Lathe) 헬퍼: Y축 기준 프로필을 Z축(-Z가 전방)으로 돌려 배치 */
 function makeLatheZ(profilePts,segs=20){
   const v2s=profilePts.map(([r,y])=>new THREE.Vector2(Math.max(.001,r),y));
   const geo=new THREE.LatheGeometry(v2s,segs);
@@ -1045,7 +1091,6 @@ wModels.forEach(g=>gun.add(g));
  }
  addTo(g,new THREE.BoxGeometry(.012,.015,.39),gm2,-.03,.064,-.02);
  addTo(g,new THREE.BoxGeometry(.012,.015,.39),gm2,.03,.064,-.02);
- /* 4면 레일 핸드가드 + 냉각 슬롯 + 가스 블록 */
  addTo(g,new THREE.BoxGeometry(.064,.074,.25),gm2,0,-.008,-.32);
  for(let hr=-.42;hr>=-.22;hr-=.04){
    addTo(g,new THREE.BoxGeometry(.068,.012,.016),gm3,0,-.008,hr);
@@ -1053,32 +1098,26 @@ wModels.forEach(g=>gun.add(g));
  }
  const barrelGeo=makeLatheZ([[.015,0],[.015,.22],[.021,.23],[.021,.25],[.013,.26],[.013,.37],[.023,.38],[.023,.45],[.015,.46]],20);
  addTo(g,barrelGeo,snM,0,.014,-.34);
- /* 다공성 컴펜세이터/소염기 */
  addTo(g,new THREE.CylinderGeometry(.025,.024,.095,18),gm3,0,.014,-.72,Math.PI/2);
  for(let ms=-.74;ms>=-.69;ms-=.018){
    addTo(g,new THREE.BoxGeometry(.054,.008,.007),gm2,0,.014,ms);
  }
  addTo(g,new THREE.CylinderGeometry(.016,.016,.024,14),brassM,0,.014,-.768,Math.PI/2);
- /* 스톡 튜브 + 윙 스톡 + 러버 패드 */
  addTo(g,new THREE.CylinderGeometry(.022,.022,.26,16),gm3,0,-.004,.33,Math.PI/2);
  const stockGeo=makeExtrudeShape([[0,.032],[.24,.048],[.25,-.068],[.12,-.038],[0,-.032]],.048,.007);
  addTo(g,stockGeo,gm2,0,-.016,.34,0,-Math.PI/2,0);
  addTo(g,new THREE.BoxGeometry(.056,.116,.024),glv,0,-.012,.472);
- /* 곡선 탄창 + 베이스플레이트 + 노출 탄두 */
  const magGeo=makeExtrudeShape([[0,0],[.086,0],[.068,-.175],[-.014,-.175]],.042,.006);
  addTo(g,magGeo,gm2,0,-.042,.092,0,-Math.PI/2,0);
  addTo(g,new THREE.BoxGeometry(.048,.02,.088),gm3,0,-.212,.128,.12);
  addTo(g,new THREE.CylinderGeometry(.009,.009,.036,10),brassM,0,-.045,.155,Math.PI/2);
- /* 각도 권총 손잡이 + 트리거 가드 */
  const gripGeo=makeExtrudeShape([[-.036,0],[.036,0],[.058,-.165],[-.014,-.175]],.044,.007);
  addTo(g,gripGeo,gm1,0,-.045,-.12,0,-Math.PI/2,0);
  const guardGeo=makeExtrudeShape([[0,0],[-.085,0],[-.075,-.036],[0,-.036]],.016,.003);
  addTo(g,guardGeo,gm3,0,-.042,-.045,0,-Math.PI/2,0);
- /* 리플렉스/홀로그램 사이트 + 렌즈 */
  addTo(g,new THREE.BoxGeometry(.062,.044,.09),gm2,0,.098,-.03);
  addTo(g,new THREE.BoxGeometry(.046,.028,.006),lensM,0,.104,-.03);
  addTo(g,new THREE.BoxGeometry(.012,.012,.004),accRed,0,.104,-.026);
- /* 장갑 손 */
  addTo(g,new THREE.BoxGeometry(.082,.08,.125),glv,0,-.076,-.26);
  addTo(g,new THREE.BoxGeometry(.082,.09,.105),glv,0,-.122,.1);
 }
@@ -1087,12 +1126,10 @@ wModels.forEach(g=>gun.add(g));
 {const g=wModels[1];
  const sgRec=makeExtrudeShape([[-.23,-.05],[.23,-.05],[.22,.058],[-.15,.062],[-.23,.02]],.072,.008);
  addTo(g,sgRec,gm3,0,.002,0,0,-Math.PI/2,0);
- /* 이중 총열 & 리브 & 튜브 매거진 */
  const sgBarGeo=makeLatheZ([[.022,0],[.022,.48],[.026,.49],[.026,.52],[.02,.53]],20);
  addTo(g,sgBarGeo,snM,0,.022,-.22);
  addTo(g,new THREE.BoxGeometry(.052,.016,.46),gm2,0,.046,-.44);
  addTo(g,new THREE.CylinderGeometry(.021,.021,.46,16),gm1,0,-.022,-.41,Math.PI/2);
- /* 우드 펌프 포어엔드 & 곡선 우드 스톡 */
  addTo(g,new THREE.CylinderGeometry(.045,.049,.25,18),wd,0,-.034,-.38,Math.PI/2);
  for(let r=-.48;r>=-.28;r-=.026){
    addTo(g,new THREE.BoxGeometry(.095,.011,.01),gm2,0,-.034,r);
@@ -1100,7 +1137,6 @@ wModels.forEach(g=>gun.add(g));
  const stockGeo=makeExtrudeShape([[0,.056],[.33,.042],[.35,-.092],[.14,-.052],[0,-.046]],.058,.009);
  addTo(g,stockGeo,wd,0,-.01,.18,0,-Math.PI/2,0);
  addTo(g,new THREE.BoxGeometry(.064,.126,.024),glv,0,-.02,.522);
- /* 사이드 쉘 홀더(붉은 샷건 탄피 4발 + 황동 림) */
  [-.052,-.017,.017,.052].forEach(zOff=>{
    addTo(g,new THREE.CylinderGeometry(.012,.012,.072,12),accRed,-.044,.005,zOff,Math.PI/2);
    addTo(g,new THREE.CylinderGeometry(.0125,.0125,.02,12),brassM,-.044,.005,zOff+.044,Math.PI/2);
@@ -1113,14 +1149,12 @@ wModels.forEach(g=>gun.add(g));
 {const g=wModels[2];
  const snRec=makeExtrudeShape([[-.35,-.045],[.33,-.045],[.31,.055],[-.23,.06],[-.35,.022]],.058,.007);
  addTo(g,snRec,gm3,0,.004,-.06,0,-Math.PI/2,0);
- /* 볼트 핸들 + 플루티드 배럴 + 머즐 브레이크 */
  addTo(g,new THREE.CylinderGeometry(.011,.011,.055,12),gm3,.042,.016,.06,0,0,Math.PI/2);
  addTo(g,new THREE.SphereGeometry(.018,14,12),gm2,.068,.016,.06);
  const snBarGeo=makeLatheZ([[.018,0],[.018,.34],[.015,.36],[.015,.68],[.025,.69],[.025,.78],[.016,.79]],22);
  addTo(g,snBarGeo,snM,0,.016,-.38);
  addTo(g,new THREE.CylinderGeometry(.026,.025,.11,18),gm3,0,.016,-1.12,Math.PI/2);
  addTo(g,new THREE.BoxGeometry(.058,.014,.068),gm2,0,.016,-1.12);
- /* 대구경 스코프(Lathe 벨 + 터렛 + 블루 코팅 렌즈) */
  const scpBodyGeo=makeLatheZ([[.036,0],[.044,.04],[.044,.12],[.037,.15],[.037,.29],[.045,.32],[.045,.4],[.038,.42]],24);
  addTo(g,scpBodyGeo,scpM,0,.104,.06);
  addTo(g,new THREE.CircleGeometry(.04,20),lensM,0,.104,-.362);
@@ -1128,7 +1162,6 @@ wModels.forEach(g=>gun.add(g));
  addTo(g,new THREE.CylinderGeometry(.019,.019,.048,16),gm3,.06,.104,-.14,0,0,Math.PI/2);
  addTo(g,new THREE.BoxGeometry(.028,.03,.075),gm2,0,.058,-.26);
  addTo(g,new THREE.BoxGeometry(.028,.03,.075),gm2,0,.058,0);
- /* 칙패드 우드 스톡 + 바이포드 */
  const snStockGeo=makeExtrudeShape([[0,.046],[.32,.038],[.34,-.082],[.15,-.048],[0,-.042]],.056,.008);
  addTo(g,snStockGeo,scpM,0,-.012,.22,0,-Math.PI/2,0);
  addTo(g,new THREE.BoxGeometry(.066,.032,.23),wd,0,.034,.38,.04);
@@ -1185,7 +1218,7 @@ function spawn(n){
     const hv=!mm&&k%4==3;
     const c=mkChar(hv?[0xd6336c,0xff6b6b,0xffe3e3,0x14171c]:[0xff3b30,0xff7a2f,0xfff5f5,0x1a1e26]);
     const e={...c,hv,x:sx,y:sy,z:sz,hp:100,cd:1+Math.random()*1.5,fl:0,ph:0,sd:Math.random()<.5?1:-1,see:0,lt:0,t:0,dead:0};
-    if(hv){c.g.scale.setScalar(1.22);e.hp=260}
+    if(hv){c.g.scale.setScalar(1.18);e.hp=260}
     c.g.traverse(m=>{if(m.isMesh)m.userData.e=e});
     c.g.position.set(e.x,e.y,e.z);sc.add(c.g);en.push(e);
   }
@@ -1288,7 +1321,7 @@ function upd(dt){
   const nx=e.x+mx*sp,nz=e.z+mz*sp;let mv=0;if(!blk(nx,e.z,e.y||0,.32)){e.x=nx;mv=1}if(!blk(e.x,nz,e.y||0,.32)){e.z=nz;mv=1}
   e.y=gnd(e.x,e.z,(e.y||0)+.35,.32);
   e.g.position.set(e.x,e.y,e.z);
-  if(mv){e.ph+=dt*8.5;e.L.rotation.x=Math.sin(e.ph)*.65;e.R.rotation.x=-Math.sin(e.ph)*.65}else{e.L.rotation.x=e.R.rotation.x=0}
+  if(mv){e.ph+=dt*8.5;e.L.rotation.x=Math.sin(e.ph)*.58;e.R.rotation.x=-Math.sin(e.ph)*.58}else{e.L.rotation.x=e.R.rotation.x=0}
   e.fl-=dt;e.ms.forEach(m=>m.emissive.setHex(e.fl>0?0xff0000:0));
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
    tracer(o,t,0xff7a5c);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,6.5);SX.hurt()}}}
