@@ -4,10 +4,10 @@
 <title>택티컬 스윕 3D</title>
 <style>
 :root{
-  --bg:#090c12;--fg:#f1f5f9;
-  --pn:rgba(10,14,22,.76);--pn-border:rgba(255,255,255,.12);
-  --ac:#ff7a2f;--ac-soft:rgba(255,122,47,.18);--ab:#090c12;
-  --muted:#94a3b8;
+  --bg:#06080c;--fg:#eef2f6;
+  --pn:rgba(8,11,17,.82);--pn-border:rgba(255,255,255,.11);
+  --ac:#ff7a2f;--ac-soft:rgba(255,122,47,.18);--ab:#06080c;
+  --muted:#8a96a8;
   --r-sm:8px;--r-md:11px;--r-lg:14px;
   --fs-xs:11px;--fs-sm:12.5px;--fs-md:15px;--fs-lg:22px;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
@@ -21,7 +21,7 @@ canvas{position:absolute;inset:0;display:block}
 .ui-panel{
   background:var(--pn);color:var(--fg);
   border:1px solid var(--pn-border);border-radius:var(--r-md);
-  backdrop-filter:blur(8px);box-shadow:0 6px 18px rgba(0,0,0,.35)
+  backdrop-filter:blur(8px);box-shadow:0 6px 18px rgba(0,0,0,.45)
 }
 
 #hud{position:absolute;top:14px;left:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none;font-weight:700;font-size:var(--fs-xs);z-index:22}
@@ -56,7 +56,7 @@ canvas{position:absolute;inset:0;display:block}
 .am-pip.empty{background:rgba(255,255,255,.14);opacity:.45}
 .am-reloading{font-size:var(--fs-xs);font-weight:800;color:var(--ac);padding:2px 0}
 
-#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;opacity:.85;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
+#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;opacity:.85;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.75);pointer-events:none;z-index:23;transition:transform .08s ease,background .08s ease}
 #xh.h{background:#ff3b30;transform:scale(1.4)}
 #hitMarker{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;pointer-events:none;z-index:23;opacity:0;transform:scale(.85);transition:opacity .09s ease,transform .09s ease}
 #hitMarker.on{opacity:1;transform:scale(1.12)}
@@ -109,7 +109,7 @@ canvas{position:absolute;inset:0;display:block}
   background:
     radial-gradient(circle at 75% 35%, rgba(255,122,47,.14), transparent 48%),
     radial-gradient(circle at 20% 80%, rgba(56,217,169,.08), transparent 50%),
-    linear-gradient(125deg, #06080c 0%, #0b0e14 55%, #111620 100%);
+    linear-gradient(125deg, #05070a 0%, #090c12 55%, #0e131c 100%);
   color:#f3f5f8;overflow:auto;text-align:left;gap:24px;
 }
 #ov::before{
@@ -143,7 +143,7 @@ h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.4px;color:#fff}
 .menu-right{position:relative;z-index:1;flex:1;display:flex;align-items:center;justify-content:center;min-width:280px}
 .tab-pane{
   display:none;flex-direction:column;gap:13px;width:100%;max-width:450px;
-  background:rgba(14,18,27,.86);border:1px solid rgba(255,255,255,.11);
+  background:rgba(12,16,24,.88);border:1px solid rgba(255,255,255,.11);
   border-radius:var(--r-lg);padding:20px;box-shadow:0 16px 36px rgba(0,0,0,.55);
   backdrop-filter:blur(10px);
 }
@@ -196,7 +196,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #roomtag{position:absolute;top:98px;left:14px;color:var(--ac);padding:5px 10px;border-radius:var(--r-sm);font-weight:800;font-size:var(--fs-xs);pointer-events:none;display:none;z-index:22}
 #ov label{font-size:var(--fs-sm);display:flex;gap:8px;align-items:center}
 
-#rdr{inset:auto;top:14px;right:14px;width:98px;height:98px;pointer-events:none;border-radius:50%;border:1px solid var(--pn-border);box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:22}
+#rdr{inset:auto;top:14px;right:14px;width:98px;height:98px;pointer-events:none;border-radius:50%;border:1px solid var(--pn-border);box-shadow:0 6px 18px rgba(0,0,0,.45);z-index:22}
 
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
 #ov .sub{background:rgba(255,255,255,.05);color:#e2e8f0;border:1px solid rgba(255,255,255,.18)}
@@ -334,7 +334,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
   <div class="menu-right">
     <div id="pane-play" class="tab-pane active">
       <div class="pane-title"><span>출격 모드 & 클래스</span></div>
-      <p id="msg" class="pane-desc">로우폴리 콘크리트 아레나의 육교와 2층 회랑, 하부 통로를 오가며 적을 소탕하세요.<br>PC: WASD 이동 · 마우스 조준 · R 재장전 · Q/E/F 스킬</p>
+      <p id="msg" class="pane-desc">어두운 콘크리트 전술 아레나의 육교와 2층 회랑, 하부 통로를 오가며 적을 소탕하세요.<br>PC: WASD 이동 · 마우스 조준 · R 재장전 · Q/E/F 스킬</p>
       <div id="chs"></div>
       <div class="mode-cards">
         <button type="button" id="go" class="mode-btn primary">
@@ -574,9 +574,9 @@ const SOLID_BOXES=[
   {xMin:31,xMax:34.2,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
   {xMin:49.8,xMax:53,zMin:53.8,zMax:57,h:7.0,kind:'pillar'},
 
-  {xMin:24.5,xMax:32.5,zMin:20.5,zMax:23.3,h:2.55,kind:'container',col:0x3f593a},
-  {xMin:52.0,xMax:60.0,zMin:60.5,zMax:63.3,h:2.55,kind:'container',col:0x7d3a28},
-  {xMin:37.5,xMax:40.3,zMin:49.0,zMax:56.5,h:2.55,kind:'container',col:0x334b66},
+  {xMin:24.5,xMax:32.5,zMin:20.5,zMax:23.3,h:2.55,kind:'container',col:0x2b3d28},
+  {xMin:52.0,xMax:60.0,zMin:60.5,zMax:63.3,h:2.55,kind:'container',col:0x572619},
+  {xMin:37.5,xMax:40.3,zMin:49.0,zMax:56.5,h:2.55,kind:'container',col:0x223347},
 
   {xMin:39.5,xMax:44.5,zMin:23.5,zMax:26.2,h:1.25,kind:'crate'},
   {xMin:39.5,xMax:44.5,zMin:57.8,zMax:60.5,h:1.25,kind:'crate'},
@@ -724,19 +724,19 @@ const LO=matchMedia('(pointer:coarse)').matches;
 ren.setPixelRatio(Math.min(devicePixelRatio||1,LO?1.75:2));
 ren.outputEncoding=THREE.sRGBEncoding;
 ren.toneMapping=THREE.ACESFilmicToneMapping;
-ren.toneMappingExposure=1.12;
+ren.toneMappingExposure=.78;
 ren.shadowMap.enabled=true;
 ren.shadowMap.type=THREE.PCFSoftShadowMap;
 ren.physicallyCorrectLights=true;
 $('app').insertBefore(cv,$('app').firstChild);
 
-/* 절차식 PBR 반사 환경맵(PMREM) 생성 -> 금속·총기·콘크리트 반사광 극대화 */
+/* 카스·스솔 무드: 차분한 다크 스틸 환경 반사맵 */
 function buildStudioEnvMap(renderer){
   if(!renderer||!THREE.PMREMGenerator)return null;
   const pmrem=new THREE.PMREMGenerator(renderer);
   pmrem.compileEquirectangularShader();
   const envScene=new THREE.Scene();
-  envScene.background=new THREE.Color(0x141a24);
+  envScene.background=new THREE.Color(0x090c12);
 
   const addPanel=(w,h,col,x,y,z,rx,ry)=>{
     const m=new THREE.Mesh(
@@ -748,12 +748,12 @@ function buildStudioEnvMap(renderer){
     if(ry)m.rotation.y=ry;
     envScene.add(m);
   };
-  addPanel(16,4,0xfff2dc,0,9,4,Math.PI/2.4,0);
-  addPanel(14,3.5,0x7dd3fc,-11,6,-6,0.3,Math.PI/3);
-  addPanel(12,3,0xff9e5e,11,5,-7,0.25,-Math.PI/3);
-  addPanel(20,5,0x2b3546,0,-8,0,-Math.PI/2,0);
+  addPanel(12,2.2,0x8fa4bf,0,9,4,Math.PI/2.4,0);
+  addPanel(10,2.0,0x334e68,-11,6,-6,0.3,Math.PI/3);
+  addPanel(10,1.8,0x6b3e26,11,5,-7,0.25,-Math.PI/3);
+  addPanel(20,5,0x10151e,0,-8,0,-Math.PI/2,0);
 
-  const rt=pmrem.fromScene(envScene,0.035);
+  const rt=pmrem.fromScene(envScene,0.045);
   pmrem.dispose();
   return rt.texture;
 }
@@ -764,7 +764,7 @@ if(window.THREE.EffectComposer&&window.THREE.UnrealBloomPass){
   composer=new THREE.EffectComposer(ren);
   const renderPass=new THREE.RenderPass(sc,cam);
   composer.addPass(renderPass);
-  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.32:.46,.38,.86);
+  bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),LO?.16:.22,.32,.92);
   composer.addPass(bloomPass);
 }
 
@@ -776,11 +776,11 @@ const rz=()=>{
 };
 addEventListener('resize',rz);rz();
 
-/* 물리 기반 조명 + 근접 고해상도 섀도우 카메라 */
-const hemiLight=new THREE.HemisphereLight(0xaec2dc,0x191e28,1.15);
+/* 묵직한 명암 대비 조명 (화이트 뜸 방지) */
+const hemiLight=new THREE.HemisphereLight(0x4a586e,0x0c0f14,.42);
 sc.add(hemiLight);
 
-const dl=new THREE.DirectionalLight(0xffe0b5,3.2);
+const dl=new THREE.DirectionalLight(0xffcf96,1.65);
 dl.position.set(28,34,20);
 dl.target.position.set(14,0,14);
 sc.add(dl,dl.target);
@@ -793,23 +793,23 @@ dl.shadow.camera.updateProjectionMatrix();
 dl.shadow.bias=-.00022;
 dl.shadow.normalBias=.018;
 
-const rimLight=new THREE.DirectionalLight(0x69a8ff,1.25);
+const rimLight=new THREE.DirectionalLight(0x3b6ea5,.48);
 rimLight.position.set(-32,22,-28);
 sc.add(rimLight);
 
-const fillLight=new THREE.DirectionalLight(0xff9d5c,.68);
+const fillLight=new THREE.DirectionalLight(0xa85524,.24);
 fillLight.position.set(-20,12,26);
 sc.add(fillLight);
 
-const fL=new THREE.PointLight(0xffb454,0,18,1.6);
+const fL=new THREE.PointLight(0xffa63d,0,16,1.8);
 fL.position.set(0,0,-.95);
 cam.add(fL);
 
 const world=new THREE.Group();
 sc.add(world);
 
-sc.background=new THREE.Color(0x0d1118);
-sc.fog=new THREE.FogExp2(0x10151f,.0095);
+sc.background=new THREE.Color(0x070a0f);
+sc.fog=new THREE.FogExp2(0x090d14,.014);
 
 function syncShadowFrustumToPlayer(){
   const cx=pl.x,cz=pl.z;
@@ -835,27 +835,27 @@ function addMergedPart(mat,geo,pos,rot,castShadow=true,receiveShadow=true){
   mergeBuckets.get(key).geos.push(g);
 }
 
-const floorMat=new THREE.MeshStandardMaterial({color:0x3a424f,roughness:.76,metalness:.14,flatShading:true});
+const floorMat=new THREE.MeshStandardMaterial({color:0x1f252e,roughness:.84,metalness:.14,flatShading:true});
 const flr=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W,ARENA_D),floorMat);
 flr.rotation.x=-Math.PI/2;flr.position.set(ARENA_W/2,0,ARENA_D/2);flr.receiveShadow=true;world.add(flr);
 
-const wallMat=new THREE.MeshStandardMaterial({color:0x6d7787,roughness:.78,metalness:.14,flatShading:true});
-const pillarMat=new THREE.MeshStandardMaterial({color:0x596373,roughness:.74,metalness:.2,flatShading:true});
-const crateMat=new THREE.MeshStandardMaterial({color:0x9c5a27,roughness:.68,metalness:.14,flatShading:true});
-const deckMat=new THREE.MeshStandardMaterial({color:0x424b5b,roughness:.76,metalness:.18,flatShading:true});
-const rampMat=new THREE.MeshStandardMaterial({color:0x373f4d,roughness:.78,metalness:.16,flatShading:true});
-const railMat=new THREE.MeshStandardMaterial({color:0x9aa6b8,roughness:.42,metalness:.55,flatShading:true});
-const steelTrimMat=new THREE.MeshStandardMaterial({color:0x232934,roughness:.5,metalness:.58,flatShading:true});
-const aoBandMat=new THREE.MeshStandardMaterial({color:0x11151c,roughness:.95,metalness:.05,flatShading:true});
-const laneMat=new THREE.MeshBasicMaterial({color:0xff8533,transparent:true,opacity:.32});
-const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xfff4de,emissive:0xffbe73,emissiveIntensity:2.1,roughness:.25,metalness:.1});
-const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0xb8ecff,emissive:0x38bdf8,emissiveIntensity:1.95,roughness:.25,metalness:.1});
+const wallMat=new THREE.MeshStandardMaterial({color:0x363e4a,roughness:.82,metalness:.16,flatShading:true});
+const pillarMat=new THREE.MeshStandardMaterial({color:0x2b323d,roughness:.78,metalness:.22,flatShading:true});
+const crateMat=new THREE.MeshStandardMaterial({color:0x693b18,roughness:.74,metalness:.14,flatShading:true});
+const deckMat=new THREE.MeshStandardMaterial({color:0x232933,roughness:.8,metalness:.2,flatShading:true});
+const rampMat=new THREE.MeshStandardMaterial({color:0x1c2129,roughness:.82,metalness:.18,flatShading:true});
+const railMat=new THREE.MeshStandardMaterial({color:0x596575,roughness:.46,metalness:.58,flatShading:true});
+const steelTrimMat=new THREE.MeshStandardMaterial({color:0x141820,roughness:.52,metalness:.6,flatShading:true});
+const aoBandMat=new THREE.MeshStandardMaterial({color:0x090c10,roughness:.96,metalness:.05,flatShading:true});
+const laneMat=new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.24});
+const emissiveCeilingBarMat=new THREE.MeshStandardMaterial({color:0xdce6f2,emissive:0x7892b0,emissiveIntensity:1.15,roughness:.35,metalness:.1});
+const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0x7dd3fc,emissive:0x0ea5e9,emissiveIntensity:1.1,roughness:.35,metalness:.1});
 
 {
   addMergedPart(laneMat,new THREE.PlaneGeometry(.38,ARENA_D-8),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
   addMergedPart(laneMat,new THREE.PlaneGeometry(ARENA_W-8,.38),[ARENA_W/2,.015,ARENA_D/2],[-Math.PI/2,0,0],false,false);
 
-  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,36),new THREE.MeshBasicMaterial({color:0xff8533,transparent:true,opacity:.36,side:2}));
+  const midRing=new THREE.Mesh(new THREE.RingGeometry(6.2,6.85,36),new THREE.MeshBasicMaterial({color:0xd96422,transparent:true,opacity:.28,side:2}));
   midRing.rotation.x=-Math.PI/2;midRing.position.set(ARENA_W/2,.02,ARENA_D/2);world.add(midRing);
 
   for(let z=14;z<=70;z+=14){
@@ -868,9 +868,9 @@ const emissiveRailStripMat=new THREE.MeshStandardMaterial({color:0xb8ecff,emissi
 
 const containerMatCache={};
 function getContainerMat(hex){
-  const k=hex||0x3f593a;
+  const k=hex||0x2b3d28;
   if(!containerMatCache[k]){
-    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.62,metalness:.36,flatShading:true});
+    containerMatCache[k]=new THREE.MeshStandardMaterial({color:k,roughness:.66,metalness:.36,flatShading:true});
   }
   return containerMatCache[k];
 }
@@ -980,13 +980,13 @@ function mkChar(c){
     emissive:new THREE.Color(emissiveHex),emissiveIntensity:emInt
   });
 
-  const u=M(solidHex,.64,.22,solidHex,.12);
-  const v=M(solidHex,.54,.36,solidHex,.14);
-  const s=M(0xe6b896,.72,.04);
-  const d=M(0x181d26,.68,.38);
-  const mt=M(0x647085,.35,.76);
-  const visor=M(0xfff3bf,.2,.25,solidHex,.85);
-  const beacon=M(solidHex,.35,.25,solidHex,.95);
+  const u=M(solidHex,.68,.2,solidHex,.06);
+  const v=M(solidHex,.58,.34,solidHex,.08);
+  const s=M(0xd4a482,.76,.04);
+  const d=M(0x141820,.72,.38);
+  const mt=M(0x525d6e,.38,.76);
+  const visor=M(0xfff3bf,.25,.25,solidHex,.55);
+  const beacon=M(solidHex,.38,.25,solidHex,.62);
   const ms=[u,v,s,d,mt,visor,beacon];
 
   const leg=(x,side)=>{
@@ -1061,23 +1061,22 @@ function getDistanceFalloff(wIdx,dist){
   return 1;
 }
 
-/* 초정밀 3종 총기 모델링: 다층 금속/폴리머/우드/광학 파츠 + 그림자 캐스트 */
 const gun=new THREE.Group();
 const MT=(c,r,m,em=0,ei=0)=>new THREE.MeshStandardMaterial({
   color:c,roughness:r,metalness:m,flatShading:true,
   emissive:new THREE.Color(em),emissiveIntensity:ei
 });
-const gm1=MT(0x2d3440,.42,.72);
-const gm2=MT(0x151820,.58,.45);
-const gm3=MT(0x6b778c,.24,.88);
-const steelBright=MT(0xa8b5c8,.18,.94);
-const glv=MT(0x1a1e26,.76,.18);
-const wd=MT(0x9b4c20,.58,.14);
-const snM=MT(0x232832,.3,.84);
-const scpM=MT(0x161a22,.32,.78);
-const accRed=MT(0xff3b30,.35,.4,0xff2e2e,.9);
-const brassM=MT(0xe5ab38,.24,.9);
-const lensM=MT(0x38bdf8,.1,.35,0x38bdf8,1.35);
+const gm1=MT(0x232832,.44,.72);
+const gm2=MT(0x101319,.6,.45);
+const gm3=MT(0x525c6e,.26,.86);
+const steelBright=MT(0x8d99ad,.2,.92);
+const glv=MT(0x141820,.78,.18);
+const wd=MT(0x7a3b18,.62,.14);
+const snM=MT(0x1b2028,.32,.84);
+const scpM=MT(0x12151c,.34,.78);
+const accRed=MT(0xd92b2b,.38,.35,0xd92b2b,.55);
+const brassM=MT(0xc48e29,.26,.88);
+const lensM=MT(0x38bdf8,.12,.3,0x0ea5e9,.85);
 
 const addTo=(p,geo,m,x,y,z,rx,ry,rz,cast=true)=>{
   const o=new THREE.Mesh(geo,m);
@@ -1108,7 +1107,6 @@ function makeLatheZ(profilePts,segs=18){
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
-/* 1. 돌격소총 (AR-15/MK18 스타일: 피카티니 레일 슬롯, 가스블록, 탄창, 개머리판, 홀로그램 사이트) */
 {
   const g=wModels[0];
   const upperRec=makeExtrudeShape([[-.25,-.032],[.24,-.032],[.23,.058],[-.15,.064],[-.25,.024]],.066,.007);
@@ -1166,7 +1164,6 @@ wModels.forEach(g=>gun.add(g));
   addTo(g,new THREE.BoxGeometry(.084,.092,.11),glv,0,-.122,.1);
 }
 
-/* 2. 샷건 (컴뱃 펌프 샷건: 플루티드 배럴, 튜브 매거진, 펌프 슬라이드, 셸 홀더, 우드/스틸 디테일) */
 {
   const g=wModels[1];
   addTo(g,makeExtrudeShape([[-.24,-.052],[.24,-.052],[.23,.06],[-.16,.064],[-.24,.022]],.074,.008),gm3,0,.002,0,0,-Math.PI/2,0);
@@ -1195,7 +1192,6 @@ wModels.forEach(g=>gun.add(g));
   addTo(g,new THREE.BoxGeometry(.092,.096,.112),glv,0,-.12,.12);
 }
 
-/* 3. 저격총 (롱레인지 볼트액션 스나이퍼: 머즐 브레이크, 볼트 핸들, 바이포드, 고배율 스코프) */
 {
   const g=wModels[2];
   addTo(g,makeExtrudeShape([[-.36,-.046],[.34,-.046],[.32,.056],[-.24,.062],[-.36,.024]],.06,.007),gm3,0,.004,-.06,0,-Math.PI/2,0);
@@ -1301,12 +1297,12 @@ function mkMedMesh(x,z,y=.45){
   );
   baseRing.rotation.x=-Math.PI/2;baseRing.position.y=-.32;g.add(baseRing);
 
-  const box=new THREE.Mesh(new THREE.BoxGeometry(.64,.46,.64),new THREE.MeshStandardMaterial({color:0xf1f5f9,emissive:0x10b981,emissiveIntensity:.35,roughness:.45,metalness:.1}));
+  const box=new THREE.Mesh(new THREE.BoxGeometry(.64,.46,.64),new THREE.MeshStandardMaterial({color:0xcbd5e1,emissive:0x10b981,emissiveIntensity:.25,roughness:.5,metalness:.1}));
   const c1=new THREE.Mesh(new THREE.BoxGeometry(.38,.5,.13),new THREE.MeshBasicMaterial({color:0x22c55e}));
   const c2=new THREE.Mesh(new THREE.BoxGeometry(.13,.5,.38),new THREE.MeshBasicMaterial({color:0x22c55e}));
   const topCross=new THREE.Mesh(new THREE.BoxGeometry(.34,.08,.12),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross.position.y=.26;
   const topCross2=new THREE.Mesh(new THREE.BoxGeometry(.12,.08,.34),new THREE.MeshBasicMaterial({color:0x4ade80}));topCross2.position.y=.26;
-  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.14,.32,2.4,14,1,true),new THREE.MeshBasicMaterial({color:0x22c55e,transparent:true,opacity:.24,side:2,depthWrite:false}));beam.position.y=1.15;
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.14,.32,2.4,14,1,true),new THREE.MeshBasicMaterial({color:0x22c55e,transparent:true,opacity:.18,side:2,depthWrite:false}));beam.position.y=1.15;
 
   g.add(box,c1,c2,topCross,topCross2,beam);
   g.position.set(x,y+.45,z);sc.add(g);return g;
@@ -1422,7 +1418,7 @@ function upd(dt){
   }else{e.L.rotation.x=e.R.rotation.x=0}
   e.fl-=dt;
   if(e.fl>0){e.ms[0].emissive.setHex(0xff0000);e.ms[0].emissiveIntensity=.65}
-  else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.12}
+  else{e.ms[0].emissive.setHex(e.aiHex||0x1d8fe1);e.ms[0].emissiveIntensity=.06}
   if(e.see&&d<36){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.014),o=new THREE.Vector3(e.x,(e.y||0)+1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
    tracer(o,t,0x74c0fc);SX.shot(Math.min(.75,6/d),0,{x:e.x,y:(e.y||0)+1.3,z:e.z});if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);triggerDamageFeedback(e.x,e.z);lh=now;shk=Math.max(shk,3.6);SX.hurt()}}}
  });
@@ -1450,7 +1446,7 @@ function fx(dt){
  gun.rotation.x=rec*.1+rPitch+bobY*2.2;gun.rotation.y=rYaw+bobX*2.4;gun.rotation.z=rRoll-bobX*1.8;
  const badge=$('rlBadge');
  if(badge){const showRl=(rl>0 && st==1 && !pl.dead);badge.classList.toggle('on',showRl);if(showRl)$('rlText').textContent='재장전 중… '+Math.max(0.1,rl).toFixed(1)+'s'}
- mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?4.2:0;
+ mfm.visible=mf>0;mfm.rotation.z=Math.random()*6;fL.intensity=mf>0?3.4:0;
  trc.forEach(o=>{if(o.t>0&&(o.t-=dt)<=0)o.l.visible=false});if(spt>0&&(spt-=dt)<=0)spk.visible=false;pp.forEach(o=>{if(o.t<=0)return;o.t-=dt;if(o.t<=0){o.m.visible=false;return}o.v.y-=12*dt;o.m.position.addScaledVector(o.v,dt);if(o.m.position.y<.04){o.m.position.y=.04;o.v.set(0,0,0)}})}
 
 let lastMag=-1,lastAm=-1,lastRl=-1;
@@ -2115,7 +2111,7 @@ function mpFx(dt){
     else{r.t+=dt;r.g.rotation.x=-Math.min(1.5,r.t*4)}
     r.g.position.set(r.x,r.y,r.z);r.fl-=dt;
     if(r.fl>0){r.ms[0].emissive.setHex(0xff0000);r.ms[0].emissiveIntensity=.65}
-    else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.12}
+    else{r.ms[0].emissive.setHex(r.colHex||0x339af0);r.ms[0].emissiveIntensity=.06}
     if(r.tagEl){
       if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
       else{
@@ -2165,7 +2161,7 @@ function fx2(dt){
  if(popT>0){popT-=dt;const p=$('pop');p.style.opacity=Math.min(1,popT*2.5)}
 }
 function radar(){
-  rg.clearRect(0,0,120,120);rg.fillStyle='rgba(10,14,22,.76)';rg.beginPath();rg.arc(60,60,60,0,6.3);rg.fill();rg.save();rg.beginPath();rg.arc(60,60,58,0,6.3);rg.clip();
+  rg.clearRect(0,0,120,120);rg.fillStyle='rgba(8,11,17,.82)';rg.beginPath();rg.arc(60,60,60,0,6.3);rg.fill();rg.save();rg.beginPath();rg.arc(60,60,58,0,6.3);rg.clip();
   const k=1.45;rg.translate(60,60);rg.rotate(pl.yaw);
   rg.fillStyle='rgba(148,163,184,.5)';
   SOLID_BOXES.forEach(b=>{if(b.kind!=='crate')rg.fillRect((b.xMin-pl.x)*k,(b.zMin-pl.z)*k,(b.xMax-b.xMin)*k,(b.zMax-b.zMin)*k)});
