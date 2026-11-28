@@ -478,7 +478,6 @@ const ELEVATED_DECKS=[
   {id:'south_gallery',xMin:18,xMax:66,zMin:66.5,zMax:72.5,h:2.6,thick:.32}
 ];
 
-/* 경사로 구간 (순행/역주행 모두 안정적으로 오르내림) */
 const ELEVATED_RAMPS=[
   {x0:14.0,x1:24.0,zMin:38.8,zMax:45.2,h0:0,h1:2.6,axis:'x'},
   {x0:60.0,x1:70.0,zMin:38.8,zMax:45.2,h0:2.6,h1:0,axis:'x'},
@@ -488,7 +487,6 @@ const ELEVATED_RAMPS=[
   {x0:66.0,x1:75.0,zMin:66.5,zMax:72.5,h0:2.6,h1:0,axis:'x'}
 ];
 
-/* 외벽/기둥/상자 + 지상 엄폐용 직사각형 컨테이너 3개 */
 const SOLID_BOXES=[
   {xMin:0,xMax:84,zMin:0,zMax:2.4,h:WALL_H,kind:'wall'},
   {xMin:0,xMax:84,zMin:81.6,zMax:84,h:WALL_H,kind:'wall'},
@@ -579,6 +577,18 @@ function isRailJumpBlocked(x,z,y){
   return false;
 }
 
+/* 경사로 쐐기 옆면/뒷면 관통 차단 */
+function isRampSideBlocked(x,z,y){
+  for(const r of ELEVATED_RAMPS){
+    if(x>=r.x0&&x<=r.x1&&z>=r.zMin&&z<=r.zMax){
+      const t=Math.max(0,Math.min(1,(x-r.x0)/(r.x1-r.x0)));
+      const wedgeH=r.h0+(r.h1-r.h0)*t;
+      if(y<wedgeH-.14)return true;
+    }
+  }
+  return false;
+}
+
 const isPassable=(x,z,y,r=.38)=>{
   if(x<2.8||x>ARENA_W-2.8||z<2.8||z>ARENA_D-2.8)return false;
   const pts=[[-r,-r],[r,-r],[-r,r],[r,r],[0,0]];
@@ -590,6 +600,7 @@ const isPassable=(x,z,y,r=.38)=>{
         return false;
       }
     }
+    if(isRampSideBlocked(px,pz,y))return false;
     if(isRailJumpBlocked(px,pz,y))return false;
     for(const d of ELEVATED_DECKS){
       if(px>=d.xMin&&px<=d.xMax&&pz>=d.zMin&&pz<=d.zMax){
@@ -1314,13 +1325,14 @@ function stickAxis(dx,dy){
   const scaled=Math.min(1,(dist-joyDeadzone)/(joyMaxRadius-joyDeadzone));
   return[(dx/dist)*scaled,(dy/dist)*scaled];
 }
+/* 터치 조준만 부드럽게 보간 (마우스 입력은 즉시 반영) */
 function stepLookSmoothing(dt){
-  if(lookTargetYaw===null||lookTargetPit===null){lookTargetYaw=pl.yaw;lookTargetPit=pl.pit;return}
+  if(lookTargetYaw===null||lookTargetPit===null)return;
   const hasActiveLook=Object.values(T).some(o=>o.r==='l');
-  const smooth=hasActiveLook?Math.min(1,dt*34):Math.min(1,dt*22);
+  if(!hasActiveLook){lookTargetYaw=null;lookTargetPit=null;return}
+  const smooth=Math.min(1,dt*34);
   let dyaw=lookTargetYaw-pl.yaw;dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw));
   pl.yaw+=dyaw*smooth;pl.pit=cl(pl.pit+(lookTargetPit-pl.pit)*smooth,-1.4,1.4);
-  if(!hasActiveLook){lookTargetYaw=pl.yaw;lookTargetPit=pl.pit}
 }
 
 function upd(dt){
@@ -1439,20 +1451,70 @@ addEventListener('keyup',e=>{K[e.key.length>1?e.key:e.key.toLowerCase()]=0});
 cv.addEventListener('mousedown',e=>{if(e.button==2){md=1;if(document.pointerLockElement&&WP[wi].canAds)ads=true}else{fi=1;if(st==1&&!document.pointerLockElement)lock()}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mouseup',e=>{if(e.button==2){md=0;ads=false}else fi=0});
-addEventListener('mousemove',e=>{if(st==1&&(document.pointerLockElement||md)){const sens=(+$('sn').value||1.1)*(ads?(wi===2?.36:.65):1);lookTargetYaw=(lookTargetYaw??pl.yaw)-e.movementX*.0024*sens;lookTargetPit=cl((lookTargetPit??pl.pit)-e.movementY*.0024*sens,-1.4,1.4)}});
+/* 마우스는 보간을 거치지 않고 pl.yaw / pl.pit에 직접 반영 */
+addEventListener('mousemove',e=>{
+  if(st==1&&(document.pointerLockElement||md)){
+    const sens=(+$('sn').value||1.1)*(ads?(wi===2?.36:.65):1);
+    pl.yaw-=e.movementX*.0024*sens;
+    pl.pit=cl(pl.pit-e.movementY*.0024*sens,-1.4,1.4);
+  }
+});
 const js=$('js'),jk=$('jk');
 function pj(o){js.style.display=jk.style.display=o?'block':'none';if(o){const dx=o.x-o.x0,dy=o.y-o.y0,d=Math.hypot(dx,dy)||1,clamped=Math.min(d,joyMaxRadius);js.style.left=o.x0+'px';js.style.top=o.y0+'px';jk.style.left=o.x0+(dx/d)*clamped+'px';jk.style.top=o.y0+(dy/d)*clamped+'px'}}
 cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){const o=T[t.identifier]={r:t.clientX<innerWidth*.45?'m':'l',x:t.clientX,y:t.clientY,x0:t.clientX,y0:t.clientY};if(o.r=='m')pj(o)}},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const o=T[t.identifier];if(!o)continue;const dx=t.clientX-o.x,dy=t.clientY-o.y;if(o.r=='l'&&st==1)look(dx,dy);o.x=t.clientX;o.y=t.clientY;if(o.r=='m')pj(o)}},{passive:false});
 const te=e=>{for(const t of e.changedTouches){const o=T[t.identifier];if(o&&o.r=='m')pj(null);delete T[t.identifier]}};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
 const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();on()};if(off)b.onpointerup=b.onpointerleave=b.onpointercancel=e=>{e.stopPropagation();off()}};
-hold('bf',()=>fi=1,()=>fi=0);hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
+
+/* 발사 버튼(#bf) 터치 드래그 조준 (에임 보정 없음) */
+{
+  const bf=$('bf');
+  let fireTouchId=null,lastFx=0,lastFy=0;
+  bf.addEventListener('touchstart',e=>{
+    if(layoutMode)return;
+    e.preventDefault();e.stopPropagation();
+    const t=e.changedTouches[0];if(!t)return;
+    fireTouchId=t.identifier;lastFx=t.clientX;lastFy=t.clientY;fi=1;
+  },{passive:false});
+  bf.addEventListener('touchmove',e=>{
+    if(layoutMode||fireTouchId===null)return;
+    e.preventDefault();e.stopPropagation();
+    for(const t of e.changedTouches){
+      if(t.identifier===fireTouchId){
+        const dx=t.clientX-lastFx,dy=t.clientY-lastFy;
+        if(st==1)look(dx,dy);
+        lastFx=t.clientX;lastFy=t.clientY;
+        break;
+      }
+    }
+  },{passive:false});
+  const endFireDrag=e=>{
+    if(fireTouchId===null)return;
+    for(const t of e.changedTouches){
+      if(t.identifier===fireTouchId){fireTouchId=null;fi=0;break}
+    }
+  };
+  bf.addEventListener('touchend',endFireDrag);
+  bf.addEventListener('touchcancel',endFireDrag);
+  bf.addEventListener('mousedown',e=>{if(!layoutMode){e.stopPropagation();fi=1}});
+  addEventListener('mouseup',()=>{if(fireTouchId===null)fi=0});
+}
+
+hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
 hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));
 
-/* 공개 방 목록 허브 */
+/* 공개 방 목록 허브 (XSS 방지 검증 적용) */
 const LOBBY_HUB_ID='TSWEEP3D-LOBBY-HUB-V1';
+const CODE_RE=/^[A-Z0-9]{4}$/;
 const publicRooms=new Map();
 let hubPeer=null;
+
+function sanitizeCode(raw){
+  const c=String(raw||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return CODE_RE.test(c)?c:'';
+}
+function sanitizeMode(m){return (m==='1v1'||m==='6v6')?m:'1v1'}
+function sanitizeSub(s){return (s==='tdm'||s==='round')?s:'tdm'}
 
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function getNick(){return (($('nickInp')?$('nickInp').value:'').trim().slice(0,12))||'플레이어'}
@@ -1471,21 +1533,51 @@ function applyCharColor(charObj,hex){
 }
 
 function getRoomSnapshot(){
-  return{code:roomCode,title:(roomTitle||(getNick()+'님의 방')).slice(0,22),mode:matchCfg.mode,sub:matchCfg.sub,hostNick:getNick(),count:Math.max(1,Object.keys(lobbyRoster).length||(1+Object.keys(rp).length)),max:matchCfg.mode==='1v1'?2:12,updatedAt:Date.now()};
+  const safeCode=sanitizeCode(roomCode)||makeCode();
+  return{code:safeCode,title:(roomTitle||(getNick()+'님의 방')).slice(0,22),mode:sanitizeMode(matchCfg.mode),sub:sanitizeSub(matchCfg.sub),hostNick:getNick(),count:Math.max(1,Object.keys(lobbyRoster).length||(1+Object.keys(rp).length)),max:matchCfg.mode==='1v1'?2:12,updatedAt:Date.now()};
 }
-function prunePublicRooms(){const now=Date.now();for(const[k,v]of publicRooms.entries())if(!v||now-v.updatedAt>9500)publicRooms.delete(k)}
+function prunePublicRooms(){const now=Date.now();for(const[k,v]of publicRooms.entries())if(!v||!CODE_RE.test(k)||now-v.updatedAt>9500)publicRooms.delete(k)}
 function renderRoomList(){
   prunePublicRooms();
   const listEl=$('roomList');if(!listEl)return;
-  const items=[...publicRooms.values()].sort((a,b)=>b.updatedAt-a.updatedAt);
-  if(!items.length){listEl.innerHTML='<div class="room-empty">열린 방이 없습니다. "방 만들기"로 방을 개설해 보세요!</div>';return}
-  listEl.innerHTML=items.map(r=>{
+  listEl.innerHTML='';
+  const items=[...publicRooms.values()].filter(r=>r&&CODE_RE.test(r.code)).sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(!items.length){
+    const empty=document.createElement('div');
+    empty.className='room-empty';
+    empty.textContent='열린 방이 없습니다. "방 만들기"로 방을 개설해 보세요!';
+    listEl.appendChild(empty);
+    return;
+  }
+  items.forEach(r=>{
     const modeLabel=r.mode==='1v1'?'1대1':('6대6 '+(r.sub==='round'?'라운드':'데스매치'));
-    return `<button type="button" class="room-card" onclick="joinRoomByCode('${r.code}','${r.mode}','${r.sub||''}')"><div class="room-card-main"><span class="room-card-title">[${r.code}] ${escapeHtml(r.title)}</span><span class="room-card-meta">${escapeHtml(r.hostNick)} · ${modeLabel}</span></div><span class="room-card-join">입장 (${r.count}/${r.max})</span></button>`;
-  }).join('');
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='room-card';
+
+    const main=document.createElement('div');
+    main.className='room-card-main';
+
+    const titleEl=document.createElement('span');
+    titleEl.className='room-card-title';
+    titleEl.textContent='['+r.code+'] '+(r.title||'공개 방');
+
+    const metaEl=document.createElement('span');
+    metaEl.className='room-card-meta';
+    metaEl.textContent=(r.hostNick||'플레이어')+' · '+modeLabel;
+
+    const joinEl=document.createElement('span');
+    joinEl.className='room-card-join';
+    joinEl.textContent='입장 ('+(r.count|0)+'/'+(r.max|2)+')';
+
+    main.append(titleEl,metaEl);
+    btn.append(main,joinEl);
+    btn.addEventListener('click',()=>joinRoomByCode(r.code,r.mode,r.sub));
+    listEl.appendChild(btn);
+  });
 }
 function broadcastRoomToHub(){
-  if(!isHost||!roomCode)return;
+  if(!isHost||!sanitizeCode(roomCode))return;
   const snap=getRoomSnapshot();publicRooms.set(snap.code,snap);renderRoomList();
   if(hubPeer&&!hubPeer.destroyed&&hubPeer.open){
     const hc=hubPeer.connect(LOBBY_HUB_ID,{reliable:false});
@@ -1494,23 +1586,30 @@ function broadcastRoomToHub(){
   }
 }
 function removeRoomFromHub(code){
-  if(!code)return;publicRooms.delete(code);renderRoomList();
+  const scode=sanitizeCode(code);if(!scode)return;publicRooms.delete(scode);renderRoomList();
   if(hubPeer&&!hubPeer.destroyed&&hubPeer.open){
     const hc=hubPeer.connect(LOBBY_HUB_ID,{reliable:false});
-    hc.on('open',()=>{try{hc.send({t:'room_down',code})}catch(_){}setTimeout(()=>{try{hc.close()}catch(_){}},250)});
+    hc.on('open',()=>{try{hc.send({t:'room_down',code:scode})}catch(_){}setTimeout(()=>{try{hc.close()}catch(_){}},250)});
     hc.on('error',()=>{});
   }
 }
 function startLobbyHub(){
   if(!window.Peer||(hubPeer&&!hubPeer.destroyed))return;
   const p=new Peer(LOBBY_HUB_ID,{debug:0});
-  p.on('open',()=>{hubPeer=p;if(isHost&&roomCode)broadcastRoomToHub()});
+  p.on('open',()=>{hubPeer=p;if(isHost&&sanitizeCode(roomCode))broadcastRoomToHub()});
   p.on('connection',c=>{
     c.on('data',d=>{
       if(!d||!d.t)return;prunePublicRooms();
-      if(d.t==='room_up'&&d.room&&d.room.code){publicRooms.set(d.room.code,{...d.room,updatedAt:Date.now()});renderRoomList()}
-      else if(d.t==='room_down'&&d.code){publicRooms.delete(d.code);renderRoomList()}
-      else if(d.t==='room_query'){try{c.send({t:'room_list',rooms:[...publicRooms.values()]})}catch(_){}}
+      if(d.t==='room_up'&&d.room){
+        const scode=sanitizeCode(d.room.code);
+        if(scode)publicRooms.set(scode,{code:scode,title:String(d.room.title||'공개 방').slice(0,22),mode:sanitizeMode(d.room.mode),sub:sanitizeSub(d.room.sub),hostNick:String(d.room.hostNick||'플레이어').slice(0,12),count:Math.max(1,Math.min(12,d.room.count|0)),max:d.room.mode==='1v1'?2:12,updatedAt:Date.now()});
+        renderRoomList();
+      }else if(d.t==='room_down'){
+        const scode=sanitizeCode(d.code);
+        if(scode){publicRooms.delete(scode);renderRoomList()}
+      }else if(d.t==='room_query'){
+        try{c.send({t:'room_list',rooms:[...publicRooms.values()]})}catch(_){}
+      }
     });
     c.on('error',()=>{});
   });
@@ -1525,21 +1624,28 @@ function startLobbyHub(){
 }
 function queryRoomsFromHub(){
   prunePublicRooms();
-  if(isHost&&roomCode)publicRooms.set(roomCode,getRoomSnapshot());
+  if(isHost&&sanitizeCode(roomCode))publicRooms.set(sanitizeCode(roomCode),getRoomSnapshot());
   renderRoomList();
   if(!hubPeer||hubPeer.destroyed||!hubPeer.open||hubPeer.id===LOBBY_HUB_ID)return;
   const hc=hubPeer.connect(LOBBY_HUB_ID,{reliable:false});
   hc.on('open',()=>{try{hc.send({t:'room_query'})}catch(_){}});
   hc.on('data',d=>{
-    if(d&&d.t==='room_list'&&Array.isArray(d.rooms)){d.rooms.forEach(r=>{if(r&&r.code)publicRooms.set(r.code,{...r,updatedAt:Date.now()})});renderRoomList()}
+    if(d&&d.t==='room_list'&&Array.isArray(d.rooms)){
+      d.rooms.forEach(r=>{
+        if(!r)return;
+        const scode=sanitizeCode(r.code);
+        if(scode)publicRooms.set(scode,{code:scode,title:String(r.title||'공개 방').slice(0,22),mode:sanitizeMode(r.mode),sub:sanitizeSub(r.sub),hostNick:String(r.hostNick||'플레이어').slice(0,12),count:Math.max(1,Math.min(12,r.count|0)),max:r.mode==='1v1'?2:12,updatedAt:Date.now()});
+      });
+      renderRoomList();
+    }
     setTimeout(()=>{try{hc.close()}catch(_){}},250);
   });
   hc.on('error',()=>{});
 }
-setInterval(()=>{if(isHost&&roomCode)broadcastRoomToHub();else queryRoomsFromHub()},2800);
+setInterval(()=>{if(isHost&&sanitizeCode(roomCode))broadcastRoomToHub();else queryRoomsFromHub()},2800);
 
-const peerIdOf=code=>'tsweep3d-'+code.toUpperCase();
-const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+const peerIdOf=code=>'tsweep3d-'+sanitizeCode(code);
+const hueOf=s=>{let h=0;for(const c of String(s||''))h=(h*31+c.charCodeAt(0))%360;return h};
 function fmtTime(sec){const s=Math.max(0,Math.ceil(sec));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function updateMatchHud(){
   const mh=$('matchHud');
@@ -1573,7 +1679,38 @@ $('gm').onclick=()=>{aud();$('mpbox').classList.toggle('on');syncModeButtonsUI()
 $('refRoomsBtn').onclick=()=>{aud();startLobbyHub();queryRoomsFromHub();pop('방 목록 갱신됨')};
 
 function makeCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.random()*c.length|0];return s}
-function mpSend(data,targetId){if(!myId)return;const pkt={...data,from:myId};if(targetId){const c=conns[targetId];if(c&&c.open)c.send(pkt);return}for(const id in conns){const c=conns[id];if(c&&c.open)c.send(pkt)}}
+
+/* 방장일 경우 게스트 패킷을 나머지 전원(또는 to 지정 대상)에게 릴레이 */
+function relayIfHost(pkt,originId){
+  if(!isHost||!pkt)return;
+  if(pkt.to){
+    if(pkt.to!==originId&&pkt.to!==myId){
+      const targetConn=conns[pkt.to];
+      if(targetConn&&targetConn.open){try{targetConn.send(pkt)}catch(_){}}
+    }
+    return;
+  }
+  for(const pid in conns){
+    if(pid!==originId&&pid!==myId){
+      const c=conns[pid];
+      if(c&&c.open){try{c.send(pkt)}catch(_){}}
+    }
+  }
+}
+
+function mpSend(data,targetId){
+  if(!myId)return;
+  const pkt={...data,from:myId};
+  if(targetId){
+    const c=conns[targetId];
+    if(c&&c.open){try{c.send(pkt)}catch(_){}}
+    else if(!isHost&&conns[peerIdOf(roomCode)]&&conns[peerIdOf(roomCode)].open){
+      try{conns[peerIdOf(roomCode)].send(pkt)}catch(_){}
+    }
+    return;
+  }
+  for(const id in conns){const c=conns[id];if(c&&c.open){try{c.send(pkt)}catch(_){}}}
+}
 function sendJoinPacketTo(conn){if(!conn||!conn.open||!myId)return;conn.send({t:'join_req',from:myId,nick:getNick(),col:getChosenHex(),mode:matchCfg.mode})}
 function attachConn(c){
   if(!c||!c.peer)return;conns[c.peer]=c;
@@ -1660,8 +1797,35 @@ function finishMatch(title,sub){
 $('meLobbyBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');st=0;syncBackBtn();$('ov').hidden=false;enterLobby(roomCode,isHost);if(isHost)broadcastLobby()};
 $('meExitBtn').onclick=()=>{aud();$('matchEndModal').classList.remove('on');mpStop();st=0;syncBackBtn();$('ov').hidden=false};
 
+function check6v6RoundEndByAlive(){
+  if(!isHost||matchCfg.mode!=='6v6'||matchCfg.sub!=='round'||matchState.phase!=='playing')return;
+  let redAlive=0,blueAlive=0;
+  const myAlive=!pl.dead;
+  if(myTeam==='red'){if(myAlive)redAlive++}else{if(myAlive)blueAlive++}
+  for(const id in rp){
+    const r=rp[id];
+    if(r&&r.al){if((r.team||'red')==='red')redAlive++;else blueAlive++}
+  }
+  if(redAlive>0&&blueAlive>0)return;
+  const winnerTeam=redAlive>0?'red':'blue';
+  const nrSc=matchState.redScore+(winnerTeam==='red'?1:0);
+  const nbSc=matchState.blueScore+(winnerTeam==='blue'?1:0);
+  if(nrSc>=5||nbSc>=5){
+    const winName=nrSc>=5?'레드팀':'블루팀';
+    const pkt={t:'match_over',title:winName+' 최종 승리!',sub:`라운드 스코어 ${nrSc} : ${nbSc}로 경기가 종료되었습니다.`};
+    mpSend(pkt);finishMatch(pkt.title,pkt.sub);
+    return;
+  }
+  const nr=matchState.round+1;
+  const msg=`${winnerTeam==='red'?'레드팀':'블루팀'} 라운드 승리 (${nrSc}:${nbSc}) · R${nr}`;
+  mpSend({t:'round_next',round:nr,redScore:nrSc,blueScore:nbSc,msg});
+  startNewRound(nr,nrSc,nbSc,msg);
+}
+
 function handleMsg(fromId,d){
   if(!d||!d.t)return;const sender=d.from||fromId;if(!sender||sender===myId)return;
+  const pkt={...d,from:sender};
+
   if(d.t==='join_req'){
     if(!isHost)return;
     if(matchCfg.mode==='1v1'){sendState(true);broadcastRoomToHub();return}
@@ -1689,6 +1853,7 @@ function handleMsg(fromId,d){
   else if(d.t==='score_sync'){matchState.redScore=d.redScore|0;matchState.blueScore=d.blueScore|0;if(typeof d.timer==='number')matchState.timer=d.timer;updateMatchHud()}
   else if(d.t==='match_over')finishMatch(d.title,d.sub);
   else if(d.t==='state'){
+    relayIfHost(pkt,fromId);
     let r=rp[sender];
     const rTeam=matchCfg.mode==='1v1'?(myTeam==='red'?'blue':'red'):((lobbyRoster[sender]&&lobbyRoster[sender].team)||d.team||'blue');
     const rawCol=(+d.col)>0?(+d.col):0x339af0;
@@ -1714,21 +1879,49 @@ function handleMsg(fromId,d){
     r.k=d.k|0;r.d=d.d|0;r.clk=d.clk?1:0;
     const was=r.al;r.al=d.al?1:0;
     if(!was&&r.al){r.g.rotation.x=0;r.g.visible=true;r.x=r.tx;r.y=r.ty;r.z=r.tz}
-    if(was&&!r.al)r.t=0;
+    if(was&&!r.al){r.t=0;check6v6RoundEndByAlive()}
     updateMatchHud();
   }
   else if(d.t==='shot'){
+    relayIfHost(pkt,fromId);
     const r=rp[sender];if(r&&r.al&&Array.isArray(d.ep))tracer(new THREE.Vector3(r.x,r.y+1.3,r.z),new THREE.Vector3(d.ep[0],d.ep[1],d.ep[2]),0x7ac8ff);
   }
-  else if(d.t==='hit'&&d.to===myId){
-    const srcObj=rp[sender];hitMe(d.dmg,sender,d.hd,srcObj?srcObj.x:undefined,srcObj?srcObj.z:undefined);
+  else if(d.t==='hit'){
+    if(d.to===myId){
+      const srcObj=rp[sender];hitMe(d.dmg,sender,d.hd,srcObj?srcObj.x:undefined,srcObj?srcObj.z:undefined);
+    }else{
+      relayIfHost(pkt,fromId);
+    }
   }
   else if(d.t==='kill'){
-    if(d.to===myId){kills++;SX.kill();pop(d.hd?'헤드샷 킬!':'처치!');if(matchCfg.mode==='1v1'){updateMatchHud();if(kills>=5){mpSend({t:'match_over',title:'1대1 패배',sub:`${getNick()}님이 먼저 5킬을 달성했습니다.`});finishMatch('1대1 최종 승리!',`${getNick()}님이 먼저 5킬을 달성했습니다!`);return}const nr=matchState.round+1;const msg=`킬 달성! (${kills}/5) · R${nr}`;mpSend({t:'round_next',round:nr,redScore:kills,blueScore:dth,msg});startNewRound(nr,kills,dth,msg)}}
-    if(isHost&&matchCfg.mode==='6v6'&&matchCfg.sub==='tdm'){
-      const kt=(lobbyRoster[d.to]&&lobbyRoster[d.to].team)||'red';
-      if(kt==='red')matchState.redScore++;else matchState.blueScore++;
-      mpSend({t:'score_sync',redScore:matchState.redScore,blueScore:matchState.blueScore,timer:matchState.timer});updateMatchHud();
+    relayIfHost(pkt,fromId);
+    if(d.to===myId){
+      kills++;SX.kill();pop(d.hd?'헤드샷 킬!':'처치!');
+      if(matchCfg.mode==='1v1'){
+        updateMatchHud();
+        if(kills>=5){
+          mpSend({t:'match_over',title:'1대1 패배',sub:`${getNick()}님이 먼저 5킬을 달성했습니다.`});
+          finishMatch('1대1 최종 승리!',`${getNick()}님이 먼저 5킬을 달성했습니다!`);
+          return;
+        }
+        const nr=matchState.round+1;const msg=`킬 달성! (${kills}/5) · R${nr}`;
+        mpSend({t:'round_next',round:nr,redScore:kills,blueScore:dth,msg});
+        startNewRound(nr,kills,dth,msg);
+      }
+    }
+    if(isHost&&matchCfg.mode==='6v6'){
+      if(matchCfg.sub==='tdm'){
+        const kt=(lobbyRoster[d.to]&&lobbyRoster[d.to].team)||'red';
+        if(kt==='red')matchState.redScore++;else matchState.blueScore++;
+        mpSend({t:'score_sync',redScore:matchState.redScore,blueScore:matchState.blueScore,timer:matchState.timer});updateMatchHud();
+        if(matchState.redScore>=30||matchState.blueScore>=30){
+          const winName=matchState.redScore>=30?'레드팀':'블루팀';
+          const overPkt={t:'match_over',title:winName+' 승리!',sub:`팀 데스매치 스코어 ${matchState.redScore} : ${matchState.blueScore} (30킬 달성)`};
+          mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);
+        }
+      }else if(matchCfg.sub==='round'){
+        check6v6RoundEndByAlive();
+      }
     }
   }
 }
@@ -1739,9 +1932,9 @@ $('mkroom').onclick=()=>{
   roomCode=code;roomTitle=($('rtitleInp')?$('rtitleInp').value:'').trim().slice(0,22)||(getNick()+'님의 방');isHost=true;mm=1;
   peer=initPeer(peerIdOf(code),()=>{enterLobby(code,true);broadcastRoomToHub();$('msg').textContent='['+roomTitle+'] (코드 '+code+') 방 생성 완료!'});
 };
-window.joinRoomByCode=(rawCode,forcedMode,forcedSub)=>{
-  aud();const code=String(rawCode||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(code.length!==4){$('msg').textContent='4자리 방 코드를 정확히 입력하세요.';return}
+function joinRoomByCode(rawCode,forcedMode,forcedSub){
+  aud();const code=sanitizeCode(rawCode);
+  if(!CODE_RE.test(code)){$('msg').textContent='4자리 영문/숫자 방 코드를 정확히 입력하세요.';return}
   if(forcedMode==='1v1'||forcedMode==='6v6'){matchCfg.mode=forcedMode;if(forcedSub==='tdm'||forcedSub==='round')matchCfg.sub=forcedSub;syncModeButtonsUI()}
   mpStop();startLobbyHub();roomCode=code;isHost=false;mm=1;if(matchCfg.mode==='1v1')myTeam='blue';
   peer=initPeer(undefined,()=>{
@@ -1749,8 +1942,8 @@ window.joinRoomByCode=(rawCode,forcedMode,forcedSub)=>{
     if(matchCfg.mode==='1v1')launchMultiMatch(false);
     else{enterLobby(code,false);$('msg').textContent='방 ['+code+'] 연결 중...'}
   });
-};
-$('jnroom').onclick=()=>window.joinRoomByCode($('rcode').value);
+}
+$('jnroom').onclick=()=>joinRoomByCode($('rcode').value);
 
 function sendState(force){
   if(!mm||!myId)return;const n=performance.now();if(!force&&n-lsend<80)return;lsend=n;
@@ -1763,13 +1956,70 @@ function mpSpawn(){
 function hitMe(n,from,hd,srcX,srcZ){
   const t=performance.now()/1e3;if(pl.dead||t<pl.inv||matchState.phase!=='playing')return;
   pl.hp-=n*(bu.shield>0?.3:1);triggerDamageFeedback(srcX,srcZ);lh=t;shk=Math.max(shk,3.6);SX.hurt();
-  if(pl.hp<=0){pl.hp=0;pl.dead=1;dth++;pl.dt=((matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round'))?999:3;mpSend({t:'kill',to:from,hd:hd?1:0},from);sendState(true)}
+  if(pl.hp<=0){
+    pl.hp=0;pl.dead=1;dth++;
+    pl.dt=((matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round'))?999:3;
+    mpSend({t:'kill',to:from,hd:hd?1:0},from);
+    if(isHost&&matchCfg.mode==='6v6'&&matchCfg.sub==='tdm'){
+      const kt=(lobbyRoster[from]&&lobbyRoster[from].team)||'red';
+      if(kt==='red')matchState.redScore++;else matchState.blueScore++;
+      mpSend({t:'score_sync',redScore:matchState.redScore,blueScore:matchState.blueScore,timer:matchState.timer});updateMatchHud();
+      if(matchState.redScore>=30||matchState.blueScore>=30){
+        const winName=matchState.redScore>=30?'레드팀':'블루팀';
+        const overPkt={t:'match_over',title:winName+' 승리!',sub:`팀 데스매치 스코어 ${matchState.redScore} : ${matchState.blueScore} (30킬 달성)`};
+        mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);return;
+      }
+    }
+    sendState(true);
+    if(isHost&&matchCfg.mode==='6v6'&&matchCfg.sub==='round')check6v6RoundEndByAlive();
+  }
 }
 function mpTick(dt){
   let t='';const isRoundMode=(matchCfg.mode==='1v1')||(matchCfg.mode==='6v6'&&matchCfg.sub==='round');
   if(pl.dead){if(isRoundMode)t='전사! 다음 라운드에 부활합니다';else{pl.dt-=dt;t='전사! '+Math.max(1,Math.ceil(pl.dt))+'초 후 부활';if(pl.dt<=0){t='';mpSpawn()}}}
   if($('tip').textContent!=t)$('tip').textContent=t;
-  if(matchState.phase==='playing'){matchState.timer=Math.max(0,matchState.timer-dt);updateMatchHud()}
+  if(matchState.phase==='playing'){
+    matchState.timer=Math.max(0,matchState.timer-dt);
+    updateMatchHud();
+    if(isHost&&matchState.timer<=0){
+      if(matchCfg.mode==='1v1'){
+        const opp=Object.values(rp)[0];
+        const oppK=opp?(opp.k|0):dth;
+        if(kills>oppK){
+          const overPkt={t:'match_over',title:'1대1 시간 종료 승리!',sub:`제한 시간 종료 · ${getNick()} ${kills}킬 vs ${oppK}킬`};
+          mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);
+        }else if(oppK>kills){
+          const overPkt={t:'match_over',title:'1대1 시간 종료 패배',sub:`제한 시간 종료 · ${getNick()} ${kills}킬 vs ${oppK}킬`};
+          mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);
+        }else{
+          const nr=matchState.round+1;const msg=`동점 시간 종료! R${nr} 돌입`;
+          mpSend({t:'round_next',round:nr,redScore:kills,blueScore:oppK,msg});
+          startNewRound(nr,kills,oppK,msg);
+        }
+      }else if(matchCfg.mode==='6v6'&&matchCfg.sub==='tdm'){
+        const winName=matchState.redScore>matchState.blueScore?'레드팀':(matchState.blueScore>matchState.redScore?'블루팀':'무승부');
+        const overPkt={t:'match_over',title:winName==='무승부'?'무승부!':winName+' 승리!',sub:`시간 종료 · 레드 ${matchState.redScore} : 블루 ${matchState.blueScore}`};
+        mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);
+      }else if(matchCfg.mode==='6v6'&&matchCfg.sub==='round'){
+        let redAlive=0,blueAlive=0;
+        if(myTeam==='red'){if(!pl.dead)redAlive++}else{if(!pl.dead)blueAlive++}
+        for(const id in rp){const r=rp[id];if(r&&r.al){if((r.team||'red')==='red')redAlive++;else blueAlive++}}
+        const winnerTeam=redAlive>=blueAlive?'red':'blue';
+        const nrSc=matchState.redScore+(winnerTeam==='red'?1:0);
+        const nbSc=matchState.blueScore+(winnerTeam==='blue'?1:0);
+        if(nrSc>=5||nbSc>=5){
+          const winName=nrSc>=5?'레드팀':'블루팀';
+          const overPkt={t:'match_over',title:winName+' 최종 승리!',sub:`라운드 스코어 ${nrSc} : ${nbSc}로 경기가 종료되었습니다.`};
+          mpSend(overPkt);finishMatch(overPkt.title,overPkt.sub);
+        }else{
+          const nr=matchState.round+1;
+          const msg=`시간 종료! ${winnerTeam==='red'?'레드팀':'블루팀'} 라운드 승리 (${nrSc}:${nbSc}) · R${nr}`;
+          mpSend({t:'round_next',round:nr,redScore:nrSc,blueScore:nbSc,msg});
+          startNewRound(nr,nrSc,nbSc,msg);
+        }
+      }
+    }
+  }
   kaTimer+=dt;if(kaTimer>1){kaTimer=0;sendState(true)}else sendState(false);
 }
 function mpFx(dt){
@@ -1876,10 +2126,21 @@ function look(dx,dy){
   const k=(+$('sn').value||1.1)*(ads?(wi===2?.36:.65):1);
   lookTargetYaw=(lookTargetYaw??pl.yaw)-dx*.0072*k;lookTargetPit=cl((lookTargetPit??pl.pit)-dy*.0058*k,-1.4,1.4);
 }
+
+/* 자동사격: world를 포함해 벽 엄폐를 확인 (에임 보정 없음) */
 function aimAssist(dt){
-  if(pl.dead||st!=1||!LO||(!fi&&!ads))return;
-  const tg=[...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!r.clk&&!isFriendly(r)).map(r=>r.g)];
-  if($('au').checked){RC.setFromCamera(V.set(0,0),cam);if(RC.intersectObjects(tg,true).length>0){shoot();return}}
+  if(pl.dead||st!=1||!LO||!fi)return;
+  if($('au').checked){
+    RC.setFromCamera(V.set(0,0),cam);
+    const hits=RC.intersectObjects([world,...en.filter(e=>!e.dead).map(e=>e.g),...Object.values(rp).filter(r=>r.al&&!r.clk&&!isFriendly(r)).map(r=>r.g)],true);
+    if(hits.length>0){
+      const first=hits[0];
+      if(first.object&&first.object.userData&&first.object.userData.e){
+        const targetObj=first.object.userData.e;
+        if(!targetObj.rem||!isFriendly(targetObj))shoot();
+      }
+    }
+  }
 }
 
 function fsMsg(){const t='전체화면이 막혀 있어요.';if(!$('ov').hidden)$('msg').textContent=t;else pop(t)}
