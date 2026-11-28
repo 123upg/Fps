@@ -216,7 +216,7 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #colGrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:340px}
 .col-sw{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.45);cursor:pointer;padding:0;transition:transform .12s ease,box-shadow .12s ease}
 .col-sw.on{transform:scale(1.18);border:3px solid #fff;box-shadow:0 0 0 2px var(--ac)}
-.name-tag{position:fixed;transform:translate(-50%,-100%);background:rgba(13,15,19,.82);color:#fff;padding:2px 6px;border-radius:8px;font-weight:800;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.22);z-index:18;text-shadow:0 1px 2px #000;transform-origin:50% 100%;line-height:1.15}
+.name-tag{position:fixed;transform:translate(-50%,-100%);background:rgba(13,15,19,.86);color:#fff;padding:3px 9px;border-radius:9px;font-weight:900;font-size:14px;white-space:nowrap;pointer-events:none;border:1.5px solid rgba(255,255,255,.28);box-shadow:0 3px 10px rgba(0,0,0,.45);z-index:18;text-shadow:0 1px 3px #000;transform-origin:50% 100%;line-height:1.2}
 </style></head><body><div id="app">
 <div id="hud">
   <div id="hpPanel">
@@ -434,10 +434,6 @@ function mkChar(c){const g=new THREE.Group();g.rotation.order='YXZ';
 /* ---------- player, weapon, effects ---------- */
 const pl={x:4.5,y:0,z:4.5,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=70;
 let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,dm=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0;
-// Damage tuning (base HP 100):
-// AR: body 17 (6 hits = 102), head 52 (2 hits = 104)
-// Sniper: body 52 (2 hits = 104), head 120 (1 hit = 120)
-// Shotgun (no ADS): 8 pellets x 7 dmg = 56 max (2 close hits ~ 50-56*2 -> ~2 body shots), head 10
 const WP=[
   {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.0045,rl:1.4,rc:.004,canAds:true},
   {n:'샷건',mag:6,res:30,cd:.8,dmg:7,hd:10,pel:8,spr:.042,rl:2,rc:.026,canAds:false},
@@ -1059,7 +1055,7 @@ function handleMsg(fromId,d){
       tagEl.className='name-tag';
       const baseNick=(typeof d.nick==='string'&&d.nick.trim())?d.nick.trim().slice(0,12):'플레이어';
       tagEl.textContent=matchCfg.mode==='6v6'?`[${rTeam==='red'?'RED':'BLUE'}] ${baseNick}`:baseNick;
-      tagEl.style.borderColor=matchCfg.mode==='6v6'?(rTeam==='red'?'#ff6b6b':'#4dabf7'):'rgba(255,255,255,.25)';
+      tagEl.style.borderColor=matchCfg.mode==='6v6'?(rTeam==='red'?'#ff6b6b':'#4dabf7'):'rgba(255,255,255,.28)';
       $('nameTags').appendChild(tagEl);
       r=rp[sender]={...c,peer:sender,rem:1,team:rTeam,x:0,y:0,z:0,yaw:0,tx:0,ty:0,tz:0,tyaw:0,ph:0,fl:0,al:1,k:0,d:0,t:0,hue:hueOf(sender),init:0,clk:0,colHex,nick:baseNick,tagEl};
       c.g.traverse(m=>{if(m.isMesh)m.userData.e=r});
@@ -1331,7 +1327,6 @@ function mpTick(dt){
   kaTimer+=dt;if(kaTimer>1){kaTimer=0;sendState(true);if(isHost&&matchCfg.mode==='6v6')checkMatchWinConditions()}else sendState(false);
 }
 
-// Check if a wall/obstacle blocks view between camera and target point
 function isOccludedByWall(fromPos,toPos){
   const dx=toPos.x-fromPos.x,dy=toPos.y-fromPos.y,dz=toPos.z-fromPos.z;
   const dist=Math.hypot(dx,dy,dz);
@@ -1346,7 +1341,7 @@ function mpFx(dt){
   const a=1-Math.exp(-14*dt);
   const projV=new THREE.Vector3();
   const headPos=new THREE.Vector3();
-  const shoulderSpan=0.56; // character shoulder width (~0.56m)
+  const shoulderSpan=0.56;
   for(const id in rp){
     const r=rp[id];
     r.g.visible=r.al?(!r.clk):r.t<=4;
@@ -1369,16 +1364,11 @@ function mpFx(dt){
       }else{
         projV.copy(headPos).project(cam);
         if(projV.z>0 && projV.z<1 && projV.x>=-1.15 && projV.x<=1.15 && projV.y>=-1.15 && projV.y<=1.15){
-          // Scale proportionally with distance, anchored to character shoulder width
           const vFovRad=(cam.fov*Math.PI)/180;
           const pxPerMeter=(innerHeight*0.5)/Math.tan(vFovRad*0.5);
           const shoulderPx=(shoulderSpan/Math.max(0.6,dist))*pxPerMeter;
-          const distScale=Math.max(0.28,Math.min(1.25,shoulderPx/68));
+          const distScale=Math.max(0.42,Math.min(1.45,shoulderPx/48));
           r.tagEl.style.display='block';
-          r.tagEl.style.fontSize='12px';
-          r.tagEl.style.maxWidth=Math.max(24,Math.round(shoulderPx*1.15))+'px';
-          r.tagEl.style.overflow='hidden';
-          r.tagEl.style.textOverflow='ellipsis';
           r.tagEl.style.left=((projV.x*.5+.5)*innerWidth)+'px';
           r.tagEl.style.top=((-projV.y*.5+.5)*innerHeight)+'px';
           r.tagEl.style.transform='translate(-50%,-100%) scale('+distScale.toFixed(3)+')';
