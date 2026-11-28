@@ -1396,12 +1396,14 @@ wModels.forEach(g=>gun.add(g));
 }
 
 let knifeBladePivot=null;
+let knifeForearmPivot=null;
+let knifeLeftHandGrp=null;
 {
   const g=wModels[4];
   const bladePivot=new THREE.Group();
-  bladePivot.position.set(0.028,-0.045,-0.17);
+  bladePivot.position.set(0.022,-0.032,-0.175);
   bladePivot.rotation.order='YXZ';
-  bladePivot.rotation.set(0.14,-0.18,-0.22);
+  bladePivot.rotation.set(0.08,-0.06,-0.04);
   g.add(bladePivot);
   knifeBladePivot=bladePivot;
 
@@ -1414,8 +1416,25 @@ let knifeBladePivot=null;
   addTo(bladePivot,knifeBladeShape,bladeEdgeMat,0,.005,-.258,0,-Math.PI/2,0);
   addTo(bladePivot,new THREE.BoxGeometry(.0055,.0055,.37),steelBright,0,.019,-.238);
 
-  buildTacticalArm(g,{side:1,handPos:[0.032,-0.048,-0.165],handRot:[-0.22,-0.22,0.18],elbowOffset:[0.31,-0.32,0.44],gripWrap:.82,scale:1});
-  buildTacticalArm(g,{side:-1,handPos:[-0.14,-0.11,-0.26],handRot:[0.18,0.34,-0.46],elbowOffset:[-0.45,-0.3,0.32],gripWrap:.45,scale:.92});
+  const rightArm=buildTacticalArm(g,{
+    side:1,
+    handPos:[0.024,-0.036,-0.17],
+    handRot:[-0.18,-0.08,0.06],
+    elbowOffset:[0.22,-0.25,0.34],
+    gripWrap:.86,
+    scale:1
+  });
+  knifeForearmPivot=rightArm.forearmPivot;
+
+  const leftArm=buildTacticalArm(g,{
+    side:-1,
+    handPos:[-0.24,-0.11,-0.34],
+    handRot:[0.14,0.28,-0.36],
+    elbowOffset:[-0.36,-0.28,0.24],
+    gripWrap:.35,
+    scale:.94
+  });
+  knifeLeftHandGrp=leftArm.handGrp;
 }
 
 function syncWeaponModel(){
@@ -1519,8 +1538,8 @@ function shoot(){
   bu.cloak=0;fcd=w.cd/(bu.rof>0?1.4:1);rec=1;
   if(w.isGun)mf=.055;
   if(w.isKnife){
-    knifeSwingT=.24;
-    shk=Math.max(shk,2.2);
+    knifeSwingT=.22;
+    shk=Math.max(shk,1.4);
     SX.knifeSwing({x:pl.x,y:pl.y+1.4,z:pl.z});
   }else{
     shk=Math.max(shk,w.rc*24);
@@ -1741,20 +1760,34 @@ function fx(dt){
  let swYaw=0,swPitch=0,swRoll=0,swX=0,swY=0,swZ=0;
  if(wi===4){
   if(knifeSwingT>0){
-   const spProg=1-(knifeSwingT/.24);
-   const arc=Math.sin(spProg*Math.PI);
-   const sweep=Math.sin(spProg*Math.PI*.85);
-   swYaw=-1.18*sweep;
-   swPitch=.52*arc;
-   swRoll=-1.45*sweep;
-   swX=-.28*sweep;
-   swY=.06*arc;
-   swZ=-.22*arc;
+   // 1 - (knifeSwingT / 0.22): 0에서 1로 진행. 팔꿈치 윗부분(전완/손목/칼날)을 축으로 위에서 아래로 하향 휘두르기
+   const spProg=1-(knifeSwingT/.22);
+   // 바람가르기(wind-up) -> 하향 절단(downward chop) -> 복귀 curve
+   const downChop=spProg<0.45?-(spProg/0.45):Math.sin(((spProg-0.45)/0.55)*Math.PI);
+   const chopCurve=Math.sin(spProg*Math.PI);
+   // 팔꿈치 아랫부분/어깨는 최소한으로 유지하고 위쪽(전완/손목/칼날)이 위->아래로 크게 회전
+   swPitch=-0.95*chopCurve;
+   swRoll=0.35*chopCurve;
+   swYaw=-0.12*chopCurve;
+   swX=-0.04*chopCurve;
+   swY=-0.14*chopCurve;
+   swZ=-0.16*chopCurve;
    if(knifeBladePivot){
-     knifeBladePivot.rotation.set(0.14+0.35*arc,-0.18-0.55*sweep,-0.22-0.65*sweep);
+     knifeBladePivot.rotation.set(0.08 - 0.88*chopCurve, -0.06, -0.04 + 0.18*chopCurve);
    }
-  }else if(knifeBladePivot){
-   knifeBladePivot.rotation.set(0.14,-0.18,-0.22);
+   if(knifeForearmPivot){
+     knifeForearmPivot.rotation.x += 0.42*chopCurve;
+   }
+   if(knifeLeftHandGrp){
+     knifeLeftHandGrp.position.set(-0.24 - 0.03*chopCurve, -0.11 - 0.025*chopCurve, -0.34 - 0.04*chopCurve);
+   }
+  }else{
+   if(knifeBladePivot){
+     knifeBladePivot.rotation.set(0.08,-0.06,-0.04);
+   }
+   if(knifeLeftHandGrp){
+     knifeLeftHandGrp.position.set(-0.24,-0.11,-0.34);
+   }
   }
  }
 
