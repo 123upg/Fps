@@ -40,8 +40,9 @@ canvas{position:absolute;inset:0;display:block}
 .am-pip.empty{background:rgba(255,255,255,.12);opacity:.5}
 .am-reloading{font-size:11.5px;font-weight:800;color:var(--ac);padding:2px 0}
 
-#xh{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border:1.5px solid rgba(255,255,255,.82);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.45);pointer-events:none;z-index:23}
-#xh.h{border-color:#fa5252;transform:scale(1.45)}
+/* 불투명 하얀색 작은 점 조준점 */
+#xh{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none;z-index:23}
+#xh.h{background:#ff3b30;transform:scale(1.35)}
 #scopeOverlay{
   display:none;position:fixed;inset:0;z-index:18;pointer-events:none;
   background:radial-gradient(circle at center,
@@ -174,7 +175,8 @@ button{font:inherit;font-weight:700;color:var(--ab);background:var(--ac);border:
 #rotBtn{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));height:32px;padding:0 11px;font-size:11.5px;border-radius:8px;background:var(--pn);border:1px solid var(--pn-border);color:#e2e8f0;z-index:65;backdrop-filter:blur(6px)}
 #rdr{inset:auto;top:50px;right:12px;width:96px;height:96px;pointer-events:none;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:22}
 
-#pop{position:absolute;left:50%;top:21%;transform:translateX(-50%);font-weight:900;font-size:22px;letter-spacing:.6px;color:#fff;background:var(--pn);border:1px solid var(--pn-border);padding:5px 14px;border-radius:9px;text-shadow:0 2px 6px rgba(0,0,0,.6);pointer-events:none;opacity:0;white-space:nowrap;z-index:26;backdrop-filter:blur(8px)}
+/* 헤드샷 / 멀티킬 강조 빨간 글씨 */
+#pop{position:absolute;left:50%;top:21%;transform:translateX(-50%);font-weight:900;font-size:24px;letter-spacing:.6px;color:#ff2e2e;text-shadow:0 0 10px rgba(0,0,0,.95),0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(255,46,46,.45);pointer-events:none;opacity:0;white-space:nowrap;z-index:26}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
 #ov .sub{background:rgba(255,255,255,.05);color:#e2e8f0;border:1px solid rgba(255,255,255,.18)}
 #mpbox{display:none;flex-direction:column;gap:8px;padding:12px;border:1px solid rgba(255,122,47,.45);border-radius:11px;background:rgba(10,13,20,.85)}
@@ -816,7 +818,6 @@ const hold=(id,on,off)=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();e.
 hold('bf',()=>fi=1,()=>fi=0);hold('bj',()=>J=1,()=>J=0);hold('br',reload);hold('bw',()=>sw((wi+1)%3));
 hold('bf2',()=>fi=1,()=>fi=0);hold('ba',()=>{if(WP[wi].canAds)ads=!ads;else ads=false});[0,1,2].forEach(i=>hold('s'+i,()=>skill(i)));['bf','bf2'].forEach(id=>{const b=$(id);let lx=0,ly=0,aimPid=null;b.addEventListener('pointerdown',e=>{lx=e.clientX;ly=e.clientY;aimPid=e.pointerId;try{b.setPointerCapture(e.pointerId)}catch(_){}});b.addEventListener('pointermove',e=>{if(!fi||st!=1||e.pointerId!==aimPid)return;const dx=e.clientX-lx,dy=e.clientY-ly;look(dx*.75,dy*.75);lx=e.clientX;ly=e.clientY});const clr=e=>{if(e.pointerId===aimPid)aimPid=null};b.addEventListener('pointerup',clr);b.addEventListener('pointercancel',clr)});
 
-// PeerJS 멀티플레이 엔진 (1대1 모드 & 6대6 팀전 분리)
 let mm=0,rp={},dth=0,lsend=0,sbt=0,roomCode='',isHost=false,kaTimer=0;
 let myId='',inLobby=false,peer=null,conns={};
 let myTeam='red';
