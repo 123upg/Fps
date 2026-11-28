@@ -2033,6 +2033,23 @@ function mpTick(dt){
   }
   kaTimer+=dt;if(kaTimer>1){kaTimer=0;sendState(true)}else sendState(false);
 }
+
+const nameRaycaster=new THREE.Raycaster();
+const nameCamPos=new THREE.Vector3();
+const nameTargetPos=new THREE.Vector3();
+
+function isTargetVisibleToCamera(x,y,z){
+  nameCamPos.copy(cam.position);
+  nameTargetPos.set(x,y,z);
+  const dir=nameTargetPos.clone().sub(nameCamPos);
+  const dist=dir.length();
+  if(dist<=.1)return true;
+  dir.normalize();
+  nameRaycaster.set(nameCamPos,dir);
+  nameRaycaster.far=dist;
+  return nameRaycaster.intersectObject(world,true).length===0;
+}
+
 function mpFx(dt){
   const a=1-Math.exp(-14*dt);
   for(const id in rp){
@@ -2045,8 +2062,9 @@ function mpFx(dt){
     if(r.tagEl){
       if(!r.al||r.clk||st!==1){r.tagEl.style.display='none'}
       else{
+        const visible=isTargetVisibleToCamera(r.x,r.y+1.75,r.z);
         const p=new THREE.Vector3(r.x,r.y+2.05,r.z).project(cam);
-        if(p.z>1||p.z<-1){r.tagEl.style.display='none'}
+        if(!visible||p.z>1||p.z<-1){r.tagEl.style.display='none'}
         else{
           r.tagEl.style.display='block';
           r.tagEl.style.left=((p.x*.5+.5)*innerWidth).toFixed(1)+'px';
