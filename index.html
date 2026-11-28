@@ -490,7 +490,7 @@ HM.forEach((r,j)=>r.forEach((h,i)=>{
 {const ws=[];HM.forEach((r,j)=>r.forEach((h,i)=>{if(h>2)ws.push([i,j])}));const nm=new THREE.InstancedMesh(new THREE.BoxGeometry(S+.04,.09,S+.04),new THREE.MeshBasicMaterial({color:0x38bdf8}),ws.length),d=new THREE.Object3D();ws.forEach(([i,j],k)=>{d.position.set((i+.5)*S,3.05,(j+.5)*S);d.updateMatrix();nm.setMatrixAt(k,d.matrix)});world.add(nm)}
 
 const GC={};
-const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=12)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=14)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
+const BG=(w,h,l)=>{const k='b'+w+h+l;return GC[k]=GC[k]||new THREE.BoxGeometry(w,h,l)},CG=(a,b,h,n=14)=>{const k='c'+a+b+h+n;return GC[k]=GC[k]||new THREE.CylinderGeometry(a,b,h,n)},SG=(r,n=16)=>{const k='s'+r+n;return GC[k]=GC[k]||new THREE.SphereGeometry(r,n,n-2)};
 function pt(geo,m,x,y,z,p,hd,rx,ry,rz){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;o.castShadow=true;p.add(o);if(hd)o.userData.hd=1;return o}
 
 function camo(base){
@@ -510,65 +510,80 @@ function camo(base){
 
 function mkChar(c){
   const g=new THREE.Group();g.rotation.order='YXZ';
+  const body=new THREE.Group();g.add(body);
   const M=(col,r,m,map)=>new THREE.MeshStandardMaterial({color:map?0xffffff:col,map,roughness:r,metalness:m}),
     u=M(0,.84,.05,camo(c[0])),
-    v=M(c[1],.62,.22),
+    v=M(c[1],.58,.26),
     s=M(c[2],.72,.05),
-    d=M(c[3],.68,.3),
-    mt=M(0x282d36,.4,.75),
-    visor=M(0x111827,.2,.85),
+    d=M(c[3],.64,.35),
+    mt=M(0x282d36,.36,.82),
+    visor=M(0x0f172a,.16,.9),
     ms=[u,v,s,d,mt];
 
-  const leg=x=>{
+  const leg=(x,side)=>{
     const p=new THREE.Group();p.position.set(x,.92,0);g.add(p);
-    pt(CG(.098,.084,.46),u,0,-.23,0,p);
-    pt(CG(.084,.072,.44),u,0,-.66,.01,p);
-    pt(BG(.14,.11,.12),d,0,-.45,.07,p);
-    pt(BG(.155,.11,.28),d,0,-.89,.04,p);
-    pt(BG(.145,.09,.1),mt,0,-.83,-.06,p);
+    pt(CG(.102,.088,.44),u,0,-.22,0,p);
+    pt(BG(.125,.14,.16),v,side*.025,-.22,.02,p,0,0,0,-side*.08);
+    pt(SG(.086),d,0,-.45,.03,p);
+    pt(BG(.13,.12,.09),mt,0,-.45,.085,p);
+    pt(CG(.086,.074,.42),u,0,-.66,.01,p);
+    pt(BG(.145,.11,.13),d,0,-.48,.075,p);
+    pt(BG(.162,.11,.29),d,0,-.88,.045,p);
+    pt(BG(.155,.05,.31),mt,0,-.925,.045,p);
+    pt(BG(.145,.09,.1),mt,0,-.83,-.065,p);
     return p;
   };
-  const L=leg(-.155),Rg=leg(.155);
+  const L=leg(-.158,-1),Rg=leg(.158,1);
 
-  pt(CG(.195,.165,.32),u,0,1.08,0,g);
-  pt(BG(.46,.08,.33),d,0,.97,0,g);
-  pt(BG(.48,.46,.29),v,0,1.38,0,g);
-  pt(BG(.44,.14,.32),u,0,1.16,0,g);
-  [-.14,0,.14].forEach(x=>pt(BG(.095,.13,.065),d,x,1.31,.175,g));
-  pt(BG(.34,.36,.13),d,0,1.4,-.2,g);
-  pt(BG(.28,.12,.06),mt,0,1.5,-.27,g);
+  pt(CG(.2,.17,.32),u,0,1.08,0,body);
+  pt(BG(.48,.085,.34),d,0,.97,0,body);
+  pt(BG(.09,.095,.07),mt,0,.97,.175,body);
+  pt(BG(.5,.46,.31),v,0,1.38,0,body);
+  pt(BG(.52,.11,.33),d,0,1.53,0,body);
+  pt(BG(.46,.14,.33),u,0,1.16,0,body);
+  [-.15,0,.15].forEach(x=>pt(BG(.095,.13,.065),d,x,1.31,.18,body));
+  pt(BG(.36,.38,.14),d,0,1.4,-.21,body);
+  pt(BG(.3,.12,.06),mt,0,1.52,-.28,body);
+  pt(BG(.24,.15,.06),u,0,1.28,-.28,body);
 
-  pt(CG(.058,.072,.11),s,0,1.67,0,g);
-  pt(SG(.112),s,0,1.78,.005,g,1);
-  pt(SG(.142,16),d,0,1.82,-.005,g,1).scale.set(1,.84,1.04);
-  pt(BG(.29,.055,.12),mt,0,1.82,0,g,1);
-  pt(BG(.22,.065,.06),visor,0,1.79,.125,g,1);
-  pt(BG(.235,.025,.03),d,0,1.825,.13,g,1);
+  const head=new THREE.Group();head.position.set(0,1.72,0);body.add(head);
+  pt(CG(.06,.074,.1),s,0,-.04,0,head);
+  pt(SG(.112),s,0,.06,.005,head,1);
+  pt(SG(.146,18),d,0,.1,-.005,head,1).scale.set(1,.85,1.06);
+  pt(BG(.07,.06,.08),mt,0,.145,.135,head,1,-.25);
+  pt(BG(.035,.035,.04),d,0,.145,.175,head,1);
+  pt(BG(.3,.055,.12),mt,0,.1,.005,head,1);
+  pt(BG(.23,.068,.065),visor,0,.07,.128,head,1);
+  pt(BG(.245,.022,.03),d,0,.104,.134,head,1);
   [-1,1].forEach(k=>{
-    pt(BG(.04,.09,.08),mt,k*.148,1.78,0,g,1);
-    pt(SG(.085),u,k*.315,1.55,0,g);
+    pt(BG(.042,.095,.085),mt,k*.152,.06,0,head,1);
+    pt(CG(.012,.012,.22,8),mt,k*.165,.12,-.03,head,1,.45);
+    pt(SG(.088),u,k*.325,-.17,0,body);
+    pt(BG(.12,.11,.16),v,k*.34,-.15,0,body,0,0,0,-k*.25);
   });
 
   const arm=(x,rx,ry)=>{
-    const p=new THREE.Group();p.position.set(x,1.55,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);g.add(p);
-    pt(CG(.064,.054,.3),u,0,-.15,0,p);
-    const f=new THREE.Group();f.position.y=-.3;f.rotation.x=-.9;p.add(f);
-    pt(CG(.054,.045,.28),u,0,-.14,0,f);
-    pt(SG(.054),d,0,-.3,0,f);
+    const p=new THREE.Group();p.position.set(x,1.55,0);p.rotation.order='YXZ';p.rotation.set(rx,ry,0);body.add(p);
+    pt(CG(.066,.056,.29),u,0,-.145,0,p);
+    const f=new THREE.Group();f.position.y=-.29;f.rotation.x=-.92;p.add(f);
+    pt(CG(.056,.046,.28),u,0,-.14,0,f);
+    pt(BG(.075,.07,.12),d,0,-.12,.02,f);
+    pt(SG(.056),d,0,-.29,0,f);
   };
-  arm(-.32,-.95,.55);arm(.32,-.7,-.5);
+  arm(-.325,-.96,.56);arm(.325,-.72,-.52);
 
-  pt(BG(.07,.11,.5),mt,0,1.38,.45,g);
-  pt(CG(.014,.014,.4,8),mt,0,1.41,.9,g).rotation.x=Math.PI/2;
-  pt(BG(.06,.06,.22),d,0,1.37,.7,g);
-  pt(BG(.05,.13,.07),d,0,1.27,.46,g);
-  pt(BG(.05,.07,.2),d,0,1.36,.12,g);
+  pt(BG(.074,.115,.52),mt,0,1.38,.46,body);
+  pt(BG(.064,.026,.44),d,0,1.44,.46,body);
+  pt(CG(.015,.015,.42,10),mt,0,1.41,.92,body).rotation.x=Math.PI/2;
+  pt(BG(.064,.064,.23),d,0,1.37,.71,body);
+  pt(BG(.052,.135,.072),d,0,1.27,.46,body);
+  pt(BG(.052,.072,.21),d,0,1.36,.12,body);
 
-  return{g,L,R:Rg,ms};
+  return{g,body,head,L,R:Rg,ms};
 }
 
 const pl={x:4.5,y:0,z:4.5,vy:0,yaw:-2.36,pit:0,hp:100,og:1},K={},T={},V=new THREE.Vector2(),RC=new THREE.Raycaster();RC.far=70;
-let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,dm=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0;
+let st=0,fi=0,md=0,J=0,am=30,res=90,kills=0,fcd=0,rl=0,rec=0,mf=0,hm=0,dm=0,lh=0,rnd=0,en=[],FD=[],ft=0,stp=0,spt=0,bobPhase=0;
 const WP=[
   {n:'돌격소총',mag:30,res:90,cd:.1,dmg:17,hd:52,pel:1,spr:.004,rl:1.4,rc:.0035,canAds:true},
   {n:'샷건',mag:6,res:30,cd:.8,dmg:7,hd:10,pel:8,spr:.038,rl:2,rc:.024,canAds:false},
@@ -576,48 +591,54 @@ const WP=[
 ];
 let WA=WP.map(w=>[w.mag,w.res]),wi=0,shk=0,score=0,strk=0,lk=0,slow=0,popT=0,spr=0,pk=[],mapPacks=[],ads=false,bloom=0;
 let lookTargetYaw=null,lookTargetPit=null,lookVelYaw=0,lookVelPit=0;
-const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.45,.6),gm2=MT(0x101114,.5,.5),gm3=MT(0x3b3f46,.35,.7),glv=MT(0x1b1b1d,.8,0),wd=MT(0x7c3f1d,.75,.05),snM=MT(0x1b1e24,.35,.8),scpM=MT(0x14171c,.25,.85);
+const gun=new THREE.Group(),MT=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),gm1=MT(0x23262b,.42,.68),gm2=MT(0x101114,.48,.58),gm3=MT(0x3b3f46,.32,.78),glv=MT(0x1b1b1d,.78,.06),wd=MT(0x7c3f1d,.72,.08),snM=MT(0x1b1e24,.34,.84),scpM=MT(0x14171c,.24,.88),accRed=MT(0xff3b30,.35,.4);
 const addTo=(p,geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(rx)o.rotation.x=rx;if(ry)o.rotation.y=ry;if(rz)o.rotation.z=rz;p.add(o);return o};
 const wModels=[new THREE.Group(),new THREE.Group(),new THREE.Group()];
 wModels.forEach(g=>gun.add(g));
 
 {const g=wModels[0];
- addTo(g,new THREE.BoxGeometry(.062,.095,.44),gm1,0,0,0);
- addTo(g,new THREE.BoxGeometry(.052,.03,.4),gm3,0,.06,-.02);
- addTo(g,new THREE.BoxGeometry(.056,.065,.18),gm2,0,-.01,-.28);
- addTo(g,new THREE.CylinderGeometry(.012,.012,.32,10),gm3,0,.012,-.48,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.02,.02,.075,10),gm2,0,.012,-.66,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.05,.055,.22),gm2,0,-.01,.3);
- addTo(g,new THREE.BoxGeometry(.044,.14,.07),gm2,0,-.1,.1,.2);
- addTo(g,new THREE.BoxGeometry(.042,.18,.085),gm1,0,-.13,-.12,-.22);
- addTo(g,new THREE.BoxGeometry(.055,.045,.07),gm2,0,.095,-.03);
- addTo(g,new THREE.BoxGeometry(.012,.012,.11),MT(0xff2222,.5,0),0,.095,-.07);
- addTo(g,new THREE.BoxGeometry(.072,.072,.1),glv,0,-.075,-.22);
- addTo(g,new THREE.BoxGeometry(.072,.082,.09),glv,0,-.12,.1);
+ addTo(g,new THREE.BoxGeometry(.064,.098,.45),gm1,0,0,0);
+ addTo(g,new THREE.BoxGeometry(.054,.034,.42),gm3,0,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,-.028,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.012,.014,.4),gm2,.028,.062,-.02);
+ addTo(g,new THREE.BoxGeometry(.058,.068,.2),gm2,0,-.01,-.29);
+ addTo(g,new THREE.CylinderGeometry(.013,.013,.34,12),gm3,0,.012,-.49,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.022,.022,.082,12),gm2,0,.012,-.67,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.052,.058,.24),gm2,0,-.01,.31);
+ addTo(g,new THREE.BoxGeometry(.044,.15,.072),gm2,0,-.105,.1,.2);
+ addTo(g,new THREE.BoxGeometry(.044,.185,.088),gm1,0,-.13,-.12,-.22);
+ addTo(g,new THREE.BoxGeometry(.058,.046,.08),gm2,0,.098,-.03);
+ addTo(g,new THREE.BoxGeometry(.012,.012,.12),accRed,0,.098,-.07);
+ addTo(g,new THREE.BoxGeometry(.076,.076,.11),glv,0,-.075,-.22);
+ addTo(g,new THREE.BoxGeometry(.076,.086,.095),glv,0,-.12,.1);
 }
 {const g=wModels[1];
- addTo(g,new THREE.BoxGeometry(.072,.105,.42),snM,0,0,0);
- addTo(g,new THREE.CylinderGeometry(.024,.024,.46,12),snM,0,.018,-.42,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.017,.017,.36,10),gm2,0,-.026,-.36,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.076,.085,.22),wd,0,-.032,-.36);
- addTo(g,new THREE.BoxGeometry(.062,.095,.28),wd,0,-.015,.32,.08);
- addTo(g,new THREE.BoxGeometry(.048,.14,.08),wd,0,-.105,.12,.25);
- addTo(g,new THREE.BoxGeometry(.046,.08,.07),gm2,0,-.085,-.12,-.1);
- addTo(g,new THREE.BoxGeometry(.08,.078,.11),glv,0,-.075,-.34);
- addTo(g,new THREE.BoxGeometry(.08,.086,.1),glv,0,-.12,.12);
+ addTo(g,new THREE.BoxGeometry(.074,.108,.44),snM,0,0,0);
+ addTo(g,new THREE.CylinderGeometry(.025,.025,.48,14),snM,0,.018,-.43,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.05,.018,.38),gm3,0,.042,-.42);
+ addTo(g,new THREE.CylinderGeometry(.018,.018,.38,12),gm2,0,-.026,-.37,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.078,.088,.23),wd,0,-.032,-.37);
+ addTo(g,new THREE.BoxGeometry(.064,.098,.3),wd,0,-.015,.33,.08);
+ addTo(g,new THREE.BoxGeometry(.056,.105,.04),gm3,0,-.015,.48,.08);
+ addTo(g,new THREE.BoxGeometry(.05,.145,.082),wd,0,-.105,.12,.25);
+ addTo(g,new THREE.BoxGeometry(.048,.082,.072),gm2,0,-.085,-.12,-.1);
+ addTo(g,new THREE.BoxGeometry(.084,.082,.115),glv,0,-.075,-.34);
+ addTo(g,new THREE.BoxGeometry(.084,.09,.105),glv,0,-.12,.12);
 }
 {const g=wModels[2];
- addTo(g,new THREE.BoxGeometry(.058,.095,.62),scpM,0,0,-.06);
- addTo(g,new THREE.CylinderGeometry(.011,.014,.66,12),gm3,0,.015,-.64,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.016,.016,.11,10),gm2,0,.015,-.98,Math.PI/2);
- addTo(g,new THREE.CylinderGeometry(.034,.038,.36,14),scpM,0,.095,-.12,Math.PI/2);
- addTo(g,new THREE.BoxGeometry(.022,.022,.06),gm2,0,.055,-.24);
- addTo(g,new THREE.BoxGeometry(.022,.022,.06),gm2,0,.055,.0);
- addTo(g,new THREE.BoxGeometry(.042,.11,.065),gm2,0,-.095,.08,.18);
- addTo(g,new THREE.BoxGeometry(.036,.12,.06),gm1,0,-.105,-.14,-.1);
- addTo(g,new THREE.BoxGeometry(.054,.085,.28),scpM,0,-.015,.36,.04);
- addTo(g,new THREE.BoxGeometry(.068,.07,.09),glv,0,-.07,-.22);
- addTo(g,new THREE.BoxGeometry(.068,.08,.09),glv,0,-.11,.08);
+ addTo(g,new THREE.BoxGeometry(.06,.098,.64),scpM,0,0,-.06);
+ addTo(g,new THREE.CylinderGeometry(.012,.015,.68,14),gm3,0,.015,-.65,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.018,.018,.12,12),gm2,0,.015,-.99,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.036,.04,.38,16),scpM,0,.098,-.12,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.042,.042,.03,16),gm3,0,.098,-.3,Math.PI/2);
+ addTo(g,new THREE.CylinderGeometry(.042,.042,.03,16),gm3,0,.098,.06,Math.PI/2);
+ addTo(g,new THREE.BoxGeometry(.024,.024,.065),gm2,0,.056,-.24);
+ addTo(g,new THREE.BoxGeometry(.024,.024,.065),gm2,0,.056,.0);
+ addTo(g,new THREE.BoxGeometry(.044,.115,.068),gm2,0,-.095,.08,.18);
+ addTo(g,new THREE.BoxGeometry(.038,.125,.062),gm1,0,-.105,-.14,-.1);
+ addTo(g,new THREE.BoxGeometry(.056,.088,.3),scpM,0,-.015,.37,.04);
+ addTo(g,new THREE.BoxGeometry(.072,.074,.095),glv,0,-.07,-.22);
+ addTo(g,new THREE.BoxGeometry(.072,.084,.095),glv,0,-.11,.08);
 }
 
 function syncWeaponModel(){
@@ -625,7 +646,7 @@ function syncWeaponModel(){
   if(!WP[wi].canAds)ads=false;
 }
 syncWeaponModel();
-const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.22,.22),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.012,-.78);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
+const mfm=new THREE.Mesh(new THREE.PlaneGeometry(.24,.24),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,side:2}));mfm.position.set(0,.012,-.8);mfm.visible=false;gun.add(mfm);gun.scale.setScalar(.8);gun.position.set(.2,-.19,-.45);cam.add(gun);
 const trc=[];for(let i=0;i<12;i++){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xffffff}));l.visible=false;l.frustumCulled=false;sc.add(l);trc.push({l,t:0})}
 let ti=0;function tracer(a,b,col){const o=trc[ti++%12],p=o.l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;o.l.material.color.setHex(col);o.l.visible=true;o.t=.06}
 const spk=new THREE.Mesh(new THREE.SphereGeometry(.12,6,4),new THREE.MeshBasicMaterial({color:0xffcc66}));spk.visible=false;sc.add(spk);
@@ -707,7 +728,8 @@ function upd(dt){
  if((J||K[' '])&&pl.og&&!pl.dead){pl.vy=8.6;pl.og=0;SX.jump()}
  pl.vy-=24*dt;pl.y+=pl.vy*dt;const g0=gnd(pl.x,pl.z,pl.y);
  if(pl.y<=g0){if(!pl.og&&pl.vy<-5)SX.land();pl.y=g0;pl.vy=0;pl.og=1}else pl.og=0;
- if(pl.og&&l>.1){stp+=dt*6.5;if(stp>2.4){stp=0;SX.step()}}
+ if(pl.og&&l>.1){bobPhase+=dt*(spr?13.5:9.5);stp+=dt*(spr?8.2:6.5);if(stp>2.4){stp=0;SX.step()}}
+ else{bobPhase+=dt*2.1}
  stepLookSmoothing(dt);
  cam.position.set(pl.x,pl.y+(pl.dead?.35:1.6),pl.z);shk=Math.max(0,shk-dt*8);cam.rotation.set(pl.pit+(Math.random()-.5)*shk*.01,pl.yaw,(Math.random()-.5)*shk*.02);cam.updateMatrixWorld();
  for(const k in bu)if(bu[k]>0)bu[k]-=dt;for(let i=0;i<3;i++)if(cd[i]>0)cd[i]-=dt;fcd-=dt;rec=Math.max(0,rec-dt*8);mf-=dt;hm-=dt;dm=Math.max(0,dm-dt*1.5);
@@ -724,7 +746,17 @@ function upd(dt){
   else{const r=e.z/S|0,c=e.x/S|0;let b=null,bv=FD[r]?FD[r][c]:999;[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,q])=>{const y=r+a,x=c+q;if(FD[y]&&FD[y][x]<bv){bv=FD[y][x];b=[y,x]}});
    const tx=b?(b[1]+.5)*S:pl.x,tz=b?(b[0]+.5)*S:pl.z,ax=tx-e.x,az=tz-e.z,dd=Math.hypot(ax,az)||1;mx=ax/dd;mz=az/dd;e.g.rotation.y=Math.atan2(mx,mz)}
   const nx=e.x+mx*sp,nz=e.z+mz*sp;let mv=0;if(!blk(nx,e.z,0,.3)){e.x=nx;mv=1}if(!blk(e.x,nz,0,.3)){e.z=nz;mv=1}
-  e.g.position.set(e.x,0,e.z);if(mv){e.ph+=dt*9;e.L.rotation.x=Math.sin(e.ph)*.7;e.R.rotation.x=-Math.sin(e.ph)*.7}
+  e.g.position.set(e.x,0,e.z);
+  if(mv){
+    e.ph+=dt*9;
+    e.L.rotation.x=Math.sin(e.ph)*.72;
+    e.R.rotation.x=-Math.sin(e.ph)*.72;
+    if(e.body)e.body.rotation.z=Math.sin(e.ph)*.045;
+  }else{
+    e.L.rotation.x=e.R.rotation.x=0;
+    if(e.body)e.body.rotation.z=0;
+  }
+  if(e.head&&e.see)e.head.rotation.y=cl(Math.atan2(dx,dz)-e.g.rotation.y,-.55,.55);
   e.fl-=dt;e.ms.forEach(m=>m.emissive.setHex(e.fl>0?0xaa2222:0));
   if(e.see&&d<28){e.cd-=dt;if(e.cd<=0){e.cd=.45+Math.random()*.6;const hit=Math.random()<Math.max(.12,.5-d*.016),o=new THREE.Vector3(e.x,1.3,e.z),t=new THREE.Vector3(pl.x+(hit?0:(Math.random()-.5)*2.4),pl.y+1.2,pl.z+(hit?0:(Math.random()-.5)*2.4));
    tracer(o,t,0xff7a5c);SX.shot(Math.min(.6,5/d));if(hit){pl.hp-=(e.hv?14:8)*(bu.shield>0?.3:1);dm=1;lh=now;shk=Math.max(shk,6);SX.hurt()}}}
@@ -746,12 +778,16 @@ function fx(dt){
  $('scopeOverlay').classList.toggle('on',isSniperScope);
  $('xh').style.opacity=isSniperScope?'0':'1';
 
- gun.position.x=((activeAds?0:.2)+rSide);
- gun.position.y=((activeAds?-.15:-.19)+rDrop);
- gun.position.z=-.45+rec*.07+(rl>0?rDrop*.35:0);
- gun.rotation.x=rec*.08+rPitch;
- gun.rotation.y=rYaw;
- gun.rotation.z=rRoll;
+ const swayAmp=activeAds?.0025:(spr?.012:.0075);
+ const bobX=Math.cos(bobPhase*.5)*swayAmp;
+ const bobY=Math.abs(Math.sin(bobPhase))*swayAmp;
+
+ gun.position.x=((activeAds?0:.2)+rSide+bobX);
+ gun.position.y=((activeAds?-.15:-.19)+rDrop-bobY);
+ gun.position.z=-.45+rec*.075+(rl>0?rDrop*.35:0);
+ gun.rotation.x=rec*.085+rPitch+bobY*2.2;
+ gun.rotation.y=rYaw+bobX*2.4;
+ gun.rotation.z=rRoll-bobX*1.8;
  const badge=$('rlBadge');
  if(badge){
   const showRl=(rl>0 && st==1 && !pl.dead);
@@ -1562,8 +1598,8 @@ function mpFx(dt){
     if(r.al){
       const dx=r.tx-r.x,dz=r.tz-r.z;r.x+=dx*a;r.y+=(r.ty-r.y)*a;r.z+=dz*a;
       let dy=r.tyaw-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*a;
-      if(Math.hypot(dx,dz)>.04){r.ph+=dt*9;r.L.rotation.x=Math.sin(r.ph)*.7;r.R.rotation.x=-Math.sin(r.ph)*.7}
-      else{r.L.rotation.x=r.R.rotation.x=0}
+      if(Math.hypot(dx,dz)>.04){r.ph+=dt*9;r.L.rotation.x=Math.sin(r.ph)*.7;r.R.rotation.x=-Math.sin(r.ph)*.7;if(r.body)r.body.rotation.z=Math.sin(r.ph)*.04}
+      else{r.L.rotation.x=r.R.rotation.x=0;if(r.body)r.body.rotation.z=0}
       r.g.rotation.y=r.yaw+Math.PI;
     }else{
       r.t+=dt;r.g.rotation.x=-Math.min(1.5,r.t*4);
